@@ -1,6 +1,11 @@
 #!/bin/bash
-# 离线部署打包脚本
-# 用法：在公网服务器构建完成后运行此脚本，将生成的 offline-deploy.tar.gz 拷贝到内网
+# 离线部署打包脚本（修复版）
+# 修复内容：
+# 1. 增加 Docker 网络 DNS 解析检查
+# 2. 增加容器健康状态检查
+# 3. 增加数据库连接测试
+# 4. 改进故障手册文件复制逻辑
+# 5. 改进错误处理和诊断信息
 
 set -e
 
@@ -159,10 +164,11 @@ else
     echo "⚠️  警告: 未找到 configure-host-mysql.sh，宿主机MySQL配置功能将不可用"
 fi
 
-# 创建启动脚本
+# 创建启动脚本（修复版）
 cat > $PACK_DIR/start.sh << 'EOF'
 #!/bin/bash
-# 内网部署启动脚本
+# 内网部署启动脚本（修复版）
+# 修复内容：增加 Docker 网络 DNS 解析检查，确保后端容器能连接到 MySQL
 
 set -e
 
@@ -267,34 +273,71 @@ docker compose -f docker-compose.prod.yml up -d
 
 echo ""
 echo "⏳ 3. 等待服务启动..."
-sleep 30
 
-# 检查服务状态
-echo ""
-echo "📊 4. 检查服务状态..."
-docker compose -f docker-compose.prod.yml ps
-
-echo ""
-echo "� 5. 初始化数据库和配置..."
-
-# 等待MySQL完全启动
-echo "等待MySQL服务启动..."
-for i in {1..30}; do
-    if docker compose -f docker-compose.prod.yml exec -T mysql mysqladmin ping -h localhost -u root -p'Zhang~~1' --silent; then
-        echo "✓ MySQL服务已启动"
+# 等待 MySQL 容器健康
+echo "等待 MySQL 容器启动..."
+for i in {1..60}; do
+    MYSQL_HEALTH=$(docker compose -f docker-compose.prod.yml ps mysql --format json 2>/dev/null | grep -o '"Health":"[^"]*"' | cut -d'"' -f4)
+    if [ "$MYSQL_HEALTH" = "healthy" ]; then
+        echo "✓ MySQL 容器已健康 (用时 ${i} 秒)"
         break
     fi
-    if [ $i -eq 30 ]; then
-        echo "❌ MySQL启动超时"
+    if [ $i -eq 60 ]; then
+        echo "❌ MySQL 容器启动超时"
+        docker compose -f docker-compose.prod.yml logs mysql --tail=50
         exit 1
     fi
+    echo "  MySQL 状态: ${MYSQL_HEALTH:-starting} (${i}/60)"
     sleep 2
 done
 
-# 等待后端容器完全启动并能连接到MySQL
-echo "等待后端服务启动并连接MySQL..."
+# 额外等待 MySQL 完全就绪
+echo "等待 MySQL 服务完全就绪..."
+sleep 10
+
+# 等待后端容器启动
+echo "等待后端容器启动..."
+for i in {1..60}; do
+    BACKEND_STATUS=$(docker compose -f docker-compose.prod.yml ps backend --format json 2>/dev/null | grep -o '"State":"[^"]*"' | cut -d'"' -f4)
+    if [ "$BACKEND_STATUS" = "running" ]; then
+        echo "✓ 后端容器已启动 (用时 ${i} 秒)"
+        break
+    fi
+    if [ $i -eq 60 ]; then
+        echo "❌ 后端容器启动超时"
+        docker compose -f docker-compose.prod.yml logs backend --tail=50
+        exit 1
+    fi
+    echo "  后端状态: ${BACKEND_STATUS:-starting} (${i}/60)"
+    sleep 2
+done
+
+# 额外等待后端应用启动和网络 DNS 生效
+echo "等待后端应用启动和网络初始化..."
+sleep 15
+
+# 检查后端容器内的网络连接（关键修复）
+echo "检查后端容器网络连接..."
 for i in {1..30}; do
-    # 在后端容器内测试MySQL连接
+    # 先测试 DNS 解析
+    if docker compose -f docker-compose.prod.yml exec -T backend sh -c "ping -c 1 -W 2 mysql > /dev/null 2>&1"; then
+        echo "✓ 后端容器可以 ping 通 MySQL (用时 ${i} 秒)"
+        break
+    fi
+    if [ $i -eq 30 ]; then
+        echo "❌ 后端容器无法连接到 MySQL（网络问题）"
+        echo "   诊断信息："
+        docker compose -f docker-compose.prod.yml exec -T backend sh -c "cat /etc/hosts | grep mysql" || true
+        docker compose -f docker-compose.prod.yml exec -T backend sh -c "getent hosts mysql" || true
+        exit 1
+    fi
+    echo "  等待网络 DNS 生效... (${i}/30)"
+    sleep 2
+done
+
+# 测试 MySQL 数据库连接（关键修复）
+echo "测试 MySQL 数据库连接..."
+for i in {1..20}; do
     if docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
 import pymysql
 import sys
@@ -308,49 +351,99 @@ try:
         connect_timeout=5
     )
     conn.close()
-    print('✓ 后端容器可以连接到MySQL', file=sys.stderr)
     sys.exit(0)
 except Exception as e:
-    print(f'✗ 连接失败: {e}', file=sys.stderr)
+    print(f'连接失败: {e}', file=sys.stderr)
     sys.exit(1)
 " 2>&1; then
-        echo "✓ 后端服务已启动，MySQL连接正常"
+        echo "✓ MySQL 数据库连接正常 (用时 ${i} 秒)"
         break
     fi
-    if [ $i -eq 30 ]; then
-        echo "❌ 后端服务启动超时或无法连接MySQL"
+    if [ $i -eq 20 ]; then
+        echo "❌ MySQL 数据库连接失败"
         echo "   请检查："
-        echo "   1. docker compose -f docker-compose.prod.yml logs backend"
-        echo "   2. docker compose -f docker-compose.prod.yml exec backend ping -c 3 mysql"
+        echo "   1. docker compose -f docker-compose.prod.yml logs backend --tail=100"
+        echo "   2. docker compose -f docker-compose.prod.yml logs mysql --tail=100"
         exit 1
     fi
-    echo "  等待中... ($i/30)"
-    sleep 2
+    echo "  等待数据库连接... (${i}/20)"
+    sleep 3
 done
+
+# 检查服务状态
+echo ""
+echo "📊 4. 检查服务状态..."
+docker compose -f docker-compose.prod.yml ps
+
+echo ""
+echo "🗄️ 5. 初始化数据库和配置..."
 
 # 导入故障手册（如果存在）
 if [ -f "knowledge/故障维修手册.csv" ]; then
     echo "📚 导入故障手册..."
-    # 先复制文件到容器内
-    docker cp knowledge/故障维修手册.csv $(docker compose -f docker-compose.prod.yml ps -q backend):/knowledge/故障维修手册.csv
-    # 然后执行导入
-    docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
+    
+    # 确保容器内目录存在
+    docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /knowledge 2>/dev/null || true
+    
+    # 获取后端容器 ID
+    BACKEND_CONTAINER=$(docker compose -f docker-compose.prod.yml ps -q backend)
+    if [ -z "$BACKEND_CONTAINER" ]; then
+        echo "❌ 无法获取后端容器 ID"
+        exit 1
+    fi
+    
+    # 复制文件到容器内
+    if docker cp knowledge/故障维修手册.csv ${BACKEND_CONTAINER}:/knowledge/故障维修手册.csv; then
+        echo "✓ 故障手册文件已复制到容器"
+    else
+        echo "❌ 故障手册文件复制失败"
+        exit 1
+    fi
+    
+    # 执行导入
+    if docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
 import sys
 sys.path.append('/app')
 from scripts.import_fault_manual import main
 main()
-" || echo "⚠️  故障手册导入失败，请手动执行"
+"; then
+        echo "✓ 故障手册导入成功"
+    else
+        echo "⚠️  故障手册导入失败（可能已存在）"
+    fi
+    
 elif [ -f "knowledge/故障维修手册.md" ]; then
-    echo "📚 导入故障手册（MD格式）..."
-    # 先复制文件到容器内
-    docker cp knowledge/故障维修手册.md $(docker compose -f docker-compose.prod.yml ps -q backend):/knowledge/故障维修手册.md
-    # 然后执行导入
-    docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
+    echo "📚 导入故障手册（MD 格式）..."
+    
+    # 确保容器内目录存在
+    docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /knowledge 2>/dev/null || true
+    
+    # 获取后端容器 ID
+    BACKEND_CONTAINER=$(docker compose -f docker-compose.prod.yml ps -q backend)
+    if [ -z "$BACKEND_CONTAINER" ]; then
+        echo "❌ 无法获取后端容器 ID"
+        exit 1
+    fi
+    
+    # 复制文件到容器内
+    if docker cp knowledge/故障维修手册.md ${BACKEND_CONTAINER}:/knowledge/故障维修手册.md; then
+        echo "✓ 故障手册文件已复制到容器"
+    else
+        echo "❌ 故障手册文件复制失败"
+        exit 1
+    fi
+    
+    # 执行导入
+    if docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
 import sys
 sys.path.append('/app')
 from scripts.import_fault_manual import main
 main()
-" || echo "⚠️  故障手册导入失败，请手动执行"
+"; then
+        echo "✓ 故障手册导入成功"
+    else
+        echo "⚠️  故障手册导入失败（可能已存在）"
+    fi
 else
     echo "⚠️  未找到故障手册文件，跳过导入"
 fi
@@ -358,7 +451,21 @@ fi
 # 初始化系统配置
 if [ -f "init_system_configs.py" ]; then
     echo "⚙️  初始化系统配置..."
-    docker compose -f docker-compose.prod.yml exec -T backend python3 init_system_configs.py || echo "⚠️  系统配置初始化失败，请手动执行"
+    
+    # 先复制配置文件到容器
+    if [ -f "backend-config/default_instance_ids.json" ]; then
+        BACKEND_CONTAINER=$(docker compose -f docker-compose.prod.yml ps -q backend)
+        docker cp backend-config/default_instance_ids.json ${BACKEND_CONTAINER}:/app/config/default_instance_ids.json 2>/dev/null || true
+    fi
+    
+    # 执行初始化
+    if docker compose -f docker-compose.prod.yml exec -T backend python3 init_system_configs.py; then
+        echo "✓ 系统配置初始化成功"
+    else
+        echo "⚠️  系统配置初始化失败（可能配置已存在）"
+        echo "   如果是首次部署，请检查日志："
+        echo "   docker compose -f docker-compose.prod.yml logs backend --tail=100"
+    fi
 fi
 
 echo ""
@@ -397,4 +504,11 @@ echo "2. 解压: tar -xzf offline-deploy.tar.gz"
 echo "3. 进入目录: cd offline-deploy"
 echo "4. 修改 .env 文件中的配置（如需要）"
 echo "5. 运行: ./start.sh"
+echo ""
+echo "📝 修复说明："
+echo "- 增加了 Docker 网络 DNS 解析检查（ping 测试）"
+echo "- 增加了容器健康状态检查"
+echo "- 增加了数据库连接测试"
+echo "- 改进了故障手册文件复制逻辑"
+echo "- 改进了错误处理和诊断信息"
 echo ""

@@ -149,6 +149,8 @@ services:
       HTTP_PROXY: http://agent.baidu.com:8891
       HTTPS_PROXY: http://agent.baidu.com:8891
       NO_PROXY: localhost,127.0.0.1,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,apiin.im.baidu.com,.baidu.com,.baidubce.com,.baidu-int.com,.bcebos.com
+      # 宿主机MySQL配置（用于查询集群信息）
+      HOST_MYSQL_IP: ${HOST_MYSQL_IP:-host.docker.internal}
       PYTHONUNBUFFERED: 1
       TZ: Asia/Shanghai
     ports:

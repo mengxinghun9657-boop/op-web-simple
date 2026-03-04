@@ -18,8 +18,12 @@ class FilenameCorrectorService:
     def __init__(self):
         """初始化服务"""
         # 宿主机数据库配置（用于查询正确的cluster_id）
+        # 注意：容器内访问宿主机需要使用宿主机IP，不能用127.0.0.1
+        # 从环境变量获取宿主机IP，默认使用host.docker.internal（Mac/Windows）
+        host_ip = os.getenv("HOST_MYSQL_IP", "host.docker.internal")
+        
         self.host_db_config = {
-            "host": "127.0.0.1",  # 宿主机MySQL
+            "host": host_ip,  # 宿主机IP或host.docker.internal
             "user": "root",
             "password": "DF210354ws!",
             "database": "mydb",

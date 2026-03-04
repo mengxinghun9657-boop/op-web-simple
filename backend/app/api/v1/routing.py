@@ -793,8 +793,8 @@ async def import_routing_rules(
 @router.post("/convert", response_model=Dict[str, Any])
 async def convert_natural_language(
     request: NLConvertRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
+    # 移除认证要求，允许匿名访问
 ):
     """
     自然语言转换为正则表达式

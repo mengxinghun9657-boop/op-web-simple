@@ -276,24 +276,27 @@ echo "⏳ 3. 等待服务启动..."
 
 # 等待 MySQL 容器健康
 echo "等待 MySQL 容器启动..."
-for i in {1..60}; do
+for i in {1..180}; do
     MYSQL_HEALTH=$(docker compose -f docker-compose.prod.yml ps mysql --format json 2>/dev/null | grep -o '"Health":"[^"]*"' | cut -d'"' -f4)
     if [ "$MYSQL_HEALTH" = "healthy" ]; then
         echo "✓ MySQL 容器已健康 (用时 ${i} 秒)"
         break
     fi
-    if [ $i -eq 60 ]; then
-        echo "❌ MySQL 容器启动超时"
+    if [ $i -eq 180 ]; then
+        echo "❌ MySQL 容器启动超时（已等待180秒）"
         docker compose -f docker-compose.prod.yml logs mysql --tail=50
         exit 1
     fi
-    echo "  MySQL 状态: ${MYSQL_HEALTH:-starting} (${i}/60)"
-    sleep 2
+    # 每10秒显示一次状态
+    if [ $((i % 10)) -eq 0 ]; then
+        echo "  MySQL 状态: ${MYSQL_HEALTH:-starting} (${i}/180秒)"
+    fi
+    sleep 1
 done
 
 # 额外等待 MySQL 完全就绪
 echo "等待 MySQL 服务完全就绪..."
-sleep 10
+sleep 20
 
 # 等待后端容器启动
 echo "等待后端容器启动..."
@@ -314,7 +317,7 @@ done
 
 # 额外等待后端应用启动和网络 DNS 生效
 echo "等待后端应用启动和网络初始化..."
-sleep 15
+sleep 20
 
 # 检查 DNS 解析（不依赖 ping）
 echo "检查 DNS 解析..."
@@ -327,7 +330,7 @@ fi
 
 # 测试 MySQL 数据库连接（关键修复）
 echo "测试 MySQL 数据库连接..."
-for i in {1..30}; do
+for i in {1..40}; do
     if docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
 import pymysql
 import sys
@@ -346,11 +349,11 @@ except Exception as e:
     print(f'连接失败: {e}', file=sys.stderr)
     sys.exit(1)
 " 2>&1; then
-        echo "✓ MySQL 数据库连接正常 (用时 ${i} 秒)"
+        echo "✓ MySQL 数据库连接正常 (用时 ${i} 次尝试)"
         break
     fi
-    if [ $i -eq 30 ]; then
-        echo "❌ MySQL 数据库连接失败"
+    if [ $i -eq 40 ]; then
+        echo "❌ MySQL 数据库连接失败（已尝试40次，共120秒）"
         echo "   诊断信息："
         echo "   1. 检查 DNS 解析："
         docker compose -f docker-compose.prod.yml exec -T backend sh -c "getent hosts mysql" || true
@@ -362,7 +365,10 @@ except Exception as e:
         echo "      docker compose -f docker-compose.prod.yml logs mysql --tail=50"
         exit 1
     fi
-    echo "  等待数据库连接... (${i}/30，每次间隔3秒)"
+    # 每10次显示一次进度
+    if [ $((i % 10)) -eq 0 ]; then
+        echo "  等待数据库连接... (${i}/40次，每次间隔3秒)"
+    fi
     sleep 3
 done
 

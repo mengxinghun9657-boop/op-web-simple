@@ -297,33 +297,44 @@ const renderDistributionChart = (data) => {
     },
     legend: {
       orient: 'vertical',
-      right: 10,
+      right: '5%',
       top: 'center',
-      type: 'scroll'
+      type: 'scroll',
+      itemGap: 12,
+      textStyle: {
+        fontSize: 12
+      }
     },
     series: [
       {
         type: 'pie',
         radius: ['40%', '70%'],
-        avoidLabelOverlap: false,
+        avoidLabelOverlap: true,
         itemStyle: {
           borderRadius: 10,
           borderColor: '#fff',
           borderWidth: 2
         },
         label: {
-          show: false,
-          position: 'center'
+          show: true,
+          position: 'outside',
+          formatter: '{b}: {d}%',
+          fontSize: 12,
+          overflow: 'break',
+          distanceToLabelLine: 5
         },
         emphasis: {
           label: {
             show: true,
-            fontSize: 20,
+            fontSize: 14,
             fontWeight: 'bold'
           }
         },
         labelLine: {
-          show: false
+          show: true,
+          length: 15,
+          length2: 10,
+          smooth: true
         },
         data: chartData
       }

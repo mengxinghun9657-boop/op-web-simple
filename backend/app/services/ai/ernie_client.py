@@ -89,6 +89,11 @@ class ERNIEClient:
         self.failed_models = set()  # 记录失败的模型
         self.model_switch_count = 0  # 模型切换次数
         
+        # 请求频率限制（避免429错误）
+        self.min_request_interval = 3.0  # 最小请求间隔（秒）
+        self.last_request_time = 0.0  # 上次请求时间戳
+        self._rate_limit_lock = asyncio.Lock()  # 频率限制锁
+        
         # 创建 HTTP 客户端
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(timeout),
@@ -97,6 +102,7 @@ class ERNIEClient:
         
         logger.info(f"ERNIEClient initialized: url={self.api_url}, primary_model={self.primary_model}, timeout={timeout}s, max_retries={max_retries}")
         logger.info(f"Available fallback models: {len(self.AVAILABLE_MODELS)} models configured")
+        logger.info(f"Rate limit: minimum {self.min_request_interval}s between requests")
     
     async def close(self):
         """关闭 HTTP 客户端"""
@@ -194,6 +200,18 @@ class ERNIEClient:
             httpx.NetworkError: 网络错误
             httpx.HTTPStatusError: HTTP 错误
         """
+        # 频率限制：确保请求间隔至少为 min_request_interval 秒
+        async with self._rate_limit_lock:
+            current_time = time.time()
+            time_since_last_request = current_time - self.last_request_time
+            
+            if time_since_last_request < self.min_request_interval:
+                wait_time = self.min_request_interval - time_since_last_request
+                logger.info(f"⏱️ Rate limit: waiting {wait_time:.2f}s before next request")
+                await asyncio.sleep(wait_time)
+            
+            self.last_request_time = time.time()
+        
         # 构建请求体
         request_body = {
             "model": self.current_model,

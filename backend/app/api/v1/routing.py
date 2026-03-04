@@ -805,7 +805,7 @@ async def convert_natural_language(
         from app.services.routing.nl_converter import NLConverter
         
         # 创建转换服务
-        converter = NLConverter(db=db)
+        converter = NLConverter()
         
         # 执行转换
         result = await converter.convert(

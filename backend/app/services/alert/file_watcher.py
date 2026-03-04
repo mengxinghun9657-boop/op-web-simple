@@ -147,12 +147,13 @@ class PathSpecificHandler(FileSystemEventHandler):
 class FileWatcherService:
     """文件监控服务
     
-    监控硬编码的告警文件目录：/app/alerts
-    该目录通过 Docker volume 挂载到宿主机的 /data/HAS_file/changan/
+    监控源告警文件目录：/app/alerts_source（只读）
+    文件会被同步到处理目录：/app/alerts（读写）
     """
     
     # 硬编码的监控路径配置
-    ALERT_PATH = "/app/alerts"
+    ALERT_SOURCE_PATH = "/app/alerts_source"  # 源目录（只读）
+    ALERT_PROCESS_PATH = "/app/alerts"        # 处理目录（读写）
     FILE_PATTERN = "*.txt"
     
     def __init__(self):
@@ -178,15 +179,15 @@ class FileWatcherService:
     def start_monitoring(self):
         """启动监控"""
         try:
-            watch_path = Path(self.ALERT_PATH).expanduser()
+            watch_path = Path(self.ALERT_SOURCE_PATH).expanduser()
             
             if not watch_path.exists():
-                logger.error(f"告警目录不存在: {watch_path}")
+                logger.error(f"告警源目录不存在: {watch_path}")
                 return
             
             # 创建虚拟的路径配置对象（用于Handler）
             path_config = type('PathConfig', (), {
-                'path': self.ALERT_PATH,
+                'path': self.ALERT_SOURCE_PATH,
                 'file_pattern': self.FILE_PATTERN,
                 'priority': 100,
                 'id': 1
@@ -203,7 +204,8 @@ class FileWatcherService:
             self.observer.schedule(self.handler, str(watch_path), recursive=False)
             self.observer.start()
             
-            logger.info(f"文件监控服务已启动，监控路径: {self.ALERT_PATH} (模式: {self.FILE_PATTERN})")
+            logger.info(f"文件监控服务已启动，监控源目录: {self.ALERT_SOURCE_PATH} (模式: {self.FILE_PATTERN})")
+            logger.info(f"文件将同步到处理目录: {self.ALERT_PROCESS_PATH}")
         except Exception as e:
             logger.error(f"启动文件监控失败: {str(e)}", exc_info=True)
     
@@ -242,27 +244,27 @@ class FileWatcherService:
         """处理已存在的文件（初始化时使用）"""
         print(f"[DEBUG] process_existing_files() 方法开始执行")
         logger.info(f"[DEBUG] process_existing_files() 方法开始执行")
-        print(f"[DEBUG] ALERT_PATH = {self.ALERT_PATH}")
-        logger.info(f"[DEBUG] ALERT_PATH = {self.ALERT_PATH}")
+        print(f"[DEBUG] ALERT_SOURCE_PATH = {self.ALERT_SOURCE_PATH}")
+        logger.info(f"[DEBUG] ALERT_SOURCE_PATH = {self.ALERT_SOURCE_PATH}")
         
         try:
             print(f"[DEBUG] 尝试创建Path对象...")
             logger.info(f"[DEBUG] 尝试创建Path对象...")
-            watch_dir = Path(self.ALERT_PATH).expanduser()
+            watch_dir = Path(self.ALERT_SOURCE_PATH).expanduser()
             print(f"[DEBUG] Path对象创建成功: {watch_dir}")
             logger.info(f"[DEBUG] Path对象创建成功: {watch_dir}")
             
             print(f"[DEBUG] 检查目录是否存在...")
             logger.info(f"[DEBUG] 检查目录是否存在...")
             if not watch_dir.exists():
-                print(f"[ERROR] 告警目录不存在: {watch_dir}")
-                logger.error(f"告警目录不存在: {watch_dir}")
+                print(f"[ERROR] 告警源目录不存在: {watch_dir}")
+                logger.error(f"告警源目录不存在: {watch_dir}")
                 return
             print(f"[DEBUG] 目录存在检查通过")
             logger.info(f"[DEBUG] 目录存在检查通过")
             
-            print(f"[INFO] 开始处理已存在的文件，路径: {watch_dir}")
-            logger.info(f"开始处理已存在的文件，路径: {watch_dir}")
+            print(f"[INFO] 开始处理已存在的文件，源路径: {watch_dir}")
+            logger.info(f"开始处理已存在的文件，源路径: {watch_dir}")
             
             # 获取所有文件
             all_files = list(watch_dir.glob("*"))
@@ -283,15 +285,17 @@ class FileWatcherService:
             print(f"[INFO] 找到 {len(matched_files)} 个匹配 '{self.FILE_PATTERN}' 模式的文件")
             logger.info(f"找到 {len(matched_files)} 个匹配 '{self.FILE_PATTERN}' 模式的文件")
             
+            # 获取文件同步服务
+            file_sync_service = get_file_sync_service()
+            
             # 处理每个文件
             for file_path in matched_files:
                 try:
-                    # 步骤1: 文件名修正（如果需要）
-                    corrector = get_filename_corrector()
-                    corrected_path = corrector.correct_filename_if_needed(str(file_path), dry_run=False)
+                    # 步骤1: 文件同步（从只读源目录复制到可写处理目录，支持文件名修正）
+                    synced_file_path = file_sync_service.sync_file(str(file_path))
                     
-                    # 如果文件名被修正，使用新的路径
-                    actual_file_path = Path(corrected_path) if corrected_path else file_path
+                    # 如果同步失败，使用原文件路径
+                    actual_file_path = Path(synced_file_path) if synced_file_path else file_path
                     
                     # 检查Redis去重（如果可用）
                     redis_key = f"alert:processed_file:{str(actual_file_path)}"
@@ -309,9 +313,9 @@ class FileWatcherService:
                     
                     print(f"[INFO] 处理文件: {actual_file_path}")
                     logger.info(f"处理文件: {actual_file_path}")
-                    if corrected_path:
-                        print(f"[INFO] 文件名已修正: {file_path} -> {actual_file_path}")
-                        logger.info(f"文件名已修正: {file_path} -> {actual_file_path}")
+                    if synced_file_path and synced_file_path != str(file_path):
+                        print(f"[INFO] 文件已同步并修正: {file_path} -> {actual_file_path}")
+                        logger.info(f"文件已同步并修正: {file_path} -> {actual_file_path}")
                     
                     # 直接创建processor并处理（不依赖handler）
                     processor = self._get_processor()

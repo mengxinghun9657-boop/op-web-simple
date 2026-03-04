@@ -292,23 +292,36 @@ for i in {1..30}; do
 done
 
 # 等待后端容器完全启动并能连接到MySQL
-echo "等待后端服务启动..."
+echo "等待后端服务启动并连接MySQL..."
 for i in {1..30}; do
     # 在后端容器内测试MySQL连接
     if docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
 import pymysql
+import sys
 try:
-    conn = pymysql.connect(host='mysql', user='root', password='Zhang~~1', database='cluster_management')
+    conn = pymysql.connect(
+        host='mysql',
+        port=3306,
+        user='root',
+        password='Zhang~~1',
+        database='cluster_management',
+        connect_timeout=5
+    )
     conn.close()
-    exit(0)
-except:
-    exit(1)
-" 2>/dev/null; then
+    print('✓ 后端容器可以连接到MySQL', file=sys.stderr)
+    sys.exit(0)
+except Exception as e:
+    print(f'✗ 连接失败: {e}', file=sys.stderr)
+    sys.exit(1)
+" 2>&1; then
         echo "✓ 后端服务已启动，MySQL连接正常"
         break
     fi
     if [ $i -eq 30 ]; then
         echo "❌ 后端服务启动超时或无法连接MySQL"
+        echo "   请检查："
+        echo "   1. docker compose -f docker-compose.prod.yml logs backend"
+        echo "   2. docker compose -f docker-compose.prod.yml exec backend ping -c 3 mysql"
         exit 1
     fi
     echo "  等待中... ($i/30)"

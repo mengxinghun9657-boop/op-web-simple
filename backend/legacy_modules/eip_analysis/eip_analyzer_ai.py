@@ -1,0 +1,692 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+EIP带宽监控分析器（AI增强版）
+完全重构，解决大数据量时的可读性问题
+采用"倒金字塔"信息架构
+"""
+
+import pandas as pd
+from datetime import datetime, timedelta, timezone
+from typing import List, Dict, Any, Optional
+import json
+
+
+class EIPAnalyzerAI:
+    """EIP带宽监控分析器（AI增强版）"""
+    
+    def __init__(self, bcm_client=None, user_id: str = "f008db4751894afe9b851e32a2068335"):
+        """
+        初始化EIP分析器
+        
+        Args:
+            bcm_client: BCM客户端实例
+            user_id: 百度云用户ID
+        """
+        self.client = bcm_client
+        self.user_id = user_id
+        self.scope = "BCE_EIP"
+        self.region = "cd"
+        self.eip_ids = []
+        
+        # 初始化ERNIE客户端用于AI解读
+        self.ernie_client = None
+        try:
+            from app.services.ai.ernie_client import get_ernie_client
+            self.ernie_client = get_ernie_client()
+            print("ERNIE客户端初始化成功")
+        except Exception as e:
+            print(f"ERNIE客户端初始化失败: {e}，将使用本地算法")
+    
+    def load_eips_from_file(self, file_path: str) -> List[str]:
+        """从文件加载EIP列表"""
+        try:
+            with open(file_path, 'r') as f:
+                eips = [line.strip() for line in f if line.strip()]
+            print(f"从{file_path}加载了{len(eips)}个EIP实例")
+            self.eip_ids = eips
+            return eips
+        except FileNotFoundError:
+            print(f"文件{file_path}未找到")
+            return []
+    
+    def load_eips_from_list(self, eips: List[str]):
+        """从列表加载EIP"""
+        self.eip_ids = eips
+        print(f"加载了{len(eips)}个EIP实例")
+
+    def get_eip_data(self, eip_ids: List[str], hours: int = 6) -> Any:
+        """获取EIP监控数据"""
+        if not self.client:
+            raise Exception("BCM客户端未初始化")
+        
+        # 北京时间最近N小时
+        beijing_tz = timezone(timedelta(hours=8))
+        end_time = datetime.now(beijing_tz)
+        start_time = end_time - timedelta(hours=hours)
+        
+        # 转换为UTC时间
+        start_utc = start_time.astimezone(timezone.utc)
+        end_utc = end_time.astimezone(timezone.utc)
+        
+        print(f"查询时间范围: {start_time.strftime('%Y-%m-%d %H:%M:%S')} 至 {end_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
+        
+        dimensions = [[{"name": "InstanceId", "value": eip_id}] for eip_id in eip_ids]
+        
+        response = self.client.get_all_data_metrics_v2(
+            self.user_id, self.scope, self.region, dimensions,
+            ["WebInBitsPerSecond", "WebOutBitsPerSecond", "DropsInPkgCounts", "DropsOutPkgCounts"],
+            ["average"],
+            start_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            end_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            type="Instance", cycle=30
+        )
+        
+        return response
+    
+    def process_data(self, response: Any, eip_ids: List[str]) -> pd.DataFrame:
+        """处理EIP监控数据"""
+        data = []
+        
+        if response and hasattr(response, 'metrics') and response.metrics:
+            for metric_data in response.metrics:
+                eip_id = metric_data.resource_id
+                metric_name = metric_data.metric_name
+                
+                for point in metric_data.data_points:
+                    if hasattr(point, 'average') and point.average is not None:
+                        # 带宽数据转换为Mbps，丢包数保持原值
+                        value = point.average / 1024 / 1024 if 'BitsPerSecond' in metric_name else point.average
+                        
+                        # 解析时间戳并移除时区信息
+                        timestamp = pd.to_datetime(point.timestamp)
+                        if hasattr(timestamp, 'tz_localize'):
+                            timestamp = timestamp.tz_localize(None)
+                        
+                        data.append({
+                            'eip_id': eip_id,
+                            'metric': metric_name,
+                            'timestamp': timestamp,
+                            'value': value
+                        })
+        
+        df = pd.DataFrame(data)
+        
+        # 确保timestamp列无时区信息
+        if not df.empty and 'timestamp' in df.columns:
+            if hasattr(df['timestamp'].dtype, 'tz') and df['timestamp'].dtype.tz is not None:
+                df['timestamp'] = df['timestamp'].dt.tz_localize(None)
+        
+        print(f"处理得到 {len(data)} 条数据点")
+        return df
+
+    def get_eip_stats(self, df: pd.DataFrame) -> List[Dict]:
+        """获取各EIP统计数据"""
+        eip_stats = []
+        for eip_id in self.eip_ids:
+            eip_data = df[df['eip_id'] == eip_id]
+            if not eip_data.empty:
+                in_data = eip_data[eip_data['metric'] == 'WebInBitsPerSecond']['value']
+                out_data = eip_data[eip_data['metric'] == 'WebOutBitsPerSecond']['value']
+                in_drops = eip_data[eip_data['metric'] == 'DropsInPkgCounts']['value']
+                out_drops = eip_data[eip_data['metric'] == 'DropsOutPkgCounts']['value']
+                
+                eip_stats.append({
+                    'id': eip_id,
+                    'in_total': float(in_data.sum()) if not in_data.empty else 0.0,
+                    'out_total': float(out_data.sum()) if not out_data.empty else 0.0,
+                    'in_avg': float(in_data.mean()) if not in_data.empty else 0.0,
+                    'out_avg': float(out_data.mean()) if not out_data.empty else 0.0,
+                    'in_max': float(in_data.max()) if not in_data.empty else 0.0,
+                    'out_max': float(out_data.max()) if not out_data.empty else 0.0,
+                    'in_drops_total': float(in_drops.sum()) if not in_drops.empty else 0.0,
+                    'out_drops_total': float(out_drops.sum()) if not out_drops.empty else 0.0
+                })
+        
+        return eip_stats
+    
+    def detect_anomalies(self, eip_stats: List[Dict], df: pd.DataFrame) -> List[Dict]:
+        """检测异常流量（基于3-sigma方法）"""
+        anomalies = []
+        
+        # 计算平均带宽和标准差
+        in_avgs = [s['in_avg'] for s in eip_stats if s['in_avg'] > 0]
+        out_avgs = [s['out_avg'] for s in eip_stats if s['out_avg'] > 0]
+        
+        if not in_avgs or not out_avgs:
+            return anomalies
+        
+        in_mean = sum(in_avgs) / len(in_avgs)
+        out_mean = sum(out_avgs) / len(out_avgs)
+        in_std = (sum((x - in_mean) ** 2 for x in in_avgs) / len(in_avgs)) ** 0.5
+        out_std = (sum((x - out_mean) ** 2 for x in out_avgs) / len(out_avgs)) ** 0.5
+        
+        # 3-sigma异常检测
+        in_threshold = in_mean + 3 * in_std
+        out_threshold = out_mean + 3 * out_std
+        
+        for stat in eip_stats:
+            issues = []
+            if stat['in_avg'] > in_threshold:
+                issues.append(f"入向流量异常 {stat['in_avg']:.2f} Mbps")
+            if stat['out_avg'] > out_threshold:
+                issues.append(f"出向流量异常 {stat['out_avg']:.2f} Mbps")
+            if stat['in_drops_total'] > 100:
+                issues.append(f"入向丢包 {stat['in_drops_total']:.0f} 个")
+            if stat['out_drops_total'] > 100:
+                issues.append(f"出向丢包 {stat['out_drops_total']:.0f} 个")
+            
+            if issues:
+                anomalies.append({
+                    'id': stat['id'],
+                    'issues': ', '.join(issues),
+                    'in_avg': stat['in_avg'],
+                    'out_avg': stat['out_avg'],
+                    'in_drops': stat['in_drops_total'],
+                    'out_drops': stat['out_drops_total'],
+                    'severity': 'critical' if (stat['in_drops_total'] > 1000 or stat['out_drops_total'] > 1000) else 'warning'
+                })
+        
+        # 按严重程度排序
+        anomalies.sort(key=lambda x: (0 if x['severity'] == 'critical' else 1, -max(x['in_drops'], x['out_drops'])))
+        return anomalies
+
+    def generate_recommendations(self, eip_stats: List[Dict], anomalies: List[Dict]) -> List[Dict]:
+        """生成优化建议"""
+        recommendations = []
+        
+        # 异常流量建议
+        if anomalies:
+            critical_anomalies = [a for a in anomalies if a['severity'] == 'critical']
+            if critical_anomalies:
+                recommendations.append({
+                    'type': 'critical_alert',
+                    'priority': 'high',
+                    'title': '严重流量异常警告',
+                    'description': f'检测到 {len(critical_anomalies)} 个EIP存在严重流量异常或大量丢包',
+                    'affected_eips': [a['id'] for a in critical_anomalies[:5]],
+                    'action': '建议立即检查这些EIP的网络状态，排查是否存在DDoS攻击或网络故障'
+                })
+        
+        # 丢包分析建议
+        high_drops = [s for s in eip_stats if s['in_drops_total'] > 100 or s['out_drops_total'] > 100]
+        if high_drops:
+            recommendations.append({
+                'type': 'packet_loss',
+                'priority': 'medium',
+                'title': '丢包问题分析',
+                'description': f'发现 {len(high_drops)} 个EIP存在丢包现象',
+                'affected_eips': [s['id'] for s in high_drops[:10]],
+                'action': '建议检查网络配置、带宽限制和上游网络质量'
+            })
+        
+        # 带宽优化建议
+        high_bandwidth = [s for s in eip_stats if s['in_max'] > 800 or s['out_max'] > 800]
+        if high_bandwidth:
+            recommendations.append({
+                'type': 'bandwidth_optimization',
+                'priority': 'low',
+                'title': '带宽优化建议',
+                'description': f'{len(high_bandwidth)} 个EIP峰值带宽接近上限',
+                'affected_eips': [s['id'] for s in high_bandwidth[:10]],
+                'action': '建议评估是否需要升级带宽配置'
+            })
+        
+        return recommendations
+    
+    async def generate_ai_summary(self, eip_stats: List[Dict], anomalies: List[Dict], recommendations: List[Dict]) -> str:
+        """生成AI执行摘要（优先使用远程API）"""
+        
+        # 优先使用远程ERNIE API
+        if self.ernie_client:
+            try:
+                ai_summary = await self._generate_ai_summary_remote(eip_stats, anomalies, recommendations)
+                if ai_summary:
+                    print("使用远程API生成AI摘要成功")
+                    return ai_summary
+            except Exception as e:
+                print(f"远程API生成失败，使用本地算法: {e}")
+        
+        # 降级方案：本地算法
+        total_in_avg = sum(s['in_avg'] for s in eip_stats) / len(eip_stats) if eip_stats else 0
+        total_out_avg = sum(s['out_avg'] for s in eip_stats) / len(eip_stats) if eip_stats else 0
+        total_drops = sum(s['in_drops_total'] + s['out_drops_total'] for s in eip_stats)
+        
+        summary_text = f"""
+<h3>核心发现</h3>
+<p>本次分析覆盖 <strong>{len(eip_stats)}</strong> 个EIP实例，平均入向带宽 <strong>{total_in_avg:.2f} Mbps</strong>，
+平均出向带宽 <strong>{total_out_avg:.2f} Mbps</strong>。</p>
+
+<h3>关键洞察</h3>
+<ul>
+    <li><strong>异常检测</strong>: 发现 {len(anomalies)} 个带宽异常的EIP实例</li>
+    <li><strong>丢包情况</strong>: 总丢包数 {total_drops}，需要关注网络质量</li>
+    <li><strong>优化建议</strong>: 共识别 {len(recommendations)} 项优化建议</li>
+</ul>
+"""
+        return summary_text
+    
+    async def _generate_ai_summary_remote(self, eip_stats: List[Dict], anomalies: List[Dict], recommendations: List[Dict]) -> Optional[str]:
+        """使用远程ERNIE API生成AI摘要"""
+        total_in_avg = sum(s['in_avg'] for s in eip_stats) / len(eip_stats) if eip_stats else 0
+        total_out_avg = sum(s['out_avg'] for s in eip_stats) / len(eip_stats) if eip_stats else 0
+        total_drops = sum(s['in_drops_total'] + s['out_drops_total'] for s in eip_stats)
+        
+        # 构建提示词
+        prompt = f"""
+请对以下EIP带宽监控数据进行专业的AI分析和总结：
+
+【带宽概览】
+- EIP实例总数: {len(eip_stats)}个
+- 平均入向带宽: {total_in_avg:.2f} Mbps
+- 平均出向带宽: {total_out_avg:.2f} Mbps
+- 总丢包数: {total_drops}
+- 异常实例数: {len(anomalies)}个
+- 优化建议数: {len(recommendations)}项
+
+【TOP 5 高带宽EIP】
+{self._format_top_eips(eip_stats[:5])}
+
+请生成一段HTML格式的执行摘要（200字以内），包括：
+1. 核心发现（带宽使用情况）
+2. 关键洞察（异常情况、网络质量）
+3. 主要建议
+
+要求：使用HTML标签（h3, p, ul, li, strong），语言简洁专业。
+"""
+        
+        # 调用ERNIE API
+        response = await self.ernie_client.chat(
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=400
+        )
+        
+        return response
+    
+    def _format_top_eips(self, eips: List[Dict]) -> str:
+        """格式化TOP EIP信息"""
+        if not eips:
+            return "无数据"
+        
+        lines = []
+        for i, eip in enumerate(eips, 1):
+            lines.append(f"{i}. {eip['id']}: 入向 {eip['in_avg']:.2f} Mbps, 出向 {eip['out_avg']:.2f} Mbps")
+        
+        return "\n".join(lines)
+    def generate_html_report(self, df: pd.DataFrame, eip_stats: List[Dict]) -> str:
+        """生成的倒金字塔HTML报告"""
+        anomalies = self.detect_anomalies(eip_stats, df)
+        recommendations = self.generate_recommendations(eip_stats, anomalies)
+        ai_summary = self.generate_ai_summary(eip_stats, anomalies, recommendations)
+        
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 汇聚统计
+        total_in_avg = sum(s['in_avg'] for s in eip_stats) / len(eip_stats) if eip_stats else 0
+        total_out_avg = sum(s['out_avg'] for s in eip_stats) / len(eip_stats) if eip_stats else 0
+        total_drops = sum(s['in_drops_total'] + s['out_drops_total'] for s in eip_stats)
+        
+        # 构建异常EIP表格
+        anomaly_rows = ''
+        for anomaly in anomalies:
+            severity_color = '#F44336' if anomaly['severity'] == 'critical' else '#FF9800'
+            anomaly_rows += f"""
+            <tr>
+                <td>{anomaly['id']}</td>
+                <td>{anomaly['in_avg']:.2f}</td>
+                <td>{anomaly['out_avg']:.2f}</td>
+                <td>{anomaly['in_drops']:.0f}</td>
+                <td>{anomaly['out_drops']:.0f}</td>
+                <td style="color: {severity_color};">{anomaly['issues']}</td>
+            </tr>"""
+        
+        # 构建EIP统计卡片
+        eip_cards_html = ''
+        for stat in eip_stats[:20]:  # 只显示前20个
+            eip_cards_html += f"""
+            <div class="eip-card">
+                <div class="eip-title">{stat['id']}</div>
+                <table>
+                    <tr><th>指标</th><th>入向</th><th>出向</th></tr>
+                    <tr><td>平均带宽</td><td class="in-traffic">{stat['in_avg']:.2f} Mbps</td><td class="out-traffic">{stat['out_avg']:.2f} Mbps</td></tr>
+                    <tr><td>峰值带宽</td><td class="in-traffic">{stat['in_max']:.2f} Mbps</td><td class="out-traffic">{stat['out_max']:.2f} Mbps</td></tr>
+                    <tr><td>丢包数</td><td style="color: #FF9800;">{stat['in_drops_total']:.0f} 个</td><td style="color: #FF9800;">{stat['out_drops_total']:.0f} 个</td></tr>
+                </table>
+            </div>"""
+        
+        # 构建优化建议卡片
+        recommendation_cards = ''
+        priority_colors = {'high': '#F44336', 'medium': '#FF9800', 'low': '#4CAF50'}
+        for rec in recommendations:
+            color = priority_colors.get(rec['priority'], '#2196F3')
+            recommendation_cards += f"""
+            <div class="recommendation-card" style="border-left: 4px solid {color};">
+                <h4>{rec['title']}</h4>
+                <p>{rec['description']}</p>
+                <p class="action"><strong>建议行动</strong>: {rec['action']}</p>
+            </div>"""
+        
+        # 准备时间序列图表数据
+        chart_data = {'timestamps': [], 'series': {}}
+        for eip_id in self.eip_ids[:10]:  # 只显示前10个EIP的趋势
+            chart_data['series'][f'{eip_id}_in'] = []
+            chart_data['series'][f'{eip_id}_out'] = []
+        
+        df_sorted = df.sort_values('timestamp')
+        timestamps = df_sorted['timestamp'].dt.strftime('%H:%M').unique()
+        chart_data['timestamps'] = timestamps.tolist()[:100]  # 限制数据点数量
+        
+        for timestamp in chart_data['timestamps']:
+            ts_data = df_sorted[df_sorted['timestamp'].dt.strftime('%H:%M') == timestamp]
+            for eip_id in self.eip_ids[:10]:
+                eip_ts_data = ts_data[ts_data['eip_id'] == eip_id]
+                in_val = eip_ts_data[eip_ts_data['metric'] == 'WebInBitsPerSecond']['value'].iloc[0] if not eip_ts_data[eip_ts_data['metric'] == 'WebInBitsPerSecond'].empty else 0
+                out_val = eip_ts_data[eip_ts_data['metric'] == 'WebOutBitsPerSecond']['value'].iloc[0] if not eip_ts_data[eip_ts_data['metric'] == 'WebOutBitsPerSecond'].empty else 0
+                chart_data['series'][f'{eip_id}_in'].append(float(in_val))
+                chart_data['series'][f'{eip_id}_out'].append(float(out_val))
+        
+        chart_data_json = json.dumps(chart_data)
+
+        html_content = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EIP流量监控报告</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ 
+            font-family: 'Microsoft YaHei', Arial, sans-serif; 
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            color: #333; line-height: 1.6; min-height: 100vh; padding: 20px;
+        }}
+        .container {{ 
+            max-width: 1400px; margin: 0 auto; 
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px; padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }}
+        h1 {{ 
+            text-align: center; 
+            background: linear-gradient(45deg, #1976D2, #42A5F5);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; margin-bottom: 40px; font-size: 2.5em; font-weight: 300;
+        }}
+        .section {{ 
+            margin-bottom: 40px; background: white;
+            border-radius: 15px; padding: 30px; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            border: 1px solid rgba(25, 118, 210, 0.1);
+        }}
+        .section h2 {{ 
+            color: #1976D2; margin-bottom: 20px; padding-bottom: 15px; 
+            border-bottom: 2px solid #E3F2FD; font-weight: 500; font-size: 1.8em;
+        }}
+        .section h3 {{
+            color: #1976D2; margin-top: 20px; margin-bottom: 15px;
+            font-weight: 500; font-size: 1.3em;
+        }}
+        .ai-summary {{
+            background: linear-gradient(135deg, #F3E5F5 0%, #E3F2FD 100%);
+            border-left: 6px solid #1976D2;
+        }}
+        .stats-grid {{ 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 20px; margin: 30px 0;
+        }}
+        .stat-card {{ 
+            background: white; padding: 25px; border-radius: 15px; 
+            text-align: center; box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            transition: all 0.3s ease; border-left: 4px solid #1976D2;
+        }}
+        .stat-card:hover {{ transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.15); }}
+        .stat-number {{ color: #1976D2; font-size: 2.5em; font-weight: 300; margin-bottom: 10px; }}
+        .stat-label {{ color: #666; font-size: 0.9em; font-weight: 500; }}
+        .in-traffic {{ color: #4CAF50; }}
+        .out-traffic {{ color: #FF5722; }}
+        .eip-card {{ 
+            background: white; padding: 20px; border-radius: 10px;
+            margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }}
+        .eip-title {{ font-size: 18px; font-weight: bold; color: #333; margin-bottom: 15px; }}
+        .recommendation-card {{
+            background: white; padding: 20px; border-radius: 10px;
+            margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }}
+        .recommendation-card h4 {{ color: #1976D2; margin-bottom: 10px; }}
+        .recommendation-card p {{ color: #555; margin-bottom: 8px; }}
+        .recommendation-card .action {{ color: #666; font-style: italic; }}
+        table {{ 
+            width: 100%; border-collapse: collapse; background: white; 
+            border-radius: 10px; overflow: hidden; margin: 20px 0;
+        }}
+        th, td {{ padding: 15px; text-align: center; border-bottom: 1px solid #E3F2FD; }}
+        th {{ 
+            background: linear-gradient(45deg, #1976D2, #42A5F5); 
+            color: white; font-weight: 500; position: sticky; top: 0;
+        }}
+        tr:nth-child(even) {{ background-color: #F8FAFC; }}
+        tr:hover {{ background-color: #E3F2FD; }}
+        .chart-container {{ margin: 30px 0; text-align: center; }}
+        .chart-wrapper {{ 
+            display: inline-block; width: 100%; max-width: 1200px; height: 500px; 
+            margin: 20px auto; background: white; border-radius: 15px; padding: 20px; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }}
+        .toggle-btn {{
+            background: linear-gradient(45deg, #1976D2, #42A5F5);
+            color: white; border: none; padding: 12px 24px;
+            border-radius: 25px; cursor: pointer; font-size: 16px;
+            margin-bottom: 20px; transition: all 0.3s ease;
+        }}
+        .toggle-btn:hover {{ transform: scale(1.05); box-shadow: 0 5px 15px rgba(25, 118, 210, 0.3); }}
+        .collapsible {{ display: none; }}
+        .collapsible.show {{ display: block; }}
+        .footer {{ 
+            margin-top: 50px; padding: 30px; 
+            background: linear-gradient(45deg, #F3E5F5, #E3F2FD); 
+            border-radius: 15px; text-align: center; color: #666;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EIP流量监控报告</h1>
+        
+        <!-- AI执行摘要 -->
+        <div class="section ai-summary">
+            <h2>AI执行摘要</h2>
+            {ai_summary}
+        </div>
+        
+        <!-- 核心指标 -->
+        <div class="section">
+            <h2>核心指标</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">{len(eip_stats)}</div>
+                    <div class="stat-label">EIP总数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number in-traffic">{total_in_avg:.2f} Mbps</div>
+                    <div class="stat-label">平均入向带宽</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number out-traffic">{total_out_avg:.2f} Mbps</div>
+                    <div class="stat-label">平均出向带宽</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #FF9800;">{total_drops:.0f}</div>
+                    <div class="stat-label">总丢包数</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 异常检测 -->
+        <div class="section">
+            <h2>异常检测</h2>
+            <p>基于3-sigma统计方法检测流量异常和丢包问题</p>
+            {f'<table><thead><tr><th>EIP ID</th><th>入向带宽(Mbps)</th><th>出向带宽(Mbps)</th><th>入向丢包</th><th>出向丢包</th><th>异常描述</th></tr></thead><tbody>{anomaly_rows}</tbody></table>' if anomalies else '<p style="color: #4CAF50; text-align: center; padding: 20px;">✓ 未检测到异常EIP</p>'}
+        </div>
+        
+        <!-- 优化建议 -->
+        <div class="section">
+            <h2>优化建议</h2>
+            {recommendation_cards if recommendations else '<p style="text-align: center; padding: 20px;">暂无优化建议</p>'}
+        </div>
+        
+        <!-- 带宽趋势图 -->
+        <div class="section">
+            <h2>带宽趋势分析</h2>
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <canvas id="trafficChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- EIP详细统计 -->
+        <div class="section">
+            <h2>EIP详细统计（前20个）</h2>
+            <button class="toggle-btn" onclick="toggleSection('eipDetails')">展开/收起详细数据</button>
+            <div id="eipDetails" class="collapsible">
+                {eip_cards_html}
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>报告生成时间: {current_time}</p>
+            <p>分析工具: EIP流量监控系统（版）</p>
+        </div>
+    </div>
+    
+    <script>
+        const chartData = {chart_data_json};
+        
+        // 流量趋势图
+        const trafficCtx = document.getElementById('trafficChart').getContext('2d');
+        const trafficDatasets = [];
+        const colors = ['#4CAF50', '#FF5722', '#2196F3', '#FF9800', '#9C27B0', '#00BCD4', '#E91E63', '#795548', '#607D8B', '#3F51B5'];
+        let colorIndex = 0;
+        
+        for (const [key, values] of Object.entries(chartData.series)) {{
+            const isInbound = key.includes('_in');
+            const eipId = key.replace('_in', '').replace('_out', '');
+            const label = `${{eipId}} ${{isInbound ? '入向' : '出向'}}`;
+            
+            trafficDatasets.push({{
+                label: label,
+                data: values,
+                borderColor: colors[colorIndex % colors.length],
+                backgroundColor: colors[colorIndex % colors.length] + '20',
+                tension: 0.4,
+                fill: false,
+                pointRadius: 2
+            }});
+            colorIndex++;
+        }}
+        
+        new Chart(trafficCtx, {{
+            type: 'line',
+            data: {{
+                labels: chartData.timestamps,
+                datasets: trafficDatasets
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {{
+                    title: {{
+                        display: true,
+                        text: 'EIP流量时间序列（前10个EIP）',
+                        font: {{ size: 18 }}
+                    }},
+                    legend: {{
+                        position: 'top',
+                        labels: {{ boxWidth: 12, font: {{ size: 10 }} }}
+                    }}
+                }},
+                scales: {{
+                    y: {{
+                        beginAtZero: true,
+                        title: {{
+                            display: true,
+                            text: '流量 (Mbps)'
+                        }}
+                    }},
+                    x: {{
+                        title: {{
+                            display: true,
+                            text: '时间'
+                        }},
+                        ticks: {{
+                            maxRotation: 45,
+                            minRotation: 45
+                        }}
+                    }}
+                }}
+            }}
+        }});
+        
+        // 切换显示/隐藏
+        function toggleSection(id) {{
+            const element = document.getElementById(id);
+            element.classList.toggle('show');
+        }}
+    </script>
+</body>
+</html>"""
+        
+        return html_content
+
+    def analyze(self, eip_ids: Optional[List[str]] = None, hours: int = 6) -> Dict[str, Any]:
+        """执行完整的EIP带宽分析"""
+        if eip_ids:
+            self.load_eips_from_list(eip_ids)
+        
+        if not self.eip_ids:
+            raise Exception("未加载任何EIP实例")
+        
+        # 获取监控数据
+        print("开始获取EIP监控数据...")
+        response = self.get_eip_data(self.eip_ids, hours)
+        
+        # 处理数据
+        print("处理监控数据...")
+        df = self.process_data(response, self.eip_ids)
+        
+        if df.empty:
+            return {
+                'success': False,
+                'message': '未获取到任何监控数据',
+                'eip_count': len(self.eip_ids)
+            }
+        
+        # 生成统计数据
+        eip_stats = self.get_eip_stats(df)
+        anomalies = self.detect_anomalies(eip_stats, df)
+        recommendations = self.generate_recommendations(eip_stats, anomalies)
+        
+        total_in_avg = sum(s['in_avg'] for s in eip_stats) / len(eip_stats) if eip_stats else 0
+        total_out_avg = sum(s['out_avg'] for s in eip_stats) / len(eip_stats) if eip_stats else 0
+        
+        return {
+            'success': True,
+            'eip_count': len(self.eip_ids),
+            'data_points': len(df),
+            'eip_stats': eip_stats,
+            'anomalies': anomalies,
+            'recommendations': recommendations,
+            'aggregate': {
+                'in_avg': total_in_avg,
+                'out_avg': total_out_avg,
+                'total_avg': total_in_avg + total_out_avg
+            },
+            'raw_data': {
+                'df': df.to_dict('records'),
+            },
+            'analysis_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }

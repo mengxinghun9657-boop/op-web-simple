@@ -1,0 +1,5 @@
+# Gemini需要在此目录生成通用组件:
+# - FileUpload.vue    (文件上传)
+# - ProgressBar.vue   (进度条)
+# - DataTable.vue     (数据表格)
+# - ChartView.vue     (图表视图)

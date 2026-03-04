@@ -1,0 +1,370 @@
+<template>
+  <div class="dashboard">
+    <!-- 统计卡片网格 -->
+    <div class="bento-metrics">
+      <StatCard
+        v-for="card in stats"
+        :key="card.id"
+        :title="card.title"
+        :value="card.value"
+        :icon="card.icon"
+        :trend="card.trend"
+        :variant="card.variant"
+        class="animate-slide-in-up"
+      />
+    </div>
+
+    <!-- CMDB 资源概览 -->
+    <Card
+      v-if="cmdbStats"
+      title="CMDB 资源概览"
+      icon="Grid"
+      class="bento-span-full animate-slide-in-up"
+    >
+      <template #header>
+        <router-link to="/cmdb" class="card-action-link">
+          查看详情
+          <el-icon :size="12"><ArrowRight /></el-icon>
+        </router-link>
+      </template>
+
+      <div class="bento-stats">
+        <div class="bento-stat-item glass-card-light">
+          <div class="bento-stat-value">{{ cmdbStats.servers }}</div>
+          <div class="bento-stat-label">物理服务器</div>
+        </div>
+        <div class="bento-stat-item glass-card-light">
+          <div class="bento-stat-value">{{ cmdbStats.instances }}</div>
+          <div class="bento-stat-label">虚拟实例</div>
+        </div>
+        <div class="bento-stat-item glass-card-light">
+          <div class="bento-stat-value">{{ cmdbStats.active_instances }}</div>
+          <div class="bento-stat-label">运行中实例</div>
+        </div>
+        <div class="bento-stat-item glass-card-light">
+          <div class="bento-stat-value">{{ cmdbStats.vcpus_used }}/{{ cmdbStats.vcpus_total }}</div>
+          <div class="bento-stat-label">vCPU 使用</div>
+          <div class="resource-progress">
+            <el-progress
+              :percentage="cmdbStats.vcpu_usage"
+              :stroke-width="6"
+              :show-text="false"
+              :color="getProgressColor(cmdbStats.vcpu_usage)"
+            />
+          </div>
+        </div>
+        <div class="bento-stat-item glass-card-light">
+          <div class="bento-stat-value">{{ cmdbStats.memory_used_gb }}/{{ cmdbStats.memory_total_gb }} GB</div>
+          <div class="bento-stat-label">内存使用</div>
+          <div class="resource-progress">
+            <el-progress
+              :percentage="cmdbStats.memory_usage"
+              :stroke-width="6"
+              :show-text="false"
+              :color="getProgressColor(cmdbStats.memory_usage)"
+            />
+          </div>
+        </div>
+      </div>
+    </Card>
+
+    <!-- 系统监控和备忘录 -->
+    <div class="bento-content">
+      <!-- 系统资源监控 -->
+      <Card
+        title="系统资源监控"
+        icon="TrendCharts"
+        class="animate-slide-in-left"
+      >
+        <StateDisplay
+          v-if="!systemHealthData"
+          state="loading"
+          loading-text="加载监控数据..."
+        />
+        <div v-else class="chart-container">
+          <ChartView :options="systemHealthOptions" height="280px" />
+        </div>
+      </Card>
+
+      <!-- 快捷备忘 -->
+      <Card
+        title="快捷备忘"
+        icon="Memo"
+        class="animate-slide-in-right"
+      >
+        <QuickNoteCard />
+      </Card>
+    </div>
+
+    <!-- 最近任务 -->
+    <Card
+      title="最近任务"
+      icon="Clock"
+      class="bento-span-full animate-slide-in-up"
+    >
+      <DataTable
+        :data="recentTasks"
+        :columns="taskColumns"
+        :loading="tasksLoading"
+        empty-text="暂无任务"
+      >
+        <template #col-status="{ row }">
+          <el-tag :type="getStatusType(row.status)">
+            {{ row.status }}
+          </el-tag>
+        </template>
+
+        <template #actions="{ row }">
+          <el-button link type="primary" size="small" @click="viewTask(row)">
+            查看
+          </el-button>
+        </template>
+      </DataTable>
+    </Card>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useDashboardStore } from '@/stores/dashboard'
+import { Card, StatCard, DataTable, StateDisplay } from '@/components/common'
+import ChartView from '@/components/common/ChartView.vue'
+import QuickNoteCard from '@/components/common/QuickNoteCard.vue'
+import { ArrowRight, TrendCharts, Memo, Clock } from '@element-plus/icons-vue'
+
+const router = useRouter()
+const dashboardStore = useDashboardStore()
+
+// 数据
+const stats = ref([])
+const cmdbStats = ref(null)
+const systemHealthData = ref(null)
+const recentTasks = ref([])
+const tasksLoading = ref(false)
+
+// 表格列定义
+const taskColumns = [
+  { prop: 'id', label: '任务ID', width: 100 },
+  { prop: 'name', label: '任务名称', minWidth: 150 },
+  { prop: 'status', label: '状态', width: 100 },
+  { prop: 'progress', label: '进度', width: 100 },
+  { prop: 'created_at', label: '创建时间', width: 150 }
+]
+
+// 系统健康图表配置
+const systemHealthOptions = computed(() => ({
+  xAxis: {
+    type: 'category',
+    data: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00']
+  },
+  yAxis: {
+    type: 'value',
+    max: 100
+  },
+  series: [
+    {
+      name: 'CPU',
+      data: [20, 32, 61, 34, 30, 30],
+      type: 'line',
+      smooth: true,
+      itemStyle: { color: 'var(--color-primary-500)' }
+    },
+    {
+      name: '内存',
+      data: [120, 132, 101, 134, 90, 130],
+      type: 'line',
+      smooth: true,
+      itemStyle: { color: 'var(--color-success)' }
+    },
+    {
+      name: '磁盘',
+      data: [220, 182, 191, 234, 290, 330],
+      type: 'line',
+      smooth: true,
+      itemStyle: { color: 'var(--color-secondary-500)' }
+    }
+  ]
+}))
+
+// 方法
+const getProgressColor = (percentage) => {
+  if (percentage < 50) return 'var(--color-success)'
+  if (percentage < 80) return 'var(--color-warning)'
+  return 'var(--color-error)'
+}
+
+const getStatusType = (status) => {
+  const statusMap = {
+    'pending': 'info',
+    'processing': 'warning',
+    'completed': 'success',
+    'failed': 'danger'
+  }
+  return statusMap[status] || 'info'
+}
+
+const viewTask = (task) => {
+  router.push(`/tasks/${task.id}`)
+}
+
+// 加载数据
+const loadDashboardData = async () => {
+  try {
+    // 加载统计数据
+    const dashboardData = await dashboardStore.fetchDashboardStats()
+    stats.value = [
+      {
+        id: 1,
+        title: '总任务数',
+        value: dashboardData.total_tasks,
+        icon: 'DocumentCopy',
+        trend: 5,
+        variant: 'primary'
+      },
+      {
+        id: 2,
+        title: '成功率',
+        value: `${dashboardData.success_rate}%`,
+        icon: 'SuccessFilled',
+        trend: 2,
+        variant: 'success'
+      },
+      {
+        id: 3,
+        title: '服务器数',
+        value: dashboardData.server_count,
+        icon: 'Monitor',
+        trend: 0,
+        variant: 'info'
+      },
+      {
+        id: 4,
+        title: '集群数',
+        value: dashboardData.cluster_count,
+        icon: 'Grid',
+        trend: -1,
+        variant: 'warning'
+      }
+    ]
+
+    // 加载 CMDB 数据
+    cmdbStats.value = dashboardData.cmdb_stats
+
+    // 加载系统健康数据
+    systemHealthData.value = dashboardData.system_health
+
+    // 加载最近任务
+    tasksLoading.value = true
+    recentTasks.value = await dashboardStore.fetchRecentTasks()
+  } catch (error) {
+    console.error('加载仪表盘数据失败:', error)
+  } finally {
+    tasksLoading.value = false
+  }
+}
+
+// 生命周期
+let refreshInterval = null
+
+onMounted(() => {
+  loadDashboardData()
+  // 每 30 秒刷新一次数据
+  refreshInterval = setInterval(loadDashboardData, 30000)
+})
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
+})
+</script>
+
+<style scoped>
+.dashboard {
+  display: grid;
+  gap: var(--spacing-6);
+  animation: slideInUp var(--duration-slow) var(--ease-out);
+}
+
+.bento-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.bento-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-6);
+}
+
+@media (max-width: 1024px) {
+  .bento-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .bento-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .bento-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card-action-link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: var(--transition-colors);
+}
+
+.card-action-link:hover {
+  color: var(--color-primary-light);
+}
+
+.chart-container {
+  padding: var(--spacing-4) 0;
+}
+
+.bento-stat-item {
+  text-align: center;
+  padding: var(--spacing-4);
+  border-radius: var(--radius-lg);
+}
+
+.bento-stat-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.bento-stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-2);
+}
+
+.resource-progress {
+  margin-top: var(--spacing-2);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

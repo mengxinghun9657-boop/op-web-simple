@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# 日志和数据文件
+*.log
+logs/
+
+# 环境配置
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 数据库
+*.db
+*.sqlite3
+
+# 临时文件
+*.tmp
+.DS_Store
+*.pyc
+.pytest_cache/
+.hypothesis/
+
+# 测试文件
+test_*.py
+
+# 临时文档
+*_ANALYSIS.md
+*_SUMMARY.md
+*_PROGRESS.md
+*_IMPLEMENTATION.md
+*_DEPLOYMENT.md
+*_GUIDE.md
+*_STATUS.md
+*_CHECKLIST.md
+*_PROMPT.md
+*_IMPROVEMENTS.md
+*_README.md
+*_STEPS.md
+*_QUICK_START.md
+*_REDESIGN.md
+todo.md
+前端改动记录.md
+
+# 临时数据文件
+*.xlsx
+*.xls
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!config/*.json
+!backend/config/*.json
+*.tar.gz
+
+# 构建产物
+dist/
+build/
+*.egg-info/
+
+# Node.js (frontend)
+node_modules/

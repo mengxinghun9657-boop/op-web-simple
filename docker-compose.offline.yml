@@ -1,0 +1,224 @@
+# 内网离线部署专用 - 不需要build，直接使用导入的镜像
+# 注意：此文件在打包时会被改名为 docker-compose.prod.yml 用于内网部署
+# 使用方法：
+#   1. 在外网服务器运行: ./pack-offline.sh 打包
+#   2. 将 offline-deploy.tar.gz 传输到内网服务器
+#   3. 在内网服务器解压: tar -xzvf offline-deploy.tar.gz
+#   4. 进入目录: cd offline-deploy
+#   5. 修改 .env 文件中的 CORS_ORIGINS 为内网服务器IP
+#   6. 启动: ./start.sh
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: cluster-mysql
+    env_file:
+      - .env
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-cluster_management}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Shanghai
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend-config/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - cluster-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 300s
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_connections=1000
+      --max_allowed_packet=256M
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  redis:
+    image: redis:7-alpine
+    container_name: cluster-redis
+    restart: always
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cluster-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  minio:
+    image: minio/minio:latest
+    container_name: cluster-minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "8087:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - cluster-network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  backend:
+    image: op-web-backend:latest
+    container_name: cluster-backend
+    env_file:
+      - .env
+    restart: always
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-cluster_management}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: cluster-files
+      MINIO_SECURE: "false"
+      SECRET_KEY: ${SECRET_KEY}
+      BCE_ACCESS_KEY: ${BCE_ACCESS_KEY:-}
+      BCE_SECRET_KEY: ${BCE_SECRET_KEY:-}
+      ERNIE_API_URL: ${ERNIE_API_URL:-http://llms-se.baidu-int.com:8200/chat/completions}
+      ERNIE_API_KEY: ${ERNIE_API_KEY:-}
+      ERNIE_MODEL: ${ERNIE_MODEL:-ernie-4.5-8k-preview}
+      # AI 智能查询功能配置
+      VECTOR_DB_TYPE: ${VECTOR_DB_TYPE:-faiss}
+      VECTOR_DB_PATH: /app/vector_store
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-small-zh}
+      EMBEDDING_API_URL: ${EMBEDDING_API_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      MAX_QUERY_LENGTH: ${MAX_QUERY_LENGTH:-1000}
+      SQL_EXECUTION_TIMEOUT: ${SQL_EXECUTION_TIMEOUT:-5}
+      SESSION_TTL: ${SESSION_TTL:-1800}
+      DEBUG: ${DEBUG:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8089}
+      # 代理配置（内网访问外网）
+      HTTP_PROXY: http://agent.baidu.com:8891
+      HTTPS_PROXY: http://agent.baidu.com:8891
+      NO_PROXY: localhost,127.0.0.1,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,apiin.im.baidu.com,.baidu.com,.baidubce.com,.baidu-int.com,.bcebos.com
+      PYTHONUNBUFFERED: 1
+      TZ: Asia/Shanghai
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_results:/app/results
+      - backend_logs:/app/logs
+      - backend_data:/app/data
+      - backend_vector_store:/app/vector_store
+      - /data/HAS_file/changan:/app/alerts:ro
+      - /data/HAS_file:/data/HAS_file:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - cluster-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '2.0'
+          memory: 2G
+
+  frontend:
+    image: op-web-frontend:latest
+    container_name: cluster-frontend
+    restart: always
+    ports:
+      - "8089:80"
+    depends_on:
+      - backend
+    networks:
+      - cluster-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+networks:
+  cluster-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  minio_data:
+  backend_uploads:
+  backend_results:
+  backend_logs:
+  backend_data:
+  backend_vector_store:

@@ -1,0 +1,387 @@
+/**
+ * 设计令牌系统 (Design Tokens)
+ * 
+ * 现代化 UI 重构的核心配色、间距、阴影、动画系统
+ * 基于 Glassmorphism + Bento Grid 设计范式
+ * 
+ * @version 3.0.0
+ * @author Kiro AI
+ */
+
+/* ==================== 配色系统 ==================== */
+:root {
+  /* ===== 主色系 - 专业蓝 ===== */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  
+  /* 主色快捷引用 */
+  --color-primary: var(--color-primary-500);
+  --color-primary-light: var(--color-primary-400);
+  --color-primary-dark: var(--color-primary-600);
+  --color-primary-hover: var(--color-primary-400);
+  --color-primary-active: var(--color-primary-600);
+  
+  /* ===== 辅助色系 - 青色 ===== */
+  --color-secondary-50: #ecfeff;
+  --color-secondary-100: #cffafe;
+  --color-secondary-200: #a5f3fc;
+  --color-secondary-300: #67e8f9;
+  --color-secondary-400: #22d3ee;
+  --color-secondary-500: #06b6d4;
+  --color-secondary-600: #0891b2;
+  --color-secondary-700: #0e7490;
+  --color-secondary-800: #155e75;
+  --color-secondary-900: #164e63;
+  --color-secondary-950: #083344;
+  
+  /* 辅助色快捷引用 */
+  --color-secondary: var(--color-secondary-500);
+  --color-secondary-light: var(--color-secondary-400);
+  --color-secondary-dark: var(--color-secondary-600);
+  
+  /* ===== 中性色系 - 现代灰 (Slate) ===== */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+  --color-neutral-950: #020617;
+  
+  /* ===== 语义色系 ===== */
+  --color-success: #10b981;
+  --color-success-light: #34d399;
+  --color-success-dark: #059669;
+  --color-success-bg: rgba(16, 185, 129, 0.1);
+  --color-success-border: rgba(16, 185, 129, 0.3);
+  
+  --color-warning: #f59e0b;
+  --color-warning-light: #fbbf24;
+  --color-warning-dark: #d97706;
+  --color-warning-bg: rgba(245, 158, 11, 0.1);
+  --color-warning-border: rgba(245, 158, 11, 0.3);
+  
+  --color-error: #ef4444;
+  --color-error-light: #f87171;
+  --color-error-dark: #dc2626;
+  --color-error-bg: rgba(239, 68, 68, 0.1);
+  --color-error-border: rgba(239, 68, 68, 0.3);
+  
+  --color-info: #3b82f6;
+  --color-info-light: #60a5fa;
+  --color-info-dark: #2563eb;
+  --color-info-bg: rgba(59, 130, 246, 0.1);
+  --color-info-border: rgba(59, 130, 246, 0.3);
+
+  /* ===== 间距系统 (4px 基准) ===== */
+  --spacing-0: 0;
+  --spacing-px: 1px;
+  --spacing-0-5: 2px;
+  --spacing-1: 4px;
+  --spacing-1-5: 6px;
+  --spacing-2: 8px;
+  --spacing-2-5: 10px;
+  --spacing-3: 12px;
+  --spacing-3-5: 14px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-7: 28px;
+  --spacing-8: 32px;
+  --spacing-9: 36px;
+  --spacing-10: 40px;
+  --spacing-11: 44px;
+  --spacing-12: 48px;
+  --spacing-14: 56px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+  
+  /* 语义化间距 */
+  --spacing-xs: var(--spacing-1);
+  --spacing-sm: var(--spacing-2);
+  --spacing-md: var(--spacing-4);
+  --spacing-lg: var(--spacing-6);
+  --spacing-xl: var(--spacing-8);
+  --spacing-2xl: var(--spacing-12);
+  --spacing-3xl: var(--spacing-16);
+  
+  /* 组件间距 */
+  --component-padding-xs: var(--spacing-2);
+  --component-padding-sm: var(--spacing-3);
+  --component-padding-md: var(--spacing-4);
+  --component-padding-lg: var(--spacing-6);
+  --component-padding-xl: var(--spacing-8);
+  
+  --component-gap-xs: var(--spacing-2);
+  --component-gap-sm: var(--spacing-3);
+  --component-gap-md: var(--spacing-4);
+  --component-gap-lg: var(--spacing-6);
+  --component-gap-xl: var(--spacing-8);
+
+  /* ===== 圆角系统 ===== */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  --radius-full: 9999px;
+  
+  /* 组件圆角 */
+  --radius-button: var(--radius-lg);
+  --radius-card: var(--radius-xl);
+  --radius-input: var(--radius-lg);
+  --radius-modal: var(--radius-2xl);
+  --radius-tag: var(--radius-md);
+
+  /* ===== 字体系统 ===== */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --font-family-mono: "SF Mono", "Fira Code", "Fira Mono", Menlo, Monaco, Consolas, monospace;
+  
+  /* 字体大小 */
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 30px;
+  --font-size-5xl: 36px;
+  
+  /* 字重 */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* 行高 */
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 2;
+
+  /* ===== 阴影系统 ===== */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+  
+  /* 发光阴影 */
+  --shadow-glow-primary: 0 0 20px rgba(59, 130, 246, 0.35);
+  --shadow-glow-secondary: 0 0 20px rgba(6, 182, 212, 0.35);
+  --shadow-glow-success: 0 0 20px rgba(16, 185, 129, 0.35);
+  --shadow-glow-warning: 0 0 20px rgba(245, 158, 11, 0.35);
+  --shadow-glow-error: 0 0 20px rgba(239, 68, 68, 0.35);
+
+  /* ===== 动画系统 ===== */
+  --duration-instant: 0ms;
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 500ms;
+  
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  /* 组合动画 */
+  --transition-colors: color var(--duration-normal) var(--ease-out), 
+                       background-color var(--duration-normal) var(--ease-out), 
+                       border-color var(--duration-normal) var(--ease-out);
+  --transition-opacity: opacity var(--duration-normal) var(--ease-out);
+  --transition-shadow: box-shadow var(--duration-normal) var(--ease-out);
+  --transition-transform: transform var(--duration-normal) var(--ease-out);
+  --transition-all: all var(--duration-normal) var(--ease-out);
+
+  /* ===== Z-Index 层级 ===== */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* ==================== 深色主题 (默认) ==================== */
+:root,
+[data-theme="dark"] {
+  /* 背景色 */
+  --bg-base: var(--color-neutral-900);
+  --bg-container: var(--color-neutral-800);
+  --bg-elevated: rgba(30, 41, 59, 0.8);
+  --bg-spotlight: var(--color-neutral-700);
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-active: rgba(255, 255, 255, 0.1);
+  
+  /* 文本色 - 增强对比度 */
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --text-disabled: #64748b;
+  --text-inverse: var(--color-neutral-900);
+  
+  /* 边框色 */
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-color-light: rgba(255, 255, 255, 0.15);
+  --border-color-strong: rgba(255, 255, 255, 0.2);
+  --border-color-focus: var(--color-primary-400);
+  
+  /* 玻璃拟态 - 增强背景不透明度 */
+  --glass-bg: rgba(30, 41, 59, 0.75);
+  --glass-bg-light: rgba(30, 41, 59, 0.5);
+  --glass-bg-strong: rgba(30, 41, 59, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 12px;
+  --glass-blur-strong: 20px;
+  
+  /* 卡片阴影 */
+  --card-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.3);
+  --card-shadow-hover: 0 8px 32px -4px rgba(0, 0, 0, 0.4);
+  
+  /* 输入框 */
+  --input-bg: rgba(15, 23, 42, 0.7);
+  --input-border: var(--border-color);
+  --input-border-hover: var(--border-color-light);
+  --input-border-focus: var(--color-primary-400);
+  
+  /* 滚动条 */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  
+  /* Element Plus 覆盖 */
+  --el-color-primary: var(--color-primary);
+  --el-color-primary-light-3: var(--color-primary-400);
+  --el-color-primary-light-5: var(--color-primary-300);
+  --el-color-primary-light-7: var(--color-primary-200);
+  --el-color-primary-light-8: var(--color-primary-100);
+  --el-color-primary-light-9: var(--color-primary-50);
+  --el-color-primary-dark-2: var(--color-primary-600);
+  
+  --el-bg-color: var(--bg-container);
+  --el-bg-color-overlay: var(--bg-elevated);
+  --el-fill-color-blank: var(--bg-elevated);
+  --el-fill-color-light: var(--bg-hover);
+  
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--text-disabled);
+  
+  --el-border-color: var(--border-color);
+  --el-border-color-light: var(--border-color-light);
+  --el-border-color-lighter: var(--border-color);
+  --el-border-color-extra-light: var(--border-color);
+  
+  --el-mask-color: rgba(0, 0, 0, 0.6);
+  --el-overlay-color: rgba(0, 0, 0, 0.6);
+}
+
+/* ==================== 浅色主题 ==================== */
+[data-theme="light"] {
+  /* 背景色 */
+  --bg-base: var(--color-neutral-100);
+  --bg-container: #ffffff;
+  --bg-elevated: rgba(255, 255, 255, 0.9);
+  --bg-spotlight: var(--color-neutral-100);
+  --bg-hover: rgba(0, 0, 0, 0.04);
+  --bg-active: rgba(0, 0, 0, 0.08);
+  
+  /* 文本色 */
+  --text-primary: var(--color-neutral-900);
+  --text-secondary: var(--color-neutral-600);
+  --text-tertiary: var(--color-neutral-500);
+  --text-disabled: var(--color-neutral-400);
+  --text-inverse: #ffffff;
+  
+  /* 边框色 */
+  --border-color: var(--color-neutral-200);
+  --border-color-light: var(--color-neutral-300);
+  --border-color-strong: var(--color-neutral-400);
+  --border-color-focus: var(--color-primary-500);
+  
+  /* 玻璃拟态 */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-bg-light: rgba(255, 255, 255, 0.5);
+  --glass-bg-strong: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-blur: 12px;
+  --glass-blur-strong: 20px;
+  
+  /* 卡片阴影 */
+  --card-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.08);
+  --card-shadow-hover: 0 8px 32px -4px rgba(0, 0, 0, 0.12);
+  
+  /* 输入框 */
+  --input-bg: #ffffff;
+  --input-border: var(--border-color);
+  --input-border-hover: var(--border-color-light);
+  --input-border-focus: var(--color-primary-500);
+  
+  /* 滚动条 */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+  
+  /* Element Plus 覆盖 */
+  --el-bg-color: var(--bg-container);
+  --el-bg-color-overlay: var(--bg-elevated);
+  --el-fill-color-blank: #ffffff;
+  --el-fill-color-light: var(--bg-hover);
+  
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--text-disabled);
+  
+  --el-border-color: var(--border-color);
+  --el-border-color-light: var(--border-color-light);
+  --el-border-color-lighter: var(--border-color);
+  --el-border-color-extra-light: var(--border-color);
+  
+  --el-mask-color: rgba(255, 255, 255, 0.8);
+  --el-overlay-color: rgba(0, 0, 0, 0.4);
+}
+
+/* ==================== 减少动画偏好 ==================== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-slower: 0ms;
+  }
+  
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

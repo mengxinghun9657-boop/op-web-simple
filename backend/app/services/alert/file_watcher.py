@@ -1,0 +1,376 @@
+"""
+文件监控服务
+监控指定目录下的告警文件，自动解析并存储到数据库
+支持动态配置、多路径监控、优先级控制、文件模式匹配
+"""
+import time
+import asyncio
+import fnmatch
+from pathlib import Path
+from typing import Optional, Dict
+from watchdog.observers.polling import PollingObserver as Observer
+from watchdog.events import FileSystemEventHandler, FileCreatedEvent, FileModifiedEvent
+from sqlalchemy.orm import Session
+from loguru import logger
+
+from app.services.alert.alert_processor import AlertProcessor
+from app.services.alert.filename_corrector import get_filename_corrector
+from app.core.config_alert import settings
+
+
+class PathSpecificHandler(FileSystemEventHandler):
+    """特定路径的事件处理器"""
+    
+    def __init__(self, path_config, processor_factory, redis_client=None):
+        """
+        Args:
+            path_config: 路径配置对象
+            processor_factory: AlertProcessor工厂函数（返回新的processor实例）
+            redis_client: Redis客户端
+        """
+        self.path_config = path_config
+        self.processor_factory = processor_factory  # 工厂函数，按需创建processor
+        self.redis_client = redis_client  # Redis客户端，用于跨进程去重
+        self.redis_key_prefix = "alert:processed_file:"  # Redis key前缀
+        self.redis_ttl = 3600  # 1小时过期（避免Redis无限增长）
+    
+    def try_acquire_file_lock(self, file_path: str) -> bool:
+        """
+        尝试获取文件处理锁（原子操作）
+        使用Redis SETNX确保只有一个worker处理文件
+        
+        Returns:
+            True: 成功获取锁，可以处理文件
+            False: 文件已被其他worker处理，跳过
+        """
+        if not self.redis_client:
+            return True  # Redis不可用时降级为允许处理
+        
+        try:
+            redis_key = f"{self.redis_key_prefix}{file_path}"
+            # SETNX: 只有key不存在时才设置，返回1表示成功，0表示已存在
+            acquired = self.redis_client.set(redis_key, "1", nx=True, ex=self.redis_ttl)
+            if acquired:
+                logger.debug(f"获取文件处理锁成功: {file_path}")
+                return True
+            else:
+                logger.debug(f"文件已被其他worker处理，跳过: {file_path}")
+                return False
+        except Exception as e:
+            logger.error(f"Redis获取锁失败: {str(e)}")
+            return True  # 异常时降级为允许处理
+    
+    def unmark_file_processed(self, file_path: str):
+        """取消标记（处理失败时）"""
+        if not self.redis_client:
+            return
+        
+        try:
+            redis_key = f"{self.redis_key_prefix}{file_path}"
+            self.redis_client.delete(redis_key)
+            logger.debug(f"取消标记文件: {file_path}")
+        except Exception as e:
+            logger.error(f"Redis取消标记失败: {str(e)}")
+    
+    def match_pattern(self, file_path: str) -> bool:
+        """匹配文件模式"""
+        filename = Path(file_path).name
+        return fnmatch.fnmatch(filename, self.path_config.file_pattern)
+    
+    def process_file(self, file_path: str):
+        """处理文件（文件级别去重 + 文件名修正）"""
+        # 验证文件格式
+        if not self.match_pattern(file_path):
+            return
+        
+        # 步骤1: 文件名修正（如果需要）
+        corrector = get_filename_corrector()
+        corrected_path = corrector.correct_filename_if_needed(file_path, dry_run=False)
+        
+        # 如果文件名被修正，使用新的路径
+        actual_file_path = corrected_path if corrected_path else file_path
+        
+        # 使用Redis原子操作获取文件处理锁（防止多worker重复处理）
+        if not self.try_acquire_file_lock(actual_file_path):
+            logger.debug(f"文件已处理过（Redis原子锁），跳过: {actual_file_path}")
+            return
+        
+        logger.info(f"检测到新文件: {actual_file_path} (路径: {self.path_config.path}, 优先级: {self.path_config.priority})")
+        if corrected_path:
+            logger.info(f"文件名已修正: {file_path} -> {actual_file_path}")
+        
+        try:
+            # 使用线程池执行异步任务
+            import concurrent.futures
+            
+            def run_async_task():
+                """在新线程中运行异步任务"""
+                processor = None
+                try:
+                    # 创建新的processor实例
+                    processor = self.processor_factory()
+                    
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        loop.run_until_complete(processor.process_alert_file(actual_file_path))
+                        logger.info(f"文件处理完成: {actual_file_path}")
+                    finally:
+                        loop.close()
+                except Exception as e:
+                    logger.error(f"异步任务执行失败: {str(e)}", exc_info=True)
+                    # 处理失败时取消标记，允许重试
+                    self.unmark_file_processed(actual_file_path)
+            
+            # 使用线程池执行
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(run_async_task)
+                # 不等待完成，避免阻塞文件监控
+            
+        except Exception as e:
+            logger.error(f"处理文件失败 {actual_file_path}: {str(e)}", exc_info=True)
+            # 处理失败时取消标记，允许重试
+            self.unmark_file_processed(actual_file_path)
+    
+    def on_created(self, event: FileCreatedEvent):
+        """新文件创建时触发"""
+        if not event.is_directory:
+            self.process_file(event.src_path)
+    
+    def on_modified(self, event: FileModifiedEvent):
+        """文件修改时触发（忽略，避免重复处理）"""
+        # PollingObserver会多次触发on_modified事件
+        # 我们只处理on_created事件，避免重复处理
+        pass
+
+
+class FileWatcherService:
+    """文件监控服务
+    
+    监控硬编码的告警文件目录：/app/alerts
+    该目录通过 Docker volume 挂载到宿主机的 /data/HAS_file/changan/
+    """
+    
+    # 硬编码的监控路径配置
+    ALERT_PATH = "/app/alerts"
+    FILE_PATTERN = "*.txt"
+    
+    def __init__(self):
+        """初始化文件监控服务（不持有数据库连接）"""
+        self.observer: Optional[Observer] = None
+        self.handler: Optional[PathSpecificHandler] = None
+        self.processor = None  # 不在初始化时创建processor
+        
+        # 获取Redis客户端（用于跨进程去重）
+        self.redis_client = None
+        try:
+            from app.core.redis_client import get_redis_client
+            redis_wrapper = get_redis_client()
+            self.redis_client = redis_wrapper.client  # 获取原始redis客户端
+            logger.info("✅ 文件监控服务已连接Redis，启用跨进程去重")
+        except Exception as e:
+            logger.warning(f"⚠️ 无法连接Redis，文件去重功能将降级: {str(e)}")
+    
+    def _get_processor(self) -> AlertProcessor:
+        """获取AlertProcessor实例（不再需要db参数）"""
+        return AlertProcessor()
+    
+    def start_monitoring(self):
+        """启动监控"""
+        try:
+            watch_path = Path(self.ALERT_PATH).expanduser()
+            
+            if not watch_path.exists():
+                logger.error(f"告警目录不存在: {watch_path}")
+                return
+            
+            # 创建虚拟的路径配置对象（用于Handler）
+            path_config = type('PathConfig', (), {
+                'path': self.ALERT_PATH,
+                'file_pattern': self.FILE_PATTERN,
+                'priority': 100,
+                'id': 1
+            })()
+            
+            # 创建Observer和Handler（传入processor工厂函数）
+            self.observer = Observer()
+            self.handler = PathSpecificHandler(
+                path_config=path_config,
+                processor_factory=self._get_processor,  # 传入工厂函数
+                redis_client=self.redis_client  # 传入Redis客户端
+            )
+            
+            self.observer.schedule(self.handler, str(watch_path), recursive=False)
+            self.observer.start()
+            
+            logger.info(f"文件监控服务已启动，监控路径: {self.ALERT_PATH} (模式: {self.FILE_PATTERN})")
+        except Exception as e:
+            logger.error(f"启动文件监控失败: {str(e)}", exc_info=True)
+    
+    def add_watch_path(self, path_config):
+        """添加监控路径（已弃用，保留用于兼容性）"""
+        pass
+    
+    def remove_watch_path(self, path_id: int):
+        """移除监控路径（已弃用，保留用于兼容性）"""
+        pass
+    
+    def reload_paths(self):
+        """重新加载监控路径（已弃用，保留用于兼容性）"""
+        pass
+    
+    def stop(self):
+        """停止监控"""
+        if self.observer:
+            try:
+                self.observer.stop()
+                self.observer.join()
+                logger.info("文件监控服务已停止")
+            except Exception as e:
+                logger.error(f"停止监控失败: {str(e)}", exc_info=True)
+    
+    def run(self):
+        """运行监控（阻塞模式）"""
+        self.start_monitoring()
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self.stop()
+    
+    def process_existing_files(self):
+        """处理已存在的文件（初始化时使用）"""
+        print(f"[DEBUG] process_existing_files() 方法开始执行")
+        logger.info(f"[DEBUG] process_existing_files() 方法开始执行")
+        print(f"[DEBUG] ALERT_PATH = {self.ALERT_PATH}")
+        logger.info(f"[DEBUG] ALERT_PATH = {self.ALERT_PATH}")
+        
+        try:
+            print(f"[DEBUG] 尝试创建Path对象...")
+            logger.info(f"[DEBUG] 尝试创建Path对象...")
+            watch_dir = Path(self.ALERT_PATH).expanduser()
+            print(f"[DEBUG] Path对象创建成功: {watch_dir}")
+            logger.info(f"[DEBUG] Path对象创建成功: {watch_dir}")
+            
+            print(f"[DEBUG] 检查目录是否存在...")
+            logger.info(f"[DEBUG] 检查目录是否存在...")
+            if not watch_dir.exists():
+                print(f"[ERROR] 告警目录不存在: {watch_dir}")
+                logger.error(f"告警目录不存在: {watch_dir}")
+                return
+            print(f"[DEBUG] 目录存在检查通过")
+            logger.info(f"[DEBUG] 目录存在检查通过")
+            
+            print(f"[INFO] 开始处理已存在的文件，路径: {watch_dir}")
+            logger.info(f"开始处理已存在的文件，路径: {watch_dir}")
+            
+            # 获取所有文件
+            all_files = list(watch_dir.glob("*"))
+            print(f"[INFO] 目录中共有 {len(all_files)} 个文件/文件夹")
+            logger.info(f"目录中共有 {len(all_files)} 个文件/文件夹")
+            
+            # 打印所有文件名用于调试
+            for f in all_files:
+                print(f"  - {f.name} (is_file={f.is_file()})")
+                logger.info(f"  - {f.name} (is_file={f.is_file()})")
+            
+            # 根据文件模式过滤
+            matched_files = [
+                f for f in all_files
+                if f.is_file() and fnmatch.fnmatch(f.name, self.FILE_PATTERN)
+            ]
+            
+            print(f"[INFO] 找到 {len(matched_files)} 个匹配 '{self.FILE_PATTERN}' 模式的文件")
+            logger.info(f"找到 {len(matched_files)} 个匹配 '{self.FILE_PATTERN}' 模式的文件")
+            
+            # 处理每个文件
+            for file_path in matched_files:
+                try:
+                    # 步骤1: 文件名修正（如果需要）
+                    corrector = get_filename_corrector()
+                    corrected_path = corrector.correct_filename_if_needed(str(file_path), dry_run=False)
+                    
+                    # 如果文件名被修正，使用新的路径
+                    actual_file_path = Path(corrected_path) if corrected_path else file_path
+                    
+                    # 检查Redis去重（如果可用）
+                    redis_key = f"alert:processed_file:{str(actual_file_path)}"
+                    if self.redis_client:
+                        try:
+                            # 尝试获取锁
+                            acquired = self.redis_client.set(redis_key, "1", nx=True, ex=3600)
+                            if not acquired:
+                                print(f"[DEBUG] 文件已处理过（Redis原子锁），跳过: {actual_file_path}")
+                                logger.debug(f"文件已处理过（Redis原子锁），跳过: {actual_file_path}")
+                                continue
+                        except Exception as e:
+                            print(f"[WARNING] Redis检查失败，继续处理: {str(e)}")
+                            logger.warning(f"Redis检查失败，继续处理: {str(e)}")
+                    
+                    print(f"[INFO] 处理文件: {actual_file_path}")
+                    logger.info(f"处理文件: {actual_file_path}")
+                    if corrected_path:
+                        print(f"[INFO] 文件名已修正: {file_path} -> {actual_file_path}")
+                        logger.info(f"文件名已修正: {file_path} -> {actual_file_path}")
+                    
+                    # 直接创建processor并处理（不依赖handler）
+                    processor = self._get_processor()
+                    
+                    # 使用线程池执行异步任务
+                    import concurrent.futures
+                    
+                    def run_async_task():
+                        """在新线程中运行异步任务"""
+                        try:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                            try:
+                                loop.run_until_complete(processor.process_alert_file(str(actual_file_path)))
+                                print(f"[INFO] 文件处理完成: {actual_file_path}")
+                                logger.info(f"文件处理完成: {actual_file_path}")
+                            finally:
+                                loop.close()
+                        except Exception as e:
+                            print(f"[ERROR] 异步任务执行失败: {str(e)}")
+                            logger.error(f"异步任务执行失败: {str(e)}", exc_info=True)
+                            # 处理失败时取消标记，允许重试
+                            if self.redis_client:
+                                try:
+                                    self.redis_client.delete(redis_key)
+                                except:
+                                    pass
+                    
+                    # 使用线程池执行
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                        future = executor.submit(run_async_task)
+                        # 等待完成（初始化时可以阻塞）
+                        future.result(timeout=60)  # 最多等待60秒
+                        
+                except Exception as e:
+                    print(f"[ERROR] 处理文件失败 {file_path}: {str(e)}")
+                    logger.error(f"处理文件失败 {file_path}: {str(e)}", exc_info=True)
+        
+        except Exception as e:
+            print(f"[ERROR] 处理已存在文件失败: {str(e)}")
+            logger.error(f"处理已存在文件失败: {str(e)}", exc_info=True)
+        
+        print(f"[INFO] 已存在文件处理完成")
+        logger.info("已存在文件处理完成")
+
+
+# 全局文件监控服务实例（用于API调用）
+_file_watcher_service: Optional[FileWatcherService] = None
+
+
+def get_file_watcher_service() -> FileWatcherService:
+    """获取文件监控服务实例（单例模式）"""
+    global _file_watcher_service
+    if _file_watcher_service is None:
+        _file_watcher_service = FileWatcherService()
+    return _file_watcher_service
+
+
+def reload_file_watcher():
+    """重新加载文件监控服务（API调用）"""
+    service = get_file_watcher_service()
+    service.reload_paths()

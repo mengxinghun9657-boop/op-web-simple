@@ -1,0 +1,5 @@
+# Gemini需要在此目录生成API调用模块:
+# - operational.js    (运营分析API)
+# - resource.js       (资源分析API)
+# - monitoring.js     (监控分析API)
+# - eip.js           (EIP监控API)

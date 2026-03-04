@@ -1,0 +1,215 @@
+/**
+ * 统一弹窗设计系统
+ * 
+ * 支持深色/浅色主题自动切换
+ * Glassmorphism 风格
+ * 
+ * @version 1.0.0
+ */
+
+/* ==================== 统一弹窗样式 ==================== */
+
+.unified-dialog :deep(.el-dialog) {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-2xl);
+  transition: var(--transition-all);
+}
+
+.unified-dialog :deep(.el-dialog__header) {
+  padding: var(--spacing-5) var(--spacing-6);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.unified-dialog :deep(.el-dialog__title) {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
+  transition: color var(--transition-fast);
+}
+
+.unified-dialog :deep(.el-dialog__headerbtn) {
+  top: var(--spacing-5);
+  right: var(--spacing-6);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  transition: var(--transition-all);
+}
+
+.unified-dialog :deep(.el-dialog__headerbtn:hover) {
+  background: var(--bg-hover);
+}
+
+.unified-dialog :deep(.el-dialog__close) {
+  color: var(--text-secondary);
+  font-size: 18px;
+  transition: color var(--transition-fast);
+}
+
+.unified-dialog :deep(.el-dialog__close:hover) {
+  color: var(--text-primary);
+}
+
+.unified-dialog :deep(.el-dialog__body) {
+  padding: var(--spacing-6);
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.unified-dialog :deep(.el-dialog__footer) {
+  padding: var(--spacing-4) var(--spacing-6);
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+/* ==================== 表单样式优化 ==================== */
+
+.unified-dialog :deep(.el-form-item__label) {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast);
+}
+
+.unified-dialog :deep(.el-input__wrapper) {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  transition: var(--transition-all);
+}
+
+.unified-dialog :deep(.el-input__wrapper:hover) {
+  border-color: var(--color-primary-400);
+}
+
+.unified-dialog :deep(.el-input__wrapper.is-focus) {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.unified-dialog :deep(.el-input__inner) {
+  color: var(--text-primary);
+  transition: color var(--transition-fast);
+}
+
+.unified-dialog :deep(.el-input__inner::placeholder) {
+  color: var(--text-tertiary);
+}
+
+.unified-dialog :deep(.el-textarea__inner) {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  transition: var(--transition-all);
+}
+
+.unified-dialog :deep(.el-textarea__inner:hover) {
+  border-color: var(--color-primary-400);
+}
+
+.unified-dialog :deep(.el-textarea__inner:focus) {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.unified-dialog :deep(.el-select .el-input__wrapper) {
+  background: var(--bg-elevated);
+}
+
+/* ==================== 按钮样式 ==================== */
+
+.unified-dialog :deep(.el-button) {
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-all);
+}
+
+.unified-dialog :deep(.el-button--default) {
+  background: var(--bg-elevated);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.unified-dialog :deep(.el-button--default:hover) {
+  background: var(--bg-hover);
+  border-color: var(--color-primary-400);
+  color: var(--color-primary-500);
+}
+
+.unified-dialog :deep(.el-button--primary) {
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+  border: none;
+  color: white;
+}
+
+.unified-dialog :deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-500));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* ==================== 响应式 ==================== */
+
+@media (max-width: 768px) {
+  .unified-dialog :deep(.el-dialog) {
+    width: 90% !important;
+    margin: var(--spacing-4);
+  }
+  
+  .unified-dialog :deep(.el-dialog__header),
+  .unified-dialog :deep(.el-dialog__body),
+  .unified-dialog :deep(.el-dialog__footer) {
+    padding: var(--spacing-4);
+  }
+}
+
+/* ==================== 动画 ==================== */
+
+.unified-dialog :deep(.el-dialog) {
+  animation: dialogFadeIn 0.3s ease-out;
+}
+
+@keyframes dialogFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ==================== 深色主题特殊处理 ==================== */
+
+:root[data-theme="dark"] .unified-dialog :deep(.el-dialog) {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme="dark"] .unified-dialog :deep(.el-input__wrapper),
+:root[data-theme="dark"] .unified-dialog :deep(.el-textarea__inner) {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ==================== 浅色主题特殊处理 ==================== */
+
+:root[data-theme="light"] .unified-dialog :deep(.el-dialog) {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme="light"] .unified-dialog :deep(.el-input__wrapper),
+:root[data-theme="light"] .unified-dialog :deep(.el-textarea__inner) {
+  background: rgba(248, 250, 252, 0.8);
+  border-color: rgba(0, 0, 0, 0.1);
+}

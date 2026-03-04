@@ -1,0 +1,6 @@
+# Gemini需要在此目录生成以下Vue组件:
+# - Dashboard.vue     (仪表盘)
+# - Operational.vue   (运营分析)
+# - Resource.vue      (资源分析)
+# - Monitoring.vue    (监控分析)
+# - EIP.vue          (EIP监控)

@@ -1,0 +1,185 @@
+# 生产环境部署 - 需要构建镜像
+# 使用方法：将 .env 文件放在同目录下，然后运行 docker compose -f docker-compose.prod.yml up -d --build
+services:
+  mysql:
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/mysql:8.0
+    container_name: cluster-mysql
+    env_file:
+      - .env
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-cluster_management}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Shanghai
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/config/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - cluster-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 300s  # 增加到 300 秒（5分钟），MySQL初始化需要约6分钟
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_connections=1000
+      --max_allowed_packet=256M
+      --ngram_token_size=1
+      --ft_min_word_len=1
+      --innodb_ft_enable_stopword=0
+
+  redis:
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/redis:7-alpine
+    container_name: cluster-redis
+    restart: always
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cluster-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  minio:
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/minio/minio:latest
+    container_name: cluster-minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "8087:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - cluster-network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: op-web-backend:latest
+    container_name: cluster-backend
+    env_file:
+      - .env
+    restart: always
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-cluster_management}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: cluster-files
+      MINIO_SECURE: "false"
+      SECRET_KEY: ${SECRET_KEY}
+      BCE_ACCESS_KEY: ${BCE_ACCESS_KEY:-}
+      BCE_SECRET_KEY: ${BCE_SECRET_KEY:-}
+      ERNIE_API_URL: ${ERNIE_API_URL:-http://llms-se.baidu-int.com:8200/chat/completions}
+      ERNIE_API_KEY: ${ERNIE_API_KEY:-}
+      ERNIE_MODEL: ${ERNIE_MODEL:-ernie-4.5-8k-preview}
+      # AI 智能查询功能配置
+      VECTOR_DB_TYPE: ${VECTOR_DB_TYPE:-faiss}
+      VECTOR_DB_PATH: /app/vector_store
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-small-zh}
+      EMBEDDING_API_URL: ${EMBEDDING_API_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      MAX_QUERY_LENGTH: ${MAX_QUERY_LENGTH:-1000}
+      SQL_EXECUTION_TIMEOUT: ${SQL_EXECUTION_TIMEOUT:-5}
+      SESSION_TTL: ${SESSION_TTL:-1800}
+      DEBUG: ${DEBUG:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8089}
+      PYTHONUNBUFFERED: 1
+      TZ: Asia/Shanghai
+      # 代理配置（仅内网部署时需要，外网部署时注释掉）
+      # HTTP_PROXY: http://agent.baidu.com:8891
+      # HTTPS_PROXY: http://agent.baidu.com:8891
+      # NO_PROXY: localhost,127.0.0.1,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,apiin.im.baidu.com,.baidu.com,.baidubce.com,.baidu-int.com,.bcebos.com
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_results:/app/results
+      - backend_logs:/app/logs
+      - backend_data:/app/data
+      - backend_vector_store:/app/vector_store
+      - /data/HAS_file/changan:/app/alerts:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - cluster-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: op-web-frontend:latest
+    container_name: cluster-frontend
+    restart: always
+    ports:
+      - "8089:80"
+    depends_on:
+      - backend
+    networks:
+      - cluster-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+networks:
+  cluster-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  minio_data:
+  backend_uploads:
+  backend_results:
+  backend_logs:
+  backend_data:
+  backend_vector_store:

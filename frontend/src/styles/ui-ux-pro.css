@@ -1,0 +1,465 @@
+/* ========================================
+   UI/UX Pro Max 全局样式
+   基于专业设计规范的优化样式
+   ======================================== */
+
+/* ========================================
+   1. 字体系统 - Modern Professional
+   ======================================== */
+:root {
+  --font-heading: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 标题使用 Poppins */
+h1, h2, h3, h4, h5, h6,
+.page-title, 
+.card-title,
+.el-dialog__title {
+  font-family: var(--font-heading) !important;
+  font-weight: 600;
+  letter-spacing: -0.02em; /* 紧凑间距 */
+}
+
+/* 正文使用 Open Sans */
+body, 
+p, 
+span, 
+div, 
+button, 
+input, 
+textarea,
+.el-button,
+.el-input,
+.el-select,
+.el-table {
+  font-family: var(--font-body) !important;
+}
+
+/* 字体加载优化 - 避免 FOIT */
+@font-face {
+  font-display: swap;
+}
+
+/* ========================================
+   2. 交互反馈 - Cursor & Hover
+   ======================================== */
+
+/* 通用 cursor-pointer 类 */
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
+/* 表格行悬停效果 */
+.el-table__row {
+  cursor: pointer;
+  transition: background-color 200ms ease-out;
+}
+
+.el-table__row:hover {
+  background-color: #f5f7fa !important;
+}
+
+/* 卡片悬停效果 - 不使用 scale 避免布局偏移 */
+.el-card {
+  transition: box-shadow 200ms ease-out, border-color 200ms ease-out;
+}
+
+.el-card:hover {
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 按钮悬停效果 */
+.el-button {
+  transition: all 200ms ease-out !important;
+}
+
+/* 禁用状态 */
+.el-button:disabled,
+.el-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+/* 链接按钮悬停 */
+.el-button--text:hover,
+.el-button--link:hover {
+  opacity: 0.8;
+}
+
+/* ========================================
+   3. 动画与过渡 - 支持可访问性
+   ======================================== */
+
+/* 支持减少动画偏好 (可访问性) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 标准过渡类 */
+.transition-colors {
+  transition: color 200ms ease-out, 
+              background-color 200ms ease-out,
+              border-color 200ms ease-out;
+}
+
+.transition-transform {
+  transition: transform 200ms ease-out;
+}
+
+.transition-opacity {
+  transition: opacity 200ms ease-out;
+}
+
+.transition-shadow {
+  transition: box-shadow 200ms ease-out;
+}
+
+/* Vue Transition 动画 */
+.fade-enter-active {
+  transition: opacity 300ms ease-out;
+}
+
+.fade-leave-active {
+  transition: opacity 200ms ease-in;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 滑动动画 */
+.slide-enter-active {
+  transition: transform 300ms ease-out, opacity 300ms ease-out;
+}
+
+.slide-leave-active {
+  transition: transform 200ms ease-in, opacity 200ms ease-in;
+}
+
+.slide-enter-from {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+
+.slide-leave-to {
+  transform: translateY(10px);
+  opacity: 0;
+}
+
+/* 滑入动画（从下方） */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 300ms ease-out;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* ========================================
+   4. 加载状态优化
+   ======================================== */
+
+/* 骨架屏动画 */
+.el-skeleton__item {
+  background: linear-gradient(
+    90deg,
+    #f2f2f2 25%,
+    #e6e6e6 37%,
+    #f2f2f2 63%
+  ) !important;
+  background-size: 400% 100% !important;
+  animation: skeleton-loading 1.4s ease infinite !important;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* Loading 遮罩优化 */
+.el-loading-mask {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* ========================================
+   5. 空状态优化
+   ======================================== */
+
+.el-empty {
+  padding: 60px 0;
+}
+
+.el-empty__description {
+  margin-top: 16px;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 8px;
+  font-family: var(--font-heading);
+}
+
+.empty-subtitle {
+  font-size: 14px;
+  color: #909399;
+  margin-bottom: 20px;
+  font-family: var(--font-body);
+}
+
+/* ========================================
+   6. 表单优化
+   ======================================== */
+
+/* 表单提示文字 */
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* 表单错误提示 */
+.form-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background-color: #FEF0F0;
+  border: 1px solid #FDE2E2;
+  border-radius: 4px;
+  color: #F56C6C;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.form-error .el-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* 表单输入框聚焦效果 */
+.el-input__inner:focus,
+.el-textarea__inner:focus {
+  transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+/* ========================================
+   7. 图表优化
+   ======================================== */
+
+.chart-container {
+  position: relative;
+  width: 100%;
+}
+
+.chart-skeleton {
+  padding: 20px;
+}
+
+.chart {
+  width: 100%;
+  min-height: 300px;
+}
+
+/* 图表加载状态 */
+.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: #909399;
+}
+
+/* ========================================
+   8. 响应式优化
+   ======================================== */
+
+/* 移动端卡片布局 */
+@media (max-width: 768px) {
+  .alert-cards {
+    display: grid;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .alert-card {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 200ms ease-out;
+  }
+
+  .alert-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .alert-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .alert-time {
+    font-size: 12px;
+    color: #909399;
+  }
+
+  .alert-card-body h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #303133;
+    font-family: var(--font-heading);
+  }
+
+  .alert-card-body p {
+    font-size: 14px;
+    color: #606266;
+  }
+}
+
+/* ========================================
+   9. 批量操作栏
+   ======================================== */
+
+.bulk-action-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 1000;
+}
+
+.selected-count {
+  font-weight: 600;
+  color: #3B82F6;
+  font-family: var(--font-heading);
+}
+
+.bulk-action-bar .actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ========================================
+   10. 可访问性优化
+   ======================================== */
+
+/* 聚焦可见性 */
+*:focus-visible {
+  outline: 2px solid #3B82F6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 跳过链接（屏幕阅读器） */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #3B82F6;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ========================================
+   11. 性能优化
+   ======================================== */
+
+/* 硬件加速 */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* GPU 加速 */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* ========================================
+   12. 通用工具类
+   ======================================== */
+
+/* 文本截断 */
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-ellipsis-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 间距工具 */
+.mt-0 { margin-top: 0 !important; }
+.mt-1 { margin-top: 8px !important; }
+.mt-2 { margin-top: 16px !important; }
+.mt-3 { margin-top: 24px !important; }
+.mt-4 { margin-top: 32px !important; }
+
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: 8px !important; }
+.mb-2 { margin-bottom: 16px !important; }
+.mb-3 { margin-bottom: 24px !important; }
+.mb-4 { margin-bottom: 32px !important; }
+
+.p-0 { padding: 0 !important; }
+.p-1 { padding: 8px !important; }
+.p-2 { padding: 16px !important; }
+.p-3 { padding: 24px !important; }
+.p-4 { padding: 32px !important; }
+
+/* Flexbox 工具 */
+.flex { display: flex !important; }
+.flex-col { flex-direction: column !important; }
+.items-center { align-items: center !important; }
+.justify-center { justify-content: center !important; }
+.justify-between { justify-content: space-between !important; }
+.gap-1 { gap: 8px !important; }
+.gap-2 { gap: 16px !important; }
+.gap-3 { gap: 24px !important; }

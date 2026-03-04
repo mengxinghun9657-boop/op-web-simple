@@ -1,0 +1,292 @@
+﻿类别,虚拟机,厂商是否独有,任务视角的故障等级,HAS级别,中文,项目,是有有感,对业务影响,来源,时效,影响,恢复方案,是否客户有感/需要通知客户操作维修,危害等级(云),是否推送事件中心,客户有感case,手动判断方法
+PCIe链路,有,否,FATAL,FAIL,通道数掉,LaneDrop,是,业务降速/中断,带内,20s,pcie链路降速,报修，检查PCIe插槽/线缆/重插拔,是,P1,是,,lspci -vvv -s <bus>" | grep -i ""LnkSta:"" 查看当前链路宽度/速度"
+PCIe链路,有,否,FATAL,FAIL,带宽掉,BWDrop,是,业务降速,带内,20s,pcie链路降速,报修，检查PCIe插槽/线缆/重插拔,是,P1,是,,lspci -vvv -s <bus>" | grep -i ""LnkSta:"" 查看当前链路宽度/速度"
+PCIe链路,有,否,ERROR,FAIL,CPU处理PcieCE耗时异常,CEErrorFFDC,是,系统稳定性风险,带外,24小时,pcie设备CE错误累积,报修，分析FFDC日志定位故障部件,是,P2,是,,"ipmitool sel list | grep -i pcie; dmesg | grep -i ""aer|pcie"""
+HDDSSD,无,否,FATAL,FAIL,Smart值告警,SMARTFail_$ID,有,数据丢失风险,带内,2小时,SMART值超过门限,换盘，提前迁移数据,是,P0,是,,SMARTFail_None：smartctl -a /dev/sdx读不到smart信息，可以不修，但会影响监控
+HDDSSD,无,否,FATAL,FAIL,硬件故障告警,HardwareError,有,业务中断/数据丢失,带内,2小时,有报hardwareError关键字,换盘，优先迁移数据,是,P0,是,,"dmesg | grep -i ""hardware error|I/O error""; smartctl -H /dev/sdx"
+HDDSSD,无,否,FATAL,FAIL,掉盘,Missing,有,业务中断/数据丢失,带内,2小时,掉盘，RAID降级或文件系统异常,换盘，检查背板/线缆/供电,是,P0,是,,"lsblk | grep sd; dmesg | grep -i ""removed|detached""; lsscsi"
+HDDSSD,无,否,FATAL,FAIL,盘符不可读,NotReady,有,业务中断,带内,2小时,testready盘符不可读，IO阻塞,换盘，检查文件系统挂载状态,是,P0,是,,blockdev --getsize64 /dev/sdx; fsck -n /dev/sdx; mount | grep sdx
+HDDSSD,无,否,FATAL,FAIL,寿命到期,SSDWearOut,有,数据写入失败风险,带内,2小时,寿命到期 小于1%，写入保护或性能骤降,换盘，提前规划数据迁移,是,P0,是,,"smartctl -a /dev/sdx | grep -E ""Percentage Used|Media_Wearout_Indicator"""
+HDDSSD,无,否,ERROR,ERROR,媒介告警,FpdmaQueuedFail,有,IO性能下降/数据错误,带内,2小时,有io error且盘smart有error,fa（故障分析），必要时换盘,是,P1,是,,"dmesg | grep -i ""fpdma|queued""; smartctl -l error /dev/sdx"
+HDDSSD,无,否,WARN,FAIL,坏块太多,TooMany,无,读写性能下降,带内,2小时,坏块太多，超过阈值,换盘，提前迁移数据,是,P1,是,,"smartctl -l selftest /dev/sdx; dmesg | grep -i ""bad block"""
+HDDSSD,无,否,WARN,ERROR,坏块,BadSector,无,读写性能下降/文件系统异常,带内,2小时,/var/log/message有提示error，影响盘的读写性能，也有可能文件系统不可访问,深度格式化，全盘擦除；无效则换盘,是,P1,是,,"dmesg | grep -i ""sector|bad""; badblocks -v /dev/sdx"
+HDDSSD,无,否,WARN,ERROR,错告警太大,TooLarge,无,读写性能下降,带内,2小时,/var/log/message有提示error，影响盘的读写性能，也有可能文件系统不可访问,深度格式化，全盘擦除；无效则换盘,是,P1,是,,"dmesg | grep -i ""error""; smartctl -A /dev/sdx | grep -i ""reallocated|pending"""
+HDDSSD,无,否,WARN,ERROR,介质错误,MediaError,有,读写性能下降/数据错误,带内,2小时,/var/log/message有提示error，影响盘的读写性能，也有可能文件系统不可访问,深度格式化，全盘擦除；无效则换盘,是,P1,是,,"dmesg | grep -i ""media error""; smartctl -l error /dev/sdx"
+HDDSSD,无,否,WARN,ERROR,IO告警,IOError,有,写入变慢/重试增多,带内,2小时,/var/log/message有提示error，有时候写入数据失败，会多次重试，导致写数据会变慢,深度格式化，全盘擦除；无效则换盘,是,P1,是,,"iostat -x 1 | grep sdx; dmesg | grep -i ""I/O error"""
+HDDSSD,无,否,WARN,WARN,文件系统错误,FSerror,无,文件系统不可访问风险,带内,2小时,/var/log/message有提示error，影响盘的读写性能，也有可能文件系统不可访问,快速格式化，重做文件系统；无效则换盘,是,P2,是,,"dmesg | grep -i ""ext4|xfs.*error""; fsck -n /dev/sdx"
+HDDSSD,无,否,WARN,WARN,掉盘,HddAssetMissing,有,容量减少/RAID降级,带内,2小时,硬盘数量少于资产记录数量,查看硬盘数量是否少于资产数量，若少，检查丢失的硬盘,是,P1,是,,"lsscsi | wc -l; dmidecode -t 17 | grep -c ""Size.*GB"""
+HDDSSD,无,否,WARN,WARN,飘盘,floated,无,挂载点不可用,带内,2小时,挂载点不可用,使用uuid挂载挂载点；has提示飘盘时重新umount和mount,是,P2,是,,mount | grep sdx; blkid /dev/sdx; cat /etc/fstab
+HDDSSD,无,否,WARN,WARN,进程僵尸,DStatus,无,IO阻塞/进程卡死,带内,2小时,存储设备因 IO得不到及时响应，有进程D状态,关注，排查IO瓶颈或硬件故障,是,P2,是,,"ps aux | awk '$8==""D""'; iostat -x 1; pidstat -d 1"
+NVMe,有,否,FATAL,FAIL,Nvme严重错误,NvmeCritalErr,有,业务中断/数据丢失,带内,2小时,smart报Critical error,换盘，提前迁移数据,是,P0,是,,"smartctl -a /dev/nvme0 | grep -i ""critical_warning""; nvme smart-log /dev/nvme0"
+NVMe,有,否,FATAL,FAIL,Nvme媒介错误,NvmeMediaErr,有,数据错误/业务中断,带内,2小时,smart有Media error计数,换盘，提前迁移数据,是,P0,是,,smartctl -a /dev/nvme0 | grep Media; nvme error-log /dev/nvme0 (smartctl需要不低于7.0版本)
+NVMe,有,否,FATAL,FAIL,Nvme掉盘,NvmeMissing,有,业务中断/数据丢失,带内,2小时,掉盘，设备从系统消失,换盘，检查背板/线缆/供电,是,P0,是,,"lsblk | grep nvme; dmesg | grep -i ""nvme.*removed""; lspci | grep -i nvme"
+NVMe,有,否,FATAL,FAIL,Nvme寿命到期,NvmeWearOut,无,写入保护/性能骤降,带内,2小时,寿命到期 小于1%,换盘，提前规划数据迁移,是,P0,是,,"nvme smart-log /dev/nvme0 | grep -i ""percentage_used|available_spare"""
+NVMe,有,否,WARN,WARN,IO告警,NVMEIOError,无,IO性能下降,带内,2小时,/var/log/messages有故障日志,快速格式化，重做文件系统；无效则换盘,是,P2,是,,"dmesg | grep -i ""nvme.*error""; nvme smart-log /dev/nvme0"
+NVMe,无,否,WARN,ERROR,读不到盘属性,NvmeSmartFail,无,监控缺失，不影响盘使用,带内,2小时,盘不能读smart信息，不影响盘使用,关注，需换件（厂商策略）,是，统计下线上情况,P2,是,,smartctl -a /dev/nvme0，NVME盘读不到smart信息厂商不给换
+NVMe,无,否,WARN,WARN,ScaleFlux盘可用空间不足,NvmeLowFreeSpace,无,写入失败风险,带内,2小时,可用空间不足<5%，应立刻停止写入，考虑迁移数据，恢复可用空间,迁移数据，清理空间,是,P2,是,,"nvme list; df -h /dev/nvme0n1; nvme smart-log /dev/nvme0 | grep -i ""available_spare"""
+NVMe,有,否,WARN,WARN,Block Size不一致,BlockSizeErr,无,性能异常/兼容性问题,带内,2小时,块大小配置不一致,参考KB文档修复配置：https://ku.baidu-int.com/knowledge/HFVrC7hq1Q/pKzJfZczuc/gSrSmFc-oo/6d9T4ximkws5ga,是,P2,是,,cat /sys/bus/pci/devices/0000:af:00.0/nvme/nvme0/nvme0n1/queue/physical_block_size
+NVMe,有,否,WARN,WARN,文件系统错误,FSerror,无,文件系统不可访问风险,带内,2小时,/var/log/messages有故障日志,快速格式化，重做文件系统；无效则换盘,是,P2,是,,"dmesg | grep -i ""ext4|xfs.*error""; fsck -n /dev/nvme0n1"
+NVMe,无,否,WARN,WARN,僵尸进程,NvmeDstatus,无,IO阻塞/进程卡死,带内,2小时,存储设备因 IO得不到及时响应，有进程D状态,关注，排查IO瓶颈或硬件故障,是，统计下线上情况,P2,是,,"ps aux | awk '$8==""D""' | grep nvme; iostat -x 1 | grep nvme"
+GPU,有,否,FATAL,FAIL,GPU掉卡,Missing,有,中断,带内,20s,从PCIe总线掉卡，lspci看不到卡,换卡，检查PCIe插槽/供电/重插拔,是,P0,是,,"lspci | grep -i nvidia; nvidia-smi; dmesg | grep -i ""nvidia.*removed"""
+GPU,有,否,FATAL,FAIL,PCI配置读写失败,PciHeader,有,中断,带内,20s,lspci读不到GPU的配置空间，显示rev ff,换卡，检查PCIe插槽/重插拔,是,P0,是,,lspci -vvv -s <bus>" | grep -i ""rev""; setpci -s "<bus> CAP_EXP+12.L
+GPU,有,否,FATAL,FAIL,PCI地址不可访问,GPUPanic,有,中断,带内,20s,GPU在PCIe bus上，PCIe地址不可访问,换卡，检查PCIe插槽/供电,是,P0,是,,lspci -vvv -s <bus>"; nvidia-smi; dmesg | grep -i ""nvidia.*panic"""
+GPU,有,否,FATAL,FAIL,GPU卡高温告警,GpuHighTemperature,有,中断,带内,20s,温度超nv的门限(NVML_TEMPERATURE_THRESHOLD_SLOWDOWN),换卡，检查散热/风扇/机房温度,是,P0,是,,"nvidia-smi -q | grep -A 5 ""Temperature""; nvidia-smi -q -d TEMPERATURE"
+GPU,有,否,FATAL,ERROR,内存双数据位错误,EccError,有,中断,带内,20s,显存出现Uncorrectable Error,重启机器；持续发生则换卡,是,P0,是,,"nvidia-smi -q -d ECC; nvidia-smi -q | grep -i ""uncorrectable"""
+GPU,有,否,ERROR,ERROR,GPU掉带宽,GpusBusErr,有,影响性能,带内,20s,链接带宽低于x16,重启机器；检查PCIe插槽/重插拔,是,P1,是,,nvidia-smi topo -m; lspci -vvv -s <bus>" | grep -i ""LnkSta:"""
+GPU,有,否,ERROR,ERROR,GPU功耗告警,PowerError,有,业务中断,带内,20s,读不到功耗，卡无法使用,重启机器；检查供电/换卡,是,P0,是,,"nvidia-smi -q -d POWER; dmesg | grep -i ""nvidia.*power"""
+GPU,有,否,ERROR,ERROR,GPU驱动无法访问（属于软件问题）,DriverError,有,可能中断,带内,20s,驱动故障，导致has无法检测,重启机器；P800需要升级驱动；重装驱动,是,P1,是,,"nvidia-smi; lsmod | grep nvidia; dmesg | grep -i ""nvidia.*error"""
+GPU,有,否,WARN,WARN,PCIe设备Link Down,PcieLinkDown,有,无法启动虚机,带内,20s,PCIe Link Down，卡无法识别，虚拟机无法重启,暂未确定，可能会自动恢复；检查PCIe连接,否,P2,是,,lspci -vvv -s <bus>" | grep -i ""LnkSta:""; dmesg | grep -i ""pcie.*link.*down"""
+GPU,有,否,WARN,WARN,PCIe设备Bus Error,PCIeBusError,无,暂未确定,带内,20s,PCIe Bus Error，暂未确定,暂未确定；关注日志，必要时报修,否,P2,是,,"dmesg | grep -i ""aer|pcie.*error""; lspci -vvv -s "<bus>
+GPU,有,否,WARN,WARN,内存错误校验未打开,EccDisabled,无,无,带内,20s,ECC未使能，存在数据静默错误风险,nvidia-smi -e 1 然后重启机器,否,P2,是,,"nvidia-smi -q -d ECC | grep ""ECC Mode""; nvidia-smi -e 1"
+GPU,有,否,WARN,WARN,Ecc single bit增速过快（单次增长超1000w）,EccGrowthRateError,无,无,带内,20s,ECC单比特错误增长过快，存在硬件隐患,关注，持续发生则换卡,否,P2,是,,"nvidia-smi -q -d ECC | grep -i ""single""; watch -n 60 'nvidia-smi -q -d ECC'"
+GPU,有,否,WARN,WARN,卡没有挂载驱动,NoDriver,有,无,带内,20s,卡无驱动无法使用，但云机器idle状态就是无驱动状态,关注，业务需要时加载驱动,否,P2,是,,ll /sys/bus/pci/devices/<bus>/driver 文件不存在; lsmod | grep nvidia
+GPU,有,昆仑P800,FATAL,FAIL,内存双数据位错误（重启不可恢复）,EccSevereError,有,中断,带内,20s,显存出现Uncorrectable Error，标准：<br>Aggregate>1：ECCSeverreError<br>Volatile=1，且开机天数少于70：ECCSeverreError<br>Volatile=1，且开机天数超过70：ECCError,wget http://has-master-a.sdns.baidu.com/download/gputools/diag/diagdbe.py && python diagdbe.py 查看维修建议，根据建议升级驱动或换卡,是,P0,是,,xpu-smi query -i <id> -t ecc; diagdbe.py脚本分析
+GPU,有,昆仑P800,WARN,WARN,TDP引起的xid2（温度功率异常）1min超20次,TDPXid2,无,无,带内,20s,降频保护，性能下降,无需处理，环境恢复后自动恢复；优化散热,否,P2,是,,xpu-smi query -i <id> -t temperature; xpu-smi query -i <id> -t power
+GPU,有,昆仑P800,FATAL,FAIL,HBM引起的xid2（温度功率异常）1min超10次,HBMXid2,有,中断,带内,20s,HBM温度异常导致降频/中断,换卡，检查散热/机房温度,是,P0,是,,xpu-smi query -i <id> -t hbm_temp; xpu-smi query -i <id> -t error
+GPU,有,昆仑,WARN,WARN,昆仑卡流处理器执行过程中出现读写冲突,SmRwConflict,无,无,带内,20s,已集成到xid中，为算子问题，需要升级算子问题解决<br>继续运行会出现loss跑飞,无需处理（等昆仑升级算子）；升级算子版本,否,P2,是,,xpu-smi query -i <id> -t error; 查看任务日志中的xid记录
+GPU,有,昆仑P800,ERROR,ERROR,wait_for_noc_idle(timeout),NocTimeout,有,中断,带内,20s,NoC通信超时，会中断业务,默认重启机器;部分会拉曹太强确认需不需要换卡,是,P0,是,,xpu-smi query -i <id>" -t noc; dmesg | grep -i ""noc.*timeout"""
+GPU,有,昆仑P800,ERROR,ERROR,noctimeout预判,NocTimeoutSeqNum,有,中断,带内,20s,继续执行，可能会出现NocTimeout故障,重启机器；关注序列号异常增长,是,P1,是,,xpu-smi query -i <id> -t noc_seq; 监控noc序列号变化
+GPU,有,昆仑P800,FATAL,FAIL,昆仑卡link不正常,XlinkInactive,有,降速,带内,20s,Xlink链路失活，卡间通信降速,换卡，检查Xlink线缆/重插拔,是,P0,是,,xpu-smi xpulink -s; xpu-smi query -i <id> -t xpulink
+GPU,有,昆仑P800,ERROR,ERROR,无法读取昆仑卡温度,TemperatureError,有,降速,带内,20s,温度监控失效，可能触发保护降频,重启机器；检查传感器/换卡,是,P1,是,,xpu-smi -q | grep Temp; xpu-smi query -i <id> -t temperature
+GPU,有,昆仑,ERROR,ERROR,昆仑卡微码错误异常,StateExpection,有,中断,带内,20s,任务异常退出，微码执行异常,重启机器；升级微码/换卡,是,P0,是,,xpu-smi query -i <id>" -t firmware; dmesg | grep -i ""kunlun.*error"""
+GPU,有,昆仑,ERROR,ERROR,昆仑卡状态错误异常,StateError,有,中断,带内,20s,任务异常退出，卡状态异常,重启机器；检查任务/换卡,是,P0,是,,xpu-smi query -i <id> -t status; xpu-smi query -i <id> -t error
+GPU,有,昆仑,FATAL,FAIL,kernel异常，cluster/sdnn运行触发异常,Xid0,有,中断,带内,20s,20s检测一次，同一张卡连续出现3次<br>KL_XID_KERNEL_EXCEPTION,换卡<br>1. 如果和Xid1同时出现，优先排查Xid1问题。<br>2. 排查异常kernel代码编写问题，详见XTDK Developer Guide。,是,P0,是,,xpu-smi query -i <id>" -t xid; dmesg | grep -i ""xid.*0"""
+GPU,有,昆仑,ERROR,ERROR,昆仑卡ECC错误,Xid1,有,中断,带内,20s,KL_XID_GDDR_ECC，gddr异常，ecc uncorrected error，计算结果有问题,修复后压测，出现DBE，换卡；nvidia-smi --reset-ecc-errors=1,是,P0,是,,xpu-smi query -i <id> -t xid; xpu-smi query -i <id> -t ecc
+GPU,有,昆仑,WARN,WARN,昆仑卡温度功率异常,Xid2,无,无,带内,20s,KL_XID_DOWN_UP_CLOCKING，温度或功率异常，自动降频,无需处理，严重故障会报TDPXid2、HBMXid2<br>重启机器。该异常能够等环境恢复后自动恢复，视情况排查机箱散热设计，优化散热通道,否,P2,是,,xpu-smi query -i <id> -t xid; xpu-smi query -i <id> -t temperature -t power
+GPU,有,昆仑,ERROR,ERROR,昆仑卡SSE异常,Xid3,有,中断,带内,20s,KL_XID_SSE_EXCEPTION，给sse（硬件的调度模块）的描述符有异常，会中断业务,重启机器；检查任务描述符/换卡,是,P0,是,,xpu-smi query -i <id>" -t xid; dmesg | grep -i ""xid.*3"""
+GPU,有,昆仑,FATAL,FAIL,昆仑卡显存发生多bitECC错误,Xid4,有,中断,带内,62,KL_XID_DOUBLE_BIT_ECC，显存发生多bitECC错误，计算结果有问题,换卡<br>修复后压测，出现DBE，换卡,是,P0,是,,xpu-smi query -i <id> -t xid; xpu-smi query -i <id> -t ecc
+GPU,有,昆仑,WARN,WARN,显存发生single bit ecc,Xid5,无,无,带内,20s,KL_XID_SINGLE_BIT_ECC,无需处理<br>1. 如果偶现单次异常，可忽略。<br>2. 如果出现达到一定概率，且伴随出现Xid 0异常，需要进一步处理。,否,P2,是,,xpu-smi query -i <id> -t xid; xpu-smi query -i <id> -t ecc
+GPU,有,昆仑,WARN,WARN,昆仑卡C2C连接触发事件,Xid6,无,无,带内,20s,C2C连接触发事件（k-link single-bit错误超过一定阈值）,无需处理；持续发生则检查C2C线缆,否,P2,是,,xpu-smi query -i <id> -t xid; xpu-smi xpulink -s
+GPU,有,昆仑,WARN,WARN,昆仑卡Xid告警,Xid***,无,无,带内,20s,kernel异常，cluster/sdnn运行异常,无需处理；参考XID文档排查,否,P2,是,,xpu-smi query -i <id> -t xid; 参考昆仑XID错误码文档
+GPU,有,NVIDIA,FATAL,FAIL,行重映射失败,RemappingFailed,有,中断,带内,20s,Remapping失败，替换正常内存块失败,换卡；nvidia-smi --reset-ecc-errors=1后压测验证,是,P0,是,,"nvidia-smi -q | grep -A 10 ""Retired Pages"" | grep ""Remapping Failure"""
+GPU,有,NVIDIA,FATAL,FAIL,内存校验超过门限,EccLimitExceeded,有,中断,带内,20s,SRAM 累积DBE > 4<br>或者<br>SRAM Threshold Exceeded=yes,换卡（若卡实在紧张，且压测可过，可执行nvidia-smi --reset-ecc-errors=1 -g <gpu编号(从0开始计)>后执行pkill -f has/hdoctor/check/logcheck;rm <has根目录>/haslog/hdoctor/log/gpu.json命令清除）,是,P0,是,,nvidia-smi -q | grep -E 'SRAM Uncorrectable|SRAM Threshold'
+GPU,有,NVIDIA,FATAL,FAIL,NVLink的links数量减少,LinksNumError,有,降速,带内,20s,GPU通讯降速，NVLink拓扑异常,重新插拔nvlink桥接器；检查NVLink线缆,是,P0,是,,nvidia-smi topo -m; nvidia-smi nvlink -s
+GPU,有,NVIDIA,FATAL,FAIL,GPU与网卡链接类型错误,GPU-NICConnError,有,降速,带内,20s,GPU与外部通讯速度降低，RDMA性能异常,检查与GPU直连的RDMA网卡位置是否插错，如果网卡插错位置，则插到正确位置；<br>如果未插错位置，则更换该GPU的RDMA网卡,是,P0,是,,nvidia-smi topo -m; lspci -tv | grep -A5 -B5 nvidia
+GPU,有,NVIDIA,ERROR,ERROR,GPU驱动读不到卡,RmInitAdapterFailed,有,中断,带内,20s,GPU在PCIe bus上，nvidia-smi识别不到卡,重启机器；重装驱动；检查PCIe连接,是,P0,是,,"nvidia-smi; dmesg | grep -i ""nvidia.*init|rmInitAdapter"""
+GPU,有,NVIDIA,ERROR,ERROR,GPU互联通信链路错误（SYS或NODE方式链接）,NvLinkError,有,降速,带内,20s,GPU间通信速度降低，NVLink报错,升级驱动（临时解决方案：执行nvidia-smi -r，等待1min执行 nvidia-smi topo -m 查看是否修复(GPU间无SYS或NODE链接)，若未修复重复执行该命令）,是,P1,是,,"nvidia-smi topo -m; nvidia-smi nvlink -e; dmesg | grep -i ""nvlink.*error"""
+GPU,有,NVIDIA,ERROR,ERROR,GPU互联链路告警,NVSW<n>-<sxid>,有,降速,带内,20s,nvlink报错，NVSwitch事件,重启机器；升级NVSwitch固件/驱动,是,P1,是,,"nvidia-smi nvlink -s; dmesg | grep -i ""nvswitch|sxid"""
+GPU,有,NVIDIA,ERROR,ERROR,GPU互联服务异常,FabricManagerNotRunning,有,降速,带内,20s,服务未启动，nvlink无法工作,启动fabricmanager服务：systemctl start nvidia-fabricmanager; 检查nvswitch状态,是,P1,是,,systemctl is-active nvidia-fabricmanager; systemctl status nvidia-fabricmanager
+GPU,有,NVIDIA,ERROR,ERROR,GPU互联中断,NvlinkInactive,有,中断,带内,20s,nvlink失活，GPU间通信中断,重启机器；检查NVLink线缆/重插拔,是,P0,是,,"nvidia-smi nvlink -s | grep -i ""inactive""; nvidia-smi topo -m"
+GPU,有,NVIDIA,ERROR,ERROR,驱动为nouveau,NvNouveau,有,无法使用GPU,带内,20s,驱动为nouveau，需安装nvidia驱动才能正常使用,安装nvidia驱动；blacklist nouveau后重启,是,P1,是,,lsmod | grep nouveau; nvidia-smi (报错提示nouveau)
+GPU,有,NVIDIA,WARN,WARN,掉NVSwitch,NvSwitchNumError,待定,待定,带内,20s,降速，NVSwitch拓扑异常,待定；检查NVSwitch供电/连接/重插拔,待定,P1,是,,lspci | grep -i nvidia | grep -i switch; nvidia-smi topo -m
+GPU,有,NVIDIA,WARN,WARN,软件热降速,SwThermalSlowdown,待定,待定,带内,20s,软件热降速已启动，以确保GPU和HBM温度不超过各自最大工作温度,待定；检查散热/机房温度/优化任务负载,待定,P2,是,,nvidia-smi -q | grep -A 10 -E 'Clocks Throttle Reasons|Clocks Event Reasons'
+GPU,有,NVIDIA,WARN,WARN,硬件热减速,HwThermalSlowdown,待定,待定,带内,20s,硬件热减速（将核心时钟减少2倍或更多）已启动,待定；检查散热/风扇/机房温度,待定,P2,是,,nvidia-smi -q | grep -A 10 -E 'Clocks Throttle Reasons|Clocks Event Reasons'
+GPU,有,NVIDIA,WARN,WARN,硬件电源制动器减速,HwPowerBrakeSlowdown,待定,待定,带内,20s,硬件电源制动器减速（将核心时钟降低2倍或更多）已启用,待定；检查供电/电源模块/功耗配置,待定,P2,是,,nvidia-smi -q | grep -A 10 -E 'Clocks Throttle Reasons|Clocks Event Reasons'
+GPU,有,NVIDIA,WARN,WARN,GPU风扇故障,GpuFanError,无,无,带内,20s,风扇故障（只有民卡有风扇），可能引发高温,无需处理（数据中心GPU通常无风扇）；若为工作站卡则更换风扇,否,P2,是,,"nvidia-smi -q -d FAN; nvidia-smi -q | grep -i ""fan speed"""
+GPU,有,NVIDIA,WARN,WARN,GPU互联链路告警,NVSW<n>-<sxid>-NF,无,无,带内,20s,nvlink报错，Non-fatal类型，不影响业务,无需处理；持续发生则关注,否,P2,是,,"nvidia-smi nvlink -e | grep -i ""non-fatal""; dmesg | grep -i ""sxid.*nf"""
+GPU,有,NVIDIA,WARN,WARN,GPU部分指标无法读取,IndexCannotRead,无,无,带内,20s,GPU利用率与显存利用率无法读取，监控缺失,无需处理；检查驱动版本/重启fabricmanager,否,P2,是,,nvidia-smi -q -d UTILIZATION; nvidia-smi -q -d MEMORY
+GPU,有,NVIDIA,WARN,WARN,GPU温度超过阈值,GpuMaxOperatingTemperature,无,无,带内,20s,温度超nv的门限(Max Operating Temp阈值)，存在降频风险,关注；检查散热/优化任务负载,否,P2,是,,"nvidia-smi -q -d TEMPERATURE | grep ""Max Operating Temp""; nvidia-smi -q | grep ""GPU Current Temp"""
+GPU,有,NVIDIA,WARN,WARN,NVIDIA卡持续模式关闭,PersistenceOff,无,无,带内,20s,没打开持续模式，驱动加载时间长，首次调用延迟高,nvidia-smi -pm 1; 将持久模式加入开机启动,否,P2,是,,"nvidia-smi -q | grep ""Persistence Mode""; nvidia-smi -pm 1"
+GPU,有,NVIDIA,WARN,WARN,最大功耗过低,LowMaxPower,无,无,带内,20s,1小时内卡最大功耗持续低于其他卡，可能存在功耗限制,关注；检查power limit配置/供电,否,P2,是,,"nvidia-smi -q -d POWER | grep ""Power Limit""; nvidia-smi -q -d PERFORMANCE"
+GPU,有,NVIDIA,WARN,WARN,功耗过低,LowPower,无,无,带内,20s,功耗低于5W，可能卡未加载或idle状态,关注；确认业务是否正常运行,否,P2,是,,"nvidia-smi -q -d POWER | grep ""GPU Power""; nvidia-smi -q -d PERFORMANCE"
+GPU,有,NVIDIA,WARN,WARN,ECC Remapping未完成,RemappedPending,无,无,带内,20s,ecc remapping没完成，存在潜在ECC风险,无需处理；重启后会自动完成remapping,否,P2,是,,"nvidia-smi -q | grep -A 10 ""Retired Pages"" | grep ""Pending"""
+GPU,有,NVIDIA,WARN,WARN,xid 1-47,xid13,无,无,带内,20s,Graphics Engine Exception，业务层面异常,无需处理；检查任务代码/驱动版本,否,P2,是,,"https://docs.nvidia.com/deploy/xid-errors/index.html; dmesg | grep -i ""xid.*13"""
+GPU,有,NVIDIA,WARN,WARN,xid 1-47,xid31,无,无,带内,20s,GPU memory page fault，是业务层面的故障,无需处理；检查任务内存访问逻辑,否,P2,是,,"dmesg | grep -i ""xid.*31""; nvidia-smi -q | grep -i ""page fault"""
+GPU,有,NVIDIA,WARN,WARN,xid 1-47,xid32,无,无,带内,20s,Invalid or corrupted push buffer stream，命令流异常,无需处理；检查任务提交逻辑/驱动版本,否,P2,是,,"dmesg | grep -i ""xid.*32""; nvidia-smi -q | grep -i ""push buffer"""
+GPU,有,NVIDIA,WARN,WARN,xid 1-47,xid43,无,无,带内,20s,GPU stopped processing，GPU停止处理任务,无需处理；检查任务/重启机器,否,P2,是,,"dmesg | grep -i ""xid.*43""; nvidia-smi -q | grep -i ""stopped"""
+GPU,有,NVIDIA,WARN,WARN,xid 1-47,xid45,无,无,带内,20s,"Preemptive cleanup, due to previous errors，前置错误清理",无需处理；排查前置错误根因,否,P2,是,,"dmesg | grep -i ""xid.*45""; 查看前置xid错误日志"
+GPU,有,NVIDIA,FATAL,ERROR,NVIDIA卡多bit ECC错误,xid48,有,中断,带内,20s,GPU显存发生多bit ECC错误，可能导致：1) 计算结果错误，影响业务准确性；2) GPU驱动重置，导致任务中断；3) 严重时可能导致系统崩溃；4) 持续发生可能表明硬件故障,立即处理步骤：1) 记录错误发生时间和频率；2) 检查GPU温度是否过高（nvidia-smi）；3) 如果错误持续发生（1小时内超过3次），建议：停止当前任务、隔离故障GPU、联系硬件团队更换GPU卡；4) 如果偶发（1小时内1-2次），可继续观察；5) 更新GPU驱动到最新稳定版本；6) 执行nvidia-smi --reset-ecc-errors=1清除ECC计数器；7) 重启机器后重新压测验证,是,P1-严重,是,,"nvidia-smi -q -d ECC | grep -i ""uncorrectable""; dmesg | grep -i ""xid.*48"""
+GPU,有,NVIDIA,WARN,WARN,,xid49-55,无,无,带内,20s,Unused，保留未使用,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*4[9-5]""; 参考NVIDIA XID文档"
+GPU,有,NVIDIA,WARN,WARN,,xid56,无,无,带内,20s,Display Engine error，显示引擎错误（数据中心卡通常无显示输出）,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*56""; nvidia-smi -q -d DISPLAY"
+GPU,有,NVIDIA,WARN,WARN,,xid57,无,无,带内,20s,Error programming video memory interface，视频内存接口编程错误,无需处理；持续发生则关注,否,P2,是,,"dmesg | grep -i ""xid.*57""; nvidia-smi -q | grep -i ""video memory"""
+GPU,有,NVIDIA,WARN,WARN,,xid58,无,无,带内,20s,Unstable video memory interface detected，视频内存接口不稳定,无需处理；持续发生则换卡,否,P2,是,,"dmesg | grep -i ""xid.*58""; nvidia-smi -q | grep -i ""unstable"""
+GPU,有,NVIDIA,WARN,WARN,,xid59,无,无,带内,20s,Older Driver，驱动版本过旧,无需处理；建议升级驱动到推荐版本,否,P2,是,,nvidia-smi; 对比NVIDIA驱动发布说明
+GPU,有,NVIDIA,WARN,WARN,,xid60,无,无,带内,20s,Internal micro-controller breakpoint/warning，微控制器断点/警告,无需处理；持续发生则关注,否,P2,是,,"dmesg | grep -i ""xid.*60""; nvidia-smi -q | grep -i ""micro-controller"""
+GPU,有,NVIDIA,ERROR,ERROR,NVIDIA卡微控制器告警,xid62,有,中断,带内,20s,Internal micro-controller halt，微控制器挂起,重启机器；持续发生则换卡,是,P1,是,,"dmesg | grep -i ""xid.*62""; nvidia-smi -q | grep -i ""micro-controller.*halt"""
+GPU,有,NVIDIA,WARN,WARN,,xid63,无,无,带内,20s,ECC page retirement or row remapping recording event，ECC页面隔离记录事件,无需处理；正常硬件维护流程,否,P2,是,,"nvidia-smi -q | grep -A 10 ""Retired Pages""; dmesg | grep -i ""xid.*63"""
+GPU,有,NVIDIA,FATAL,ERROR,NVIDIA卡ECC页面隔离映射记录失败,xid64,有,中断,带内,20s,ECC page retirement or row remapper recording failure，隔离记录失败,重启机器；持续发生则换卡,是,P0,是,,"dmesg | grep -i ""xid.*64""; nvidia-smi -q | grep -i ""remapping.*failure"""
+GPU,有,NVIDIA,WARN,WARN,,xid65,无,无,带内,20s,Video processor exception，视频处理器异常（数据中心卡通常无视频编码需求）,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*65""; nvidia-smi -q -d VIDEO"
+GPU,有,NVIDIA,WARN,WARN,,xid66-67,无,无,带内,20s,Illegal access by driver，驱动非法访问,无需处理；检查驱动版本/内核兼容性,否,P2,是,,"dmesg | grep -i ""xid.*6[6-7]""; lsmod | grep nvidia"
+GPU,有,NVIDIA,WARN,WARN,,xid68,无,无,带内,20s,NVDEC0 Exception，视频解码引擎0异常,无需处理；数据中心卡通常不使用NVDEC,否,P2,是,,"dmesg | grep -i ""xid.*68""; nvidia-smi -q -d VIDEO"
+GPU,有,NVIDIA,WARN,WARN,,xid69,无,无,带内,20s,Graphics Engine class error，图形引擎类错误,无需处理；检查任务/驱动,否,P2,是,,"dmesg | grep -i ""xid.*69""; nvidia-smi -q | grep -i ""graphics engine"""
+GPU,有,NVIDIA,WARN,WARN,,xid70-72,无,无,带内,20s,CEx: Unknown Error，Copy Engine未知错误,无需处理；持续发生则关注,否,P2,是,,"dmesg | grep -i ""xid.*7[0-2]""; nvidia-smi -q | grep -i ""copy engine"""
+GPU,有,NVIDIA,WARN,WARN,,xid73,无,无,带内,20s,NVENC2 Error，视频编码引擎2异常,无需处理；数据中心卡通常不使用NVENC,否,P2,是,,"dmesg | grep -i ""xid.*73""; nvidia-smi -q -d VIDEO"
+GPU,有,NVIDIA,ERROR,ERROR,NVIDIA卡NVLINK错误,xid74,有,降速,带内,20s,NVLINK Error，NVLink通信错误,重启机器；检查NVLink线缆/升级驱动,是,P1,是,,"nvidia-smi nvlink -e; dmesg | grep -i ""xid.*74"""
+GPU,有,NVIDIA,WARN,WARN,,xid75-77,无,无,带内,20s,CEx: Unknown Error，Copy Engine未知错误,无需处理；持续发生则关注,否,P2,是,,"dmesg | grep -i ""xid.*7[5-7]""; nvidia-smi -q | grep -i ""copy engine"""
+GPU,有,NVIDIA,WARN,WARN,,xid78,无,无,带内,20s,vGPU Start Error，vGPU启动错误（物理卡通常不使用vGPU）,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*78""; nvidia-smi -q | grep -i ""vGPU"""
+GPU,有,NVIDIA,ERROR,ERROR,NVIDIA卡掉卡,xid79,有,中断,带内,20s,GPU has fallen off the bus，GPU从总线掉线,重启机器；检查PCIe插槽/供电/换卡,是,P0,是,,"lspci | grep -i nvidia; nvidia-smi; dmesg | grep -i ""xid.*79|fallen off"""
+GPU,有,NVIDIA,WARN,WARN,,xid80,无,无,带内,20s,Corrupted data sent to GPU，发送到GPU的数据损坏,无需处理；检查任务数据传输逻辑,否,P2,是,,"dmesg | grep -i ""xid.*80""; 检查任务日志"
+GPU,有,NVIDIA,WARN,WARN,,xid81,无,无,带内,20s,VGA Subsystem Error，VGA子系统错误（数据中心卡无VGA输出）,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*81""; nvidia-smi -q -d DISPLAY"
+GPU,有,NVIDIA,WARN,WARN,,xid82,无,无,带内,20s,NVJPG0 Error，JPEG解码引擎异常,无需处理；数据中心卡通常不使用NVJPG,否,P2,是,,"dmesg | grep -i ""xid.*82""; nvidia-smi -q -d VIDEO"
+GPU,有,NVIDIA,WARN,WARN,,xid83-84,无,无,带内,20s,NVDEC1 Error，视频解码引擎1异常,无需处理；数据中心卡通常不使用NVDEC,否,P2,是,,"dmesg | grep -i ""xid.*8[3-4]""; nvidia-smi -q -d VIDEO"
+GPU,有,NVIDIA,WARN,WARN,,xid85,无,无,带内,20s,CE9: Unknown Error，Copy Engine 9未知错误,无需处理；持续发生则关注,否,P2,是,,"dmesg | grep -i ""xid.*85""; nvidia-smi -q | grep -i ""copy engine"""
+GPU,有,NVIDIA,WARN,WARN,,xid86,无,无,带内,20s,OFA Exception，Optical Flow Accelerator异常（通常不使用）,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*86""; nvidia-smi -q -d VIDEO"
+GPU,有,NVIDIA,WARN,WARN,,xid87,无,无,带内,20s,Reserved，保留未使用,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*87""; 参考NVIDIA XID文档"
+GPU,有,NVIDIA,WARN,WARN,,xid88,无,无,带内,20s,NVDEC3 Error，视频解码引擎3异常,无需处理；数据中心卡通常不使用NVDEC,否,P2,是,,"dmesg | grep -i ""xid.*88""; nvidia-smi -q -d VIDEO"
+GPU,有,NVIDIA,WARN,WARN,,xid89,无,无,带内,20s,NVDEC4 Error，视频解码引擎4异常,无需处理；数据中心卡通常不使用NVDEC,否,P2,是,,"dmesg | grep -i ""xid.*89""; nvidia-smi -q -d VIDEO"
+GPU,有,NVIDIA,WARN,WARN,,xid90-91,无,无,带内,20s,Reserved，保留未使用,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*9[0-1]""; 参考NVIDIA XID文档"
+GPU,有,NVIDIA,WARN,WARN,,xid92,无,无,带内,20s,High single-bit ECC error rate，单比特ECC错误率高,无需处理；持续高发则关注硬件健康,否,P2,是,,"nvidia-smi -q -d ECC | grep -i ""single""; watch -n 60 'nvidia-smi -q -d ECC'"
+GPU,有,NVIDIA,WARN,WARN,,xid93,无,无,带内,20s,Non-fatal violation of provisioned InfoROM wear limit，InfoROM磨损非致命告警,无需处理；关注InfoROM健康度,否,P2,是,,"nvidia-smi -q | grep -i ""inforom""; nvidia-smi -q -d SUPPORTED_CLOCKS"
+GPU,有,NVIDIA,WARN,WARN,,xid94,无,无,带内,20s,Contained ECC error，已隔离的ECC错误,无需处理；硬件自动隔离机制正常工作,否,P2,是,,"nvidia-smi -q -d ECC | grep -i ""contained""; nvidia-smi -q | grep -A 10 ""Retired Pages"""
+GPU,有,NVIDIA,FATAL,ERROR,NVIDIA卡未隔离ECC错误,xid95,有,中断,带内,20s,Uncontained ECC error，未隔离的ECC错误，可能影响计算结果,重启机器；持续发生则换卡,是,P0,是,,"nvidia-smi -q -d ECC | grep -i ""uncontained""; dmesg | grep -i ""xid.*95"""
+GPU,有,NVIDIA,WARN,WARN,,xid96-105,无,无,带内,20s,NVDEC7 Error，视频解码引擎7异常,无需处理；数据中心卡通常不使用NVDEC,否,P2,是,,"dmesg | grep -i ""xid.*9[6-9]|xid.*10[0-5]""; nvidia-smi -q -d VIDEO"
+GPU,有,NVIDIA,WARN,WARN,,xid106-108,无,无,带内,20s,Test and Reserved，测试/保留未使用,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*10[6-8]""; 参考NVIDIA XID文档"
+GPU,有,NVIDIA,ERROR,ERROR,NVIDIA卡Context切换超时错误,xid109,有,中断,带内,20s,Context Switch Timeout Error，上下文切换超时,重启机器；检查任务调度/驱动版本,是,P1,是,,"dmesg | grep -i ""xid.*109""; nvidia-smi -q | grep -i ""context switch"""
+GPU,有,NVIDIA,WARN,WARN,,xid110,无,无,带内,20s,Security Fault Error，安全故障错误,无需处理；检查安全策略/驱动,否,P2,是,,"dmesg | grep -i ""xid.*110""; nvidia-smi -q | grep -i ""security"""
+GPU,有,NVIDIA,WARN,WARN,,xid111,无,无,带内,20s,Display Bundle Error Event，显示捆绑错误事件,无需处理；数据中心卡无显示输出,否,P2,是,,"dmesg | grep -i ""xid.*111""; nvidia-smi -q -d DISPLAY"
+GPU,有,NVIDIA,WARN,WARN,,xid112,无,无,带内,20s,Display Supervisor Error，显示监控器错误,无需处理；数据中心卡无显示输出,否,P2,是,,"dmesg | grep -i ""xid.*112""; nvidia-smi -q -d DISPLAY"
+GPU,有,NVIDIA,WARN,WARN,,xid113,无,无,带内,20s,DP Link Training Error，DisplayPort链路训练错误,无需处理；数据中心卡无DP输出,否,P2,是,,"dmesg | grep -i ""xid.*113""; nvidia-smi -q -d DISPLAY"
+GPU,有,NVIDIA,WARN,WARN,,xid114,无,无,带内,20s,Display Pipeline Underflow Error，显示流水线下溢错误,无需处理；数据中心卡无显示输出,否,P2,是,,"dmesg | grep -i ""xid.*114""; nvidia-smi -q -d DISPLAY"
+GPU,有,NVIDIA,WARN,WARN,,xid115,无,无,带内,20s,Display Core Channel Error，显示核心通道错误,无需处理；数据中心卡无显示输出,否,P2,是,,"dmesg | grep -i ""xid.*115""; nvidia-smi -q -d DISPLAY"
+GPU,有,NVIDIA,WARN,WARN,,xid116,无,无,带内,20s,Display Window Channel Error，显示窗口通道错误,无需处理；数据中心卡无显示输出,否,P2,是,,"dmesg | grep -i ""xid.*116""; nvidia-smi -q -d DISPLAY"
+GPU,有,NVIDIA,WARN,WARN,,xid117,无,无,带内,20s,Display Cursor Channel Error，显示光标通道错误,无需处理；数据中心卡无显示输出,否,P2,是,,"dmesg | grep -i ""xid.*117""; nvidia-smi -q -d DISPLAY"
+GPU,有,NVIDIA,WARN,WARN,,xid118,无,无,带内,20s,Display Pixel Pipeline Error，显示像素流水线错误,无需处理；数据中心卡无显示输出,否,P2,是,,"dmesg | grep -i ""xid.*118""; nvidia-smi -q -d DISPLAY"
+GPU,有,NVIDIA,WARN,WARN,,xid119,无,无,带内,20s,GSP RPC Timeout，GSP远程过程调用超时,无需处理；持续发生则重启fabricmanager,否,P2,是,,"dmesg | grep -i ""xid.*119""; systemctl status nvidia-fabricmanager"
+GPU,有,NVIDIA,WARN,WARN,,xid120,无,无,带内,20s,GSP Error，GSP通用错误,无需处理；持续发生则关注,否,P2,是,,"dmesg | grep -i ""xid.*120""; nvidia-smi -q | grep -i ""GSP"""
+GPU,有,NVIDIA,WARN,WARN,,xid121,无,无,带内,20s,Reserved，保留未使用,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*121""; 参考NVIDIA XID文档"
+GPU,有,NVIDIA,WARN,WARN,,xid122,无,无,带内,20s,,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*122""; 参考NVIDIA XID文档"
+GPU,有,NVIDIA,WARN,WARN,,xid123,无,无,带内,20s,,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*123""; 参考NVIDIA XID文档"
+GPU,有,NVIDIA,WARN,WARN,,xid124,无,无,带内,20s,,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*124""; 参考NVIDIA XID文档"
+GPU,有,NVIDIA,WARN,WARN,,xid125,无,无,带内,20s,Inforom FS Failure，InfoROM文件系统失败,无需处理；持续发生则关注硬件健康,否,P2,是,,"nvidia-smi -q | grep -i ""inforom""; dmesg | grep -i ""xid.*125"""
+GPU,有,NVIDIA,WARN,WARN,,xid126-139,无,无,带内,20s,Reserved，保留未使用,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*12[6-9]|xid.*13[0-9]""; 参考NVIDIA XID文档"
+GPU,有,NVIDIA,FATAL,ERROR,NVIDIA卡不可恢复ECC错误,xid140,有,中断,带内,20s,Unrecovered ECC Error，不可恢复的ECC错误,重启机器；持续发生则换卡,是,P0,是,,"nvidia-smi -q -d ECC | grep -i ""uncorrectable""; dmesg | grep -i ""xid.*140"""
+GPU,有,NVIDIA,WARN,WARN,,xid141-142,无,无,带内,20s,Reserved，保留未使用,无需处理,否,P2,是,,"dmesg | grep -i ""xid.*14[1-2]""; 参考NVIDIA XID文档"
+GPU,有,NVIDIA,WARN,WARN,,xid143,无,无,带内,20s,GPU Initialization Failure，GPU初始化失败,有待商榷；重启机器/重装驱动/换卡,否,P1,是,,"dmesg | grep -i ""xid.*143""; nvidia-smi; lspci -vvv -s "<bus>
+GPU,有,Gaudi,WARN,WARN,,ParityError,无,无,带内,20s,带内dmesg/带外都会记录，超过一定阈值会触发RMA（带外监控，FW自动监控是否达到阈值，到阈值会触发RMA置位，一般由BMC监控RMA置位信息），确定RMA了就会返厂重修,有待商榷；关注RMA状态，达到阈值则返厂,否,P2,是,,"dmesg | grep -i ""gaudi.*parity""; ipmitool sel list | grep -i gaudi"
+GPU,有,昇腾,FATAL,FAIL,LPM 检测到调压功能异常,Err80E3A201,有,中断,带内,20s,系统温保，EDP控制功能受影响，影响系统可靠性。,电源故障，建议产品检测电源，进行电源检修，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t health -i <id>"; dmesg | grep -i ""ascend.*80E3A201"""
+GPU,有,昇腾,FATAL,FAIL,HBM高温告警,Err80E0020B,有,中断,带内,20s,温度过高时HBMC会提升刷新率及流控，影响业务性能。,1.建议检查系统散热情况，加强散热，降低HBM器件温度。<br>2.如果不能降低温度，建议重启SoC后重新检测HBM温度，此时还不能降温，建议硬件送修。,是,P0,是,,npu-smi info -t temp -i <id>; npu-smi info -t health -i <id>
+GPU,有,昇腾,FATAL,FAIL,HBM总的多bit ECC隔离地址记录达到64个,Err80E18402,有,中断,带内,20s,HBM故障隔离地址记录达到64个，新增多bit错误将无法隔离，可能会导致启动失败或业务失败。,建议返厂送修。,是,P0,是,,npu-smi info -t ecc -i <id>; npu-smi info -t health -i <id>
+GPU,有,昇腾,ERROR,ERROR,昇腾卡DVPP Dispatch多bit ECC错误,Err81478008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*81478008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡DVPP Dispatch输入错误,Err81478002,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*81478002"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡AIC Dispatch多bitECC错误,Err813B8008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*813B8008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡AIC Dispatch输入错误,Err813B8002,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*813B8002"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡DSA Dispatch多bitECC错误,Err81938008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*81938008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡DSA Dispatch输入错误,Err81938002,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*81938002"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡TS多bit ECC错误,Err80C78008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*80C78008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡SDMAM多bit ECC错误,Err80CF8008,有,中断,带内,20s,SDMA发生多bit ECC，单个任务执行失败。,建议AI任务退出重新执行，若多次失败则建议产品复位SOC。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*80CF8008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡HWTS多bit ECC错误,Err80F78008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*80F78008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡TS Dispatch多bit ECC错误,Err81338008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*81338008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡TS Dispatch输入错误,Err81338002,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*81338002"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡TEEDrv侧硬件多bit ECC错误,Err80E78008,有,中断,带内,20s,Flash操作失败；固件升级功能失败。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*80E78008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡HBM内存颗粒访问多bit ECC错误,Err80E01801,有,中断,带内,20s,访问HBM返回错误数据，可能导致NPU启动失败或者业务失败。,1. 建议AI任务退出重新执行，避免后续业务访问到对应预失效页。<br>2.如果后续频繁碰到错误，建议重启进行隔离后，再次开始AI业务。,是,P0,是,,npu-smi info -t ecc -i <id>; npu-smi info -t error -i <id>
+GPU,有,昇腾,ERROR,ERROR,昇腾卡HBMA多bit ECC错误,Err80F38008,有,中断,带内,20s,可能导致系统停止响应或返回错误数据。,建议复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t ecc -i <id>; npu-smi info -t error -i <id>
+GPU,有,昇腾,ERROR,ERROR,昇腾卡HBMC多bit ECC错误,Err80E18008,有,中断,带内,20s,可能导致系统停止响应或返回错误数据。,建议复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t ecc -i <id>; npu-smi info -t error -i <id>
+GPU,有,昇腾,ERROR,ERROR,昇腾卡L2BUFF多bit ECC错误,Err80CD8008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*80CD8008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡L3T多bit ECC错误,Err80A58008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*80A58008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡TaishanCore多bit ECC错误,Err80A18008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*80A18008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡ROCE多bit ECC错误,Err80BB8008,有,中断,带内,20s,数据错误或可能出现一致性错误，断链，可能会导致模块停止响应。,建议AI任务退出重新执行，若多次失败则建议产品复位SOC。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*80BB8008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡PCIE多bit ECC错误,Err80B98008,有,中断,带内,20s,数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*80B98008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡PCIE Dispatch多bitECC错误,Err81978008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*81978008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡PCIE Dispatch输入错误,Err81978002,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*81978002"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡NIC多bit ECC错误,Err80BD8008,有,中断,带内,20s,报文内容出错或丢失。,建议AI任务退出重新执行，若多次失败则建议产品复位SOC。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*80BD8008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡NIC Dispatch多bit ECC错误,Err81958008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*81958008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡NIC Dispatch输入错误,Err81958002,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修。,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*81958002"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡PERI Dispatch输入错误,Err815F8002,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*815F8002"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡PERI Dispatch多bit ECC错误,Err815F8008,有,中断,带内,20s,系统停止响应，数据错误或可能出现一致性错误。,建议产品复位SOC，如果故障持续建议返厂送修,是,P0,是,,npu-smi info -t error -i <id>"; dmesg | grep -i ""ascend.*815F8008"""
+GPU,有,昇腾,ERROR,ERROR,昇腾卡使能P2P失败,EnableP2PFail,有,无,带内,20s,devdrv_enable_p2p失败，影响业务运行,重启机器；检查驱动版本/内核兼容性,是,P1,是,,npu-smi info -t p2p -i <id>"; dmesg | grep -i ""p2p.*fail"""
+GPU,有,昇腾,WARN,WARN,昇腾卡设备汇报不健康,HwDeviceHealth,无,无,带内,20s,具体影响需要看华为错误码,无需处理；参考错误码文档排查,否,P2,是,,npu-smi info -t health -i <id>; 参考昇腾错误码文档
+GPU,有,昇腾,WARN,WARN,昇腾卡网络部分有异常事件,HwNetworkHealth,无,无,带内,20s,具体影响需要看网络侧,无需处理；检查网络配置/线缆,否,P2,是,,npu-smi info -t network -i <id>; ethtool -S <nic>
+GPU,有,昇腾,WARN,WARN,昇腾卡错误码告警,Err8***,无,无,带内,20s,可忽略错误码,无需处理；参考错误码文档确认,否,P2,是,,npu-smi info -t error -i <id>; 参考昇腾错误码文档
+RAID 逻辑盘,无,否,ERROR,ERROR,逻辑盘状态异常,RaidVdNotReady,无,业务中断风险,带内,2小时,逻辑盘处于不可用状态，或因为多次掉盘导致降级,重建逻辑阵列；检查物理盘状态,是,P0,是,,"MegaCli -LDInfo -Lall -aAll; storcli /c0 show; dmesg | grep -i ""raid.*error"""
+RAID 逻辑盘,无,否,WARN,ERROR,写缓存为 WT 模式,RaidVdWT,无,性能下降,带内,2小时,逻辑盘写缓存由 WriteBack 变为 WriteThrough，性能下降,关注；检查BBU状态/更换BBU/迁移服务后重新设置缓存模式,是,P1,是,,MegaCli -LDGetProp -Cache -LAll -aAll; storcli /c0/v0 show cache
+RAID 逻辑盘,无,否,WARN,ERROR,读缓存为 NRA 模式,RaidVdNra,无,性能下降,带内,2小时,逻辑盘预读模式改变，由 Read Ahead 变 为 No Read Ahead,关注；业务需要时重新设置预读模式,是,P2,是,,MegaCli -LDGetProp -Cache -LAll -aAll; storcli /c0/v0 show cache
+RAID 物理盘,无,否,FATAL,FAIL,预测错误,RaidPdPreErr,有,数据丢失风险,带内,2小时,物理硬盘预测错误超过阀值（1），盘即将故障,换件，提前迁移数据,是,P0,是,,"MegaCli -PDList -aAll | grep -A20 ""Slot Number""; storcli /c0/e0/s0 show"
+RAID 物理盘,无,否,FATAL,FAIL,其他错误,RaidPdOtherErr,有,业务中断风险,带内,2小时,物理硬盘因接口松动或其他原因导 致 Other Error 报错超过阀值 （500）,换件，检查背板/线缆/重插拔,是,P0,是,,"MegaCli -PDList -aAll | grep -i ""error""; storcli /c0/e0/s0 show"
+RAID 物理盘,无,否,FATAL,FAIL,硬盘配置损坏,RaidPdUB,有,业务中断风险,带内,2小时,物理硬盘配置损坏，不能继续使用， Unconfiged Bad 模式,换件；尝试Clear配置后重新加入阵列,是,P0,是,,"MegaCli -PDList -aAll | grep ""Firmware state""; storcli /c0/e0/s0 show"
+RAID 物理盘,无,否,FATAL,FAIL,硬盘损坏,RaidPdFailed,有,业务中断/数据丢失,带内,2小时,物理硬盘配置损坏，不能继续使用，或识别失败,换件，优先迁移数据,是,P0,是,,"MegaCli -PDList -aAll | grep ""Failed""; storcli /c0/e0/s0 show | grep State"
+RAID 物理盘,无,否,FATAL,FAIL,硬盘丢失,RaidPdMissing,有,业务中断/数据丢失,带内,2小时,物理硬盘无法探测，处于缺失状态,换件，检查背板/线缆/供电,是,P0,是,,"MegaCli -PDList -aAll | grep -i ""missing""; lsscsi; storcli /c0 show"
+RAID 物理盘,无,否,FATAL,FAIL,硬盘离线,RaidPdOffline,有,RAID降级风险,带内,2小时,物理盘离线，已被踢出逻辑盘，需要更换,换件，重建阵列,是,P0,是,,"MegaCli -PDList -aAll | grep ""Offline""; storcli /c0/e0/s0 show | grep State"
+RAID 物理盘,无,否,WARN,ERROR,,RaidPdMediaErr,无,性能下降,带内,2小时,逻辑盘写缓存由WriteBack变为WriteThrough；性能下降,1.若对性能不敏感，可以忽略<br>2.若对性能敏感，迁移服务，然后重新设置缓存模式,是,P1,是,,"MegaCli -PDList -aAll | grep -i ""media""; storcli /c0/e0/s0 show | grep -i error"
+RAID 物理盘,无,否,WARN,ERROR,硬盘未配置,RaidPdUG,无,容量未利用,带内,2小时,物理盘未加入 RAID 整列 Unconfigure Good 模式,加入阵列或标记为热备盘；MegaCli -PDMakeGood -PhysDrv [E:S] -Force -a0,是,P2,是,,"MegaCli -PDList -aAll | grep ""Unconfigured Good""; storcli /c0 show"
+RAID 控制器,无,否,FATAL,FAIL,,RaidPsErr,无,RAID功能异常,带内,2小时,RAID控制器故障，阵列管理异常,换件；联系厂商支持,是,P0,是,,"MegaCli -AdpAllInfo -aAll; storcli /c0 show; dmesg | grep -i ""raid.*controller"""
+RAID 控制器,无,否,WARN,ERROR,,RaidVdNoBBUCacheErr,无,性能下降,带内,2小时,逻辑盘预读模式改变，由Read Ahead变为 No ReadAhead,1.若对性能不敏感，可以忽略<br>2.若对性能敏感，迁移服务，然后重新设置缓存模式,是,P1,是,,MegaCli -LDGetProp -Cache -LAll -aAll; storcli /c0/v0 show cache
+RAID 控制器,无,否,WARN,ERROR,,RaidBBUFailed,无,关机丢数据风险,带内,2小时,BBU故障，写缓存策略降级，异常断电有数据丢失风险,无电池无需关注；有BBU则更换BBU,是,P1,是,,MegaCli -AdpBbuCmd -GetBbuStatus -a0; storcli /c0/bbu show
+OCSSD,无,否,WARN,ERROR,,Permission_wrong,无,访问失败风险,带内,2小时,权限模式错误，可能导致IO失败,关注；检查设备权限/用户组配置,是,P2,是,,ls -l /dev/ocssd*; getfacl /dev/ocssd*; id <user>
+CPU,无,否,FATAL,FAIL,,ConfigurationError,有,系统无法启动,带外,15分,配置错误，CPU微码/BIOS配置异常,换件；更新BIOS/微码,是,P0,是,,"ipmitool sel list | grep -i ""cpu.*config""; dmidecode -t processor"
+CPU,无,否,FATAL,FAIL,,IERR,有,系统宕机,带外,15分,CPU内部错误，硬件故障,换件；分析MCE日志定位根因,是,P0,是,,"ipmitool sel list | grep -i ""ierr""; dmesg | grep -i ""mce|machine check"""
+CPU,无,否,FATAL,FAIL,,FRB1BISTfailure,有,系统无法启动,带外,15分,BIOS检测到BIST Failure，CPU自检失败,换件；检查CPU插槽/重插拔,是,P0,是,,"ipmitool sel list | grep -i ""frb1|bist""; BIOS日志"
+CPU,无,否,FATAL,FAIL,,SM BIOS Uncorrectable CPU-complex Error,有,系统宕机,带外,15分,BIOS检测到CPU-complex Error，CPU子系统不可恢复错误,换件；分析SEL日志,是,P0,是,,"ipmitool sel list | grep -i ""cpu-complex""; dmidecode -t processor"
+CPU,无,否,FATAL,FAIL,,Uncorrectable machine check exception,有,系统宕机,带外,15分,CPU MCE 故障，不可纠正的硬件错误,换件；分析mcelog/rasdaemon日志,是,P0,是,,"mcelog --client; ras-mc-ctl --errors; ipmitool sel list | grep -i ""mce"""
+CPU,无,否,FATAL,FAIL,,Correctable machine check error,有,系统稳定性风险,带外,15分,可恢复的硬检错误，CE累积可能升级为UE,换件；关注CE增长趋势,是,P1,是,,"ras-mc-ctl --errors | grep -i ""correctable""; dmesg | grep -i ""mce.*ce"""
+CPU,无,否,WARN,WARN,,ThermalTrip,无,降频/关机风险,带外,15分,CPU温度超出极限温度，触发保护,检查环境温度、风扇等，若非环温引起，发起报修（过保服务器不可维修）,是,P1,是,,"ipmitool sensor | grep -i ""cpu.*temp""; sensors; ipmitool sel list | grep -i ""thermal"""
+CPU,无,否,WARN,ERROR,,CPUCacheErr,无,有宕机风险,带内,2小时,CPU 出现Cache 读写错误，有宕机风险,如果机器宕机，说明Cache故障不可恢复，需要进行CPU更换,是,P1,是,,"dmesg | grep -i ""cache.*error""; ras-mc-ctl --errors"
+CPU,无,否,GOOD,GOOD,,FreqLow,无,性能下降,带内,2小时,CPU降频，可能因温度/功耗/策略导致,关注；检查cpufreq策略/温度/功耗,是,P2,是,,cpufreq-info; cat /proc/cpuinfo | grep MHz; turbostat --interval 5
+CPU,无,否,FATAL,FAIL,,FRB2HanginPOSTfailure,有,系统无法启动,带外,15min,POST时间超时、CPU故障、机器宕机等,换件；检查内存/CPU/主板连接,是,P0,是,,"BIOS POST日志; ipmitool sel list | grep -i ""frb2|post"""
+CPU,无,否,WARN,WARN,,Throttled,无,性能下降,带外,15min,CPU降频，可能因温度/功耗/策略导致,检查环境温度、风扇等，若非环温引起，发起报修（过保服务器不可维修）,是,P2,是,,"ipmitool sensor | grep -i ""throttle""; turbostat --interval 5; cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq"
+内存,无,否,FATAL,FAIL,,UncorrectableECC,有,系统宕机/数据错误,带内,15min,内存不可恢复的 ECC错误超过阀值,换件；分析MCE日志定位DIMM槽位,是,P0,是,,"ras-mc-ctl --errors | grep -i ""uncorrectable""; dmidecode -t memory; ipmitool sel list | grep -i ""mem.*ue"""
+内存,无,否,FATAL,FAIL,,MemoryScrubFailed,有,数据完整性风险,带外,15min,内存清理失败，后台scrub无法纠正错误,换件；检查内存兼容性/重插拔,是,P0,是,,"ipmitool sel list | grep -i ""scrub""; BIOS日志; ras-mc-ctl --errors"
+内存,无,否,FATAL,FAIL,,Parity,有,系统宕机风险,带外,15min,内存条没有安装正确或者内存条内部发生故障,换件；检查内存插槽/重插拔/更换槽位,是,P0,是,,"ipmitool sel list | grep -i ""parity""; dmidecode -t memory; memtest86+"
+内存,无,否,FATAL,FAIL,,MemoryDeviceDisabled,有,容量减少/性能下降,带外,15min,内存隔离故障，BIOS/OS禁用故障DIMM,换件；分析隔离原因,是,P0,是,,"dmidecode -t memory | grep -A10 ""Status.*Disabled""; ipmitool sel list | grep -i ""disabled"""
+内存,无,否,FATAL,FAIL,,ADCBankVLS,有,系统宕机风险,带外,15min,内存产生 无法隔离 的故障，电压/时序异常,换件；检查内存规格/BIOS设置,是,P0,是,,"ipmitool sel list | grep -i ""adcbank|vls""; BIOS日志"
+内存,无,否,FATAL,FAIL,,SDDC,有,系统宕机风险,带内,5min,内存产生 无法隔离 的故障，SDDC机制失效,换件；分析MCE日志,是,P0,是,,"ras-mc-ctl --errors | grep -i ""sddc""; dmesg | grep -i ""edac.*fail"""
+内存,无,否,FATAL,FAIL,,UncorrectableECC,有,系统宕机/数据错误,带外,15min,内存不可恢复错误，UE导致系统崩溃,换件；分析SEL/MCE日志定位故障DIMM,是,P0,是,,"ipmitool sel list | grep -i ""mem.*ue""; ras-mc-ctl --errors; dmidecode -t memory"
+内存,无,否,FATAL,FAIL,,DIMMUE,有,系统宕机/数据错误,带内,5min,内存不可恢复错误，UE导致系统崩溃,换件；分析edac/mce日志,是,P0,是,,"dmesg | grep -i ""edac.*ue""; ras-mc-ctl --errors | grep -i ""uncorrectable"""
+内存,无,否,FAIL/WARN,FAIL,掉内存,DimmAssetMissing,有,容量减少/性能下降,带内,15min,内存数量少于资产记录的数量<br>（云与SCI为FAIL，其他为WARN）,查看内存数量是否少于资产数量，若少，检查丢失的内存/重插拔,是,P1,是,,"dmidecode -t memory | grep -A5 ""Memory Device"" | grep ""Size"" 查看内存数量; lshw -C memory"
+内存,无,否,WARN,WARN,,CorrectableECC,无,系统稳定性风险,带外,15min,内存可恢复的 ECC错误超过阀值，CE累积可能升级为UE,关注；监控CE增长趋势，持续高发则换件,否,P2,是,,"ras-mc-ctl --errors | grep -i ""correctable""; ipmitool sel list | grep -i ""mem.*ce"""
+内存,无,否,WARN,FAIL,,CorrectableECClogginglimitreached,无,监控缺失风险,带外,15min,内存可恢复的 ECC错误超过阀值，日志记录达到上限,关注；清除日志后继续监控，持续高发则换件,否,P2,是,,ras-mc-ctl --clear; ras-mc-ctl --errors; ipmitool sel list
+内存,无,否,WARN,WARN,,DIMMCE,无,系统稳定性风险,带内,5min,内存可恢复的 ECC错误超过阀值,关注；监控CE增长趋势，持续高发则换件,否,P2,是,,"dmesg | grep -i ""edac.*ce""; ras-mc-ctl --errors | grep -i ""correctable"""
+内存,无,否,WARN,WARN,,DIMMCELarge,无,系统稳定性风险,带内,5min,内存可恢复的 ECC错误超过阀值，CE增长过快,关注；立即分析根因，必要时换件,否,P2,是,,"watch -n 60 'ras-mc-ctl --errors'; dmesg | grep -i ""edac.*ce.*large"""
+内存,无,否,WARN,WARN,,Throttled,WARN,性能下降,带外,15min,达到系统设置的内存使用限制，可能触发OOM,关注；优化业务内存使用/扩容,否,P2,是,,"free -h; cat /proc/meminfo | grep -E ""MemAvailable|MemFree""; dmesg | grep -i ""oom"""
+网卡,无,否,FATAL,FAIL,pci地址不可用,NicPciAddr_None,有,网络中断,带内,20s,网卡从PCIe总线消失，lspci看不到,换卡，检查PCIe插槽/供电/重插拔,是,P0,是,,lspci | grep -i eth; ethtool -i <nic>"; dmesg | grep -i ""nic.*removed"""
+网卡,无,否,ERROR,ERROR,端口down超过1分钟（开机30min内端口down超过5分钟）,NetLinkDown,有,网络中断,带内,20s,链路down，业务流量中断,报修。换线或清理光模块；检查对端设备,是,P0,是,,ethtool <nic>" | grep ""Link detected""; ip link show "<nic>"; dmesg | grep -i ""link.*down"""
+网卡,无,否,ERROR,ERROR,每天抖动 >3次（开机30min内的抖动不检测）,NicLinkFlutter,有,网络闪断/丢包,带内,20s,链路频繁up/down，业务不稳定,报修。换线或清理光模块；检查光功率/线缆质量,是,P1,是,,ethtool -S <nic>" | grep -i ""link.*change""; dmesg | grep -i ""link.*up|link.*down"" | wc -l"
+网卡,无,否,ERROR,ERROR,协商速度达不到标称速度,NicSpeedLow,有,带宽不足/性能下降,带内,20s,链路协商速率低于标称值，吞吐量受限,报修。插拔网卡；检查线缆/对端配置/驱动,是,P1,是,,ethtool <nic>" | grep ""Speed:""; ethtool "<nic>" | grep ""Advertised link modes"""
+网卡,无,否,FATAL,FAIL,网卡通道数量未到支持的最大值,NicBusErr_BW,有,降速,带内,20s,PCIe通道数不足，网卡带宽受限,报修。插拔网卡；检查PCIe插槽/BIOS设置,是,P1,是,,lspci -vvv -s <bus>" | grep -i ""LnkSta:""; ethtool -i "<nic> | grep bus-info
+网卡,无,否,FATAL,FAIL,网卡带宽未到支持的最大值,NicBusErr_SP,有,降速,带内,20s,PCIe链路速率不足，网卡带宽受限,报修。插拔网卡；检查PCIe插槽/驱动/固件,是,P1,是,,lspci -vvv -s <bus>" | grep -i ""LnkSta:""; ethtool "<nic>" | grep ""Speed:"""
+网卡,无,否,ERROR,ERROR,两种情况都会报（每次采集间隔1min）：<br>持续性CRC错误：一天月内出现3次以上CRC报错<br>严重CRC错误风暴：单次采集超过1000个CRC报错,NICCRC,有,丢包/重传/性能下降,带内,20s,CRC错误导致数据包校验失败，业务丢包,报修。换线或清理光模块；检查光功率/线缆质量/对端设备,是,P1,是,,ethtool -S <nic>" | grep -i ""crc|fcs""; watch -n 60 'ethtool -S "<nic> | grep crc'
+网卡,无,否,ERROR,ERROR,自适应路由未开启,NicAdRtDis(H800),有,RDMA性能下降,带内,20s,自适应路由未启用，多路径负载均衡失效,执行以下命令开启自适应路由：<br>CentOs系统：service rdma restart<br>Ubuntu系统：systemctl restart rdma,是,P1,是,,ibdev2netdev; ibstatus; cat /sys/class/infiniband//ports//gids/0_type
+网卡,无,否,ERROR,ERROR,Firmware版本不符合要求,NicFWVerErr(SCI),有,兼容性/稳定性风险,带内,20s,固件版本不匹配，可能存在已知bug,SCI机器要求Firmware版本为22.35.2302，只检查xgbe0与xgbe1；升级固件,是,P1,是,,ethtool -i <nic> | grep firmware; 对比版本要求文档
+网卡,无,否,ERROR,ERROR,MTU不符合要求,NicMTUErr(SCI),有,网络性能/兼容性问题,带内,20s,MTU配置不一致，可能导致分片/丢包,SCI机器要求MTU设置为4200；ip link set <nic> mtu 4200,是,P1,是,,ip link show <nic> | grep mtu; ethtool <nic>" | grep ""Maximum MTU"""
+网卡,无,否,ERROR,ERROR,IP地址不唯一（只有SCI采集）,NicNonSingleIpErr(SCI),有,IP冲突/网络异常,带内,20s,同一网段存在重复IP，导致网络冲突,关注；检查DHCP配置/静态IP分配/ARP表,是,P1,是,,ip a show <nic>; arp -n | grep <ip>; tcpdump -i <nic> arp
+网卡,无,否,WARN,WARN,端口down且端口未启用,NicNotUsed,无,无,带内,20s,端口为down状态，但业务不使用该端口，理论对业务无影响,如果业务需要使用该端口，检查是否是未插线缆或线缆松动,否,P2,是,,ethtool -m 网口名 | grep Link; ip a # 查看对应网口是否有ip; cat /sys/class/net/网口名/flags # 第0位为1表示已启用
+网卡,无,否,WARN,WARN,端口down且端口已启用,NicStatusErr,无,业务中断风险,带内,20s,端口为down状态，且存在IP、端口为启用状态，可能对业务有影响,如果业务需要使用该端口，检查是否是未插线缆或线缆松动,否,P2,是,,ethtool -m 网口名 | grep Link; ip a # 查看对应网口是否有ip; cat /sys/class/net/网口名/flags # 第0位为1表示已启用
+网卡,无,否,WARN,WARN,高温,NicHighTemp,有,网卡降频/故障风险,带内,20s,网卡温度过高，可能触发保护降频,关注；检查机房温度/散热/风扇,否,P2,是,,ethtool -m <nic>" | grep -i ""temperature""; sensors; ipmitool sensor | grep -i ""nic.*temp"""
+网卡,无,否,WARN,WARN,掉网卡,NicAssetMissing,有,网络中断/容量减少,带内,20s,网卡数量少于资产记录数量,查看网卡数量是否少于资产数量，若少，检查丢失的网卡/重插拔,否,P1,是,,"lspci | grep -iE 'Eth|Inf' | grep 00.0; lshw -C network; dmidecode -t system | grep -i ""asset"""
+网卡,无,否,GOOD,GOOD,出光功率过高或过低,tx_power_is_low_alarm <br>tx_power_is_high_alarm<br>tx_power_is_low_warning<br>tx_power_is_high_warning,无,链路质量风险,带内,12h,光模块发射功率异常，可能影响链路稳定性,换线或清理光模块（确定有感情况下）；检查光模块健康度,否,P2,是,,ethtool -m <nic>" | grep -E ""Tx Power|Laser tx power""; 对比光模块规格书"
+网卡,无,否,GOOD,GOOD,入光功率过高或过低,rx_power_is_low_alarm<br>rx_power_is_high_alarm<br>rx_power_is_low_warning<br>rx_power_is_high_warning,无,链路质量风险,带内,12h,光模块接收功率异常，可能影响链路稳定性,换线或清理光模块（确定有感情况下）；检查对端发射功率/光纤损耗,否,P2,是,,ethtool -m <nic>" | grep -E ""Rx Power|Laser rx power""; 对比光模块规格书"
+网卡,无,否,GOOD,GOOD,电压过高或过低,voltage_is_low_alarm<br>voltage_is_high_alarm<br>voltage_is_low_warning<br>voltage_is_high_warning,无,硬件稳定性风险,带内,12h,光模块供电电压异常，可能影响模块工作,关注；检查电源/背板供电/更换光模块,否,P2,是,,ethtool -m <nic>" | grep -i ""voltage""; 对比光模块规格书"
+网卡,无,否,GOOD,GOOD,温度过高或过低,temperature_is_low_alarm<br>temperature_is_high_alarm<br>temperature_is_low_warning<br>temperature_is_high_warning,无,硬件稳定性风险,带内,12h,光模块温度异常，可能影响性能/寿命,关注；检查机房温度/散热/更换光模块,否,P2,是,,ethtool -m <nic>" | grep -i ""temperature""; 对比光模块规格书"
+温度,无,否,WARN,WARN,,UpperNoncriticalgoinglow,无,无,带外,15分,温度从非临界高值下降，正常恢复过程,关注；确认温度趋势是否正常,否,P2,是,,"ipmitool sensor | grep -i ""temp""; sensors; 监控温度历史曲线"
+温度,无,否,WARN,WARN,,UpperCriticalgoinghigh,无,降频/关机风险,带外,15分,超温-严重，达到Critical阈值,关注；检查散热/风扇/机房温度/优化负载,否,P1,是,【POC】车和家仿真7w83 ebc测试,"ipmitool sensor | grep -i ""critical.*temp""; sensors; ipmitool sel list | grep -i ""thermal"""
+温度,无,否,WARN,WARN,,UpperCriticalgoinglow,无,无,带外,15分,温度从临界高值下降，保护恢复过程,关注；确认温度是否稳定在安全范围,否,P2,是,,"ipmitool sensor | grep -i ""temp""; 监控温度历史曲线"
+温度,无,否,WARN,WARN,,UpperNoncriticalgoinghigh,无,性能下降风险,带外,15分,超温-中度，达到Non-critical阈值,关注；检查散热/风扇/机房温度,否,P2,是,,"ipmitool sensor | grep -i ""noncritical.*temp""; sensors; 监控温度趋势"
+风扇,无,否,FATAL,FAIL,,DeviceAbsent,无,散热失效风险,带外,15分,风扇不在位，机箱散热能力下降,换件；检查风扇插槽/供电/重插拔,是,P0,是,,"ipmitool sensor | grep -i ""fan.*absent""; ipmitool sel list | grep -i ""fan.*missing"""
+风扇,无,否,WARN,WARN,,LowerCriticalgoinglow,无,散热不足风险,带外,15分,Fan转速过低-严重，低于Critical阈值,关注；检查风扇/供电/控制策略；必要时换件,是,P1,是,,"ipmitool sensor | grep -i ""fan.*critical""; ipmitool sel list | grep -i ""fan.*low"""
+风扇,无,否,WARN,WARN,,LowerNoncriticalgoinghigh,无,无,带外,15分,风扇转速从非临界低值上升，正常恢复过程,关注；确认转速趋势是否正常,否,P2,是,,"ipmitool sensor | grep -i ""fan""; 监控转速历史曲线"
+风扇,无,否,WARN,WARN,,LowerNoncriticalgoinglow,无,散热不足风险,带外,15分,Fan转速过低-中度，低于Non-critical阈值,关注；检查风扇/供电/控制策略,是,P2,是,,"ipmitool sensor | grep -i ""fan.*noncritical""; 监控转速趋势"
+风扇,无,否,WARN,WARN,,LowerNonrecoverablegoinglow,无,散热失效风险,带外,15分,风扇转速低于不可恢复阈值，散热严重不足,关注；立即检查风扇/供电；必要时停机保护,否,P1,是,,"ipmitool sensor | grep -i ""fan.*nonrecoverable""; ipmitool sel list | grep -i ""fan.*fail"""
+电源,无,否,ERROR,ERROR,,RedundancyDegraded,无,冗余丢失风险,带外,15分,电源冗余降级，单电源故障将导致宕机,关注；检查电源模块/供电线路；及时更换故障电源,统计看下，暂无计入,P1,是,,"ipmitool sensor | grep -i ""psu.*redundancy""; ipmitool sel list | grep -i ""redundancy"""
+电源,无,否,ERROR/WARN,ERROR,,PowerSupplyAClost,无,电源告警,带外,15分,电源告警，AC输入丢失,关注（电源告警一般会有现场巡检，异常电源会进行在线电源模块插拔恢复，若恢复不了，则发起报修）,统计看下，暂无计入,P1,是,,"ipmitool sensor | grep -i ""psu.*ac""; ipmitool sel list | grep -i ""ac.*lost"""
+电源,无,否,FATAL,FAIL,,Failuredetected,无,电源故障,带外,15分,电源故障，模块失效,换件；检查供电线路/电源模块,统计看下，暂无计入,P0,是,,"ipmitool sensor | grep -i ""psu.*fail""; ipmitool sel list | grep -i ""power.*fail"""
+电源,无,否,ERROR,ERROR,,PowerSupplyInactive,无,冗余丢失风险,带外,15分,电源进入冷备份状态触发此日志,关注（电源告警一般会有现场巡检，异常电源会进行在线电源模块插拔恢复，若恢复不了，则发起报修）,统计看下，暂无计入,P1,是,,"ipmitool sensor | grep -i ""psu.*inactive""; ipmitool sel list | grep -i ""power.*inactive"""
+电源,无,否,ERROR,ERROR,,Predictivefailure,无,电源故障预警,带外,15分,PSU故障预警，模块即将失效,关注；提前准备备件，计划更换,统计看下，暂无计入,P1,是,,"ipmitool sel list | grep -i ""predictive""; ipmitool sensor | grep -i ""psu.*warn"""
+电源,无,否,ERROR,ERROR,,AClostoroutofrange,无,电源告警(因输入电压过低导致的电源关闭),带外,15分,电源告警，AC输入电压异常,关注；检查机房供电/PDU/UPS,统计看下，暂无计入,P1,是,,"ipmitool sensor | grep -i ""psu.*voltage""; ipmitool sel list | grep -i ""ac.*range"""
+电源,无,否,ERROR,ERROR,,ACoutofrangebutpresent,无,电源告警 (输入过压故障，输入低压故障),带外,15分,电源告警，AC输入电压超限但仍在位,关注；检查机房供电/PDU/UPS；联系电力部门,统计看下，暂无计入,P1,是,,"ipmitool sensor | grep -i ""psu.*voltage""; ipmitool sel list | grep -i ""ac.*out.*range"""
+电源,无,否,ERROR,ERROR,,RedundancyLost,无,冗余丢失,带外,15分,电源冗余完全丢失，单点故障风险,关注；立即检查电源模块/供电线路；及时恢复冗余,统计看下，暂无计入,P0,是,,"ipmitool sensor | grep -i ""psu.*redundancy.*lost""; ipmitool sel list | grep -i ""redundancy.*lost"""
+主板,无,否,FATAL,FAIL,,BusUncorrectableerror,有,系统宕机,带外,15分,BUS 不可纠正错误，主板总线硬件故障,换件；分析SEL/MCE日志定位故障部件,是,P1,是,,"ipmitool sel list | grep -i ""bus.*uncorrectable""; dmesg | grep -i ""mce.*bus"""
+主板,无,否,FATAL,FAIL,,BusFatalError,有,系统宕机,带外,15分,BUS Fatal 错误，主板总线严重故障,换件；分析SEL日志/联系厂商,是,P1,是,,"ipmitool sel list | grep -i ""bus.*fatal""; BIOS日志"
+主板,无,否,FATAL,FAIL,,PCIPERR,有,系统宕机,带外,15分,PCIE 中断触发，PCIe总线奇偶校验错误,换件；检查PCIe设备/重插拔/更新固件,是,P0,是,,"ipmitool sel list | grep -i ""pci.*perr""; dmesg | grep -i ""aer.*perr"""
+主板,无,否,FATAL,FAIL,,PCISERR,有,系统宕机,带外,15分,PCIe系统错误，严重总线故障,换件；分析AER/MCE日志,是,P0,是,,"ipmitool sel list | grep -i ""pci.*serr""; dmesg | grep -i ""aer.*serr"""
+主板,无,否,FATAL,FAIL,,SMBIOSUncorrectableCPU-complexError,有,系统宕机,带外,15分,CPU子系统不可纠正错误，主板/CPU故障,换件；分析SEL/dmidecode日志,是,P0,是,,"ipmitool sel list | grep -i ""cpu-complex""; dmidecode -t processor"
+主板,无,否,FATAL,FAIL,,UnrecoverableIDEdevicefailure,有,系统无法启动,带外,15分,IDE设备不可恢复故障，启动盘异常,换件；检查SATA/SAS线缆/更换启动盘,是,P0,是,,"ipmitool sel list | grep -i ""ide.*fail""; dmesg | grep -i ""ata.*error"""
+主板,无,否,FATAL,FAIL,,Undeterminedsystemhardwarefailure,有,系统宕机,带外,15分,不确定的硬件故障，系统级异常,换件；全面分析SEL/BIOS/OS日志,是,P0,是,,"ipmitool sel list; BIOS日志; dmesg | grep -i ""hardware.*fail"""
+主板,无,否,FATAL,FAIL,,Unrecoverablesystemboardfailure,有,系统宕机,带外,15分,不可恢复的主板故障，主板硬件失效,换件；联系厂商支持,是,P0,是,,"ipmitool sel list | grep -i ""system.*board.*fail""; BIOS POST日志"
+主板,无,否,FATAL,FAIL,,Unrecoverablevideocontrollerfailure,有,显示输出异常,带外,15分,不可恢复的视频控制器故障（数据中心卡通常无显示输出）,换件；若为计算节点可忽略,是,P1,是,,"ipmitool sel list | grep -i ""video.*fail""; lspci | grep -i vga"
+主板,无,否,FATAL,FAIL,,Uncorrectablemachinecheckexception,有,系统宕机,带外,15分,不可纠正的MCE，系统级硬件故障,换件；分析mcelog/rasdaemon日志,是,P0,是,,"mcelog --client; ras-mc-ctl --errors; ipmitool sel list | grep -i ""mce"""
+主板,无,否,FATAL,FAIL,,TransitiontoNonrecoverablefromlesssever,有,系统宕机风险,带外,15分,检测到主板故障，状态从轻微升级为不可恢复,关注；立即分析根因，必要时停机保护,是,P0,是,,"ipmitool sel list | grep -i ""transition.*nonrecoverable""; 监控SEL事件序列"
+主板,无,否,WARN,WARN,,TransitiontoNoncriticalfrommoresevere,无,无,带外,15分,状态从严重降级为非临界，故障恢复过程,关注；确认系统是否完全恢复,否,P2,是,,"ipmitool sel list | grep -i ""transition.*noncritical""; 监控SEL事件序列"
+主板,无,否,WARN,WARN,,SystemFirmwareError,有,系统稳定性风险,带外,15分,系统固件错误，BIOS/BMC固件异常,关注；升级固件/联系厂商,是,P1,是,,"ipmitool sel list | grep -i ""firmware.*error""; ipmitool mc info; BIOS版本"
+主板,无,否,WARN,WARN,,NMI/Diag Interrupt,无,系统调试中断,带外,15分,中断错误，NMI调试中断触发,关注；确认是否为人为调试触发,是,P2,是,,"dmesg | grep -i ""nmi""; ipmitool sel list | grep -i ""nmi"""
+主板,无,否,WARN,WARN,,TransitiontoDegraded,无,性能降级风险,带外,15分,设备降级，部分功能不可用,关注；分析降级原因，计划修复,是,P1,是,,"ipmitool sel list | grep -i ""degraded""; ipmitool sensor"
+主板,无,否,WARN,WARN,,BusCorrectableerror,无,系统稳定性风险,带外,15分,BUS 可纠正错误，总线CE累积可能升级为UE,无需处理 关注；监控CE增长趋势,是,P2,是,,"ipmitool sel list | grep -i ""bus.*correctable""; ras-mc-ctl --errors"
+主板,无,否,WARN,WARN,,FRUfailure,无,FRU信息异常,带外,15分,BMC FRU故障，资产信息读取异常,关注；重写FRU/更换主板,否,P2,是,,"ipmitool fru print; ipmitool sel list | grep -i ""fru.*fail"""
+主板,无,否,FATAL,FAIL,,TransitiontoCriticalfromlesssever,有,系统宕机风险,带外,15分,检测到主板故障，状态从轻微升级为临界,关注；立即分析根因，必要时停机保护,是,P0,是,,"ipmitool sel list | grep -i ""transition.*critical""; 监控SEL事件序列"
+硬盘背板,无,否,WARN,WARN,,DriveFault,无,硬盘通信风险,带外,15分,硬盘驱动错误（电信号，散热），背板异常,关注；检查背板供电/信号/散热；必要时换件,否,P1,是,,"ipmitool sel list | grep -i ""drive.*fault""; lsscsi; dmesg | grep -i ""backplane"""
+其他,无,否,FATAL,FAIL,,DeviceFault,无,设备功能异常,带外,15分,通用设备故障告警,换件；分析具体设备日志,是,P0,是,,"ipmitool sel list | grep -i ""device.*fault""; 根据设备类型进一步排查"
+其他,无,否,FATAL,FAIL,,DeviceAbsent,无,设备缺失,带外,15分,设备不在位，资产缺失,换件；检查设备插槽/连接,是,P0,是,,"ipmitool sel list | grep -i ""device.*absent""; lshw; dmidecode"
+其他,无,否,FATAL,FAIL,,ConfigError,无,配置异常,带外,15分,配置错误，设备无法正常工作,换件/重配；检查BIOS/BMC/OS配置,是,P1,是,,"ipmitool sel list | grep -i ""config.*error""; BIOS/BMC配置界面"
+其他,无,否,FATAL,FAIL,,InCriticalArray,无,阵列降级风险,带外,15分,RAID阵列处于Critical状态，再掉盘将丢失数据,换件；立即重建阵列,是,P0,是,,"MegaCli -LDInfo -Lall -aAll; storcli /c0 show; ipmitool sel list | grep -i ""critical.*array"""
+其他,无,否,FATAL,FAIL,,InFailedArray,无,阵列失效,带外,15分,RAID阵列Failed，数据不可访问,换件；尝试恢复阵列/从备份恢复数据,是,P0,是,,"MegaCli -LDInfo -Lall -aAll; storcli /c0 show; ipmitool sel list | grep -i ""failed.*array"""
+其他,无,否,FATAL,FAIL,,Installationfailed,无,安装失败,带外,15分,设备安装/初始化失败,换件；检查安装流程/兼容性,是,P1,是,,"ipmitool sel list | grep -i ""install.*fail""; 安装日志"
+其他,无,否,FATAL,FAIL,,InstallError,无,安装异常,带外,15分,安装过程报错，配置/兼容性问题,换件/重配；检查安装文档/日志,是,P1,是,,"ipmitool sel list | grep -i ""install.*error""; 安装日志"
+其他,无,否,FATAL,FAIL,,Predictivefailure,无,设备故障预警,带外,15分,预测性故障告警，设备即将失效,换件；提前准备备件，计划更换,是,P1,是,,"ipmitool sel list | grep -i ""predictive""; smartctl -H /dev/sdx"
+其他,无,否,FATAL,FAIL,,SystemFirmwareError,无,固件异常,带外,15分,系统固件错误，BMC/BIOS/CPLD异常,换件/升级；联系厂商支持,是,P1,是,,"ipmitool sel list | grep -i ""firmware.*error""; ipmitool mc info; BIOS版本"
+其他,无,否,WARN,WARN,,AClost,无,供电异常,带外,15分,AC输入丢失，电源告警,关注；检查机房供电/PDU/UPS,否,P1,是,,"ipmitool sensor | grep -i ""psu.*ac""; ipmitool sel list | grep -i ""ac.*lost"""
+其他,无,否,WARN,WARN,,NMIDiagInterrupt,无,调试中断,带外,15分,NMI调试中断，系统调试触发,关注；确认是否为人为调试,否,P2,是,,"dmesg | grep -i ""nmi""; ipmitool sel list | grep -i ""nmi"""
+其他,无,否,WARN,WARN,,TransitiontoNonrecoverable,无,设备失效风险,带外,15分,设备状态升级为不可恢复，功能丧失,关注；立即分析根因，计划更换,否,P1,是,,"ipmitool sel list | grep -i ""transition.*nonrecoverable""; 监控设备状态"
+其他,无,否,WARN,WARN,,TransitiontoOffLine,无,设备离线,带外,15分,设备离线，管理通道中断,关注；检查设备供电/网络/重插拔,否,P1,是,,"ipmitool sel list | grep -i ""offline""; ping "<bmc_ip>; ipmitool -H <bmc_ip> mc info
+其他,无,否,WARN,WARN,,UpperNonrecoverablegoinghigh,无,超限风险,带外,15分,传感器值超过不可恢复高阈值,关注；检查传感器/环境/设备状态,否,P1,是,,"ipmitool sensor | grep -i ""nonrecoverable.*high""; 监控传感器历史曲线"
+其他,无,否,WARN,WARN,,UpperNonrecoverablegoinglow,无,超限风险,带外,15分,传感器值超过不可恢复低阈值,关注；检查传感器/环境/设备状态,否,P1,是,,"ipmitool sensor | grep -i ""nonrecoverable.*low""; 监控传感器历史曲线"
+其他,无,否,FATAL,FAIL,CPU处理PcieCE耗时异常,CEErrorFFDC,是,系统稳定性风险,带外,24小时,pcie设备CE错误累积，存在硬件隐患,报修，分析FFDC日志定位故障部件,是,P2,是,暂无发现此故障历史带外记录,"ipmitool sel list | grep -i pcie; dmesg | grep -i ""aer|pcie""; FFDC日志分析"
+监控插件,无,否,WARN / ERROR,WARN / ERROR,HAS的GPU监控插件运行超时,GPUTimeOut*,无,无,带内,20s,无影响。可能是GPU驱动故障导致，联系@张文普 确认,关注；检查驱动/插件配置/重启插件,否,P2,是,,"ps aux | grep has; systemctl status has-gpu; dmesg | grep -i ""has.*timeout"""
+监控插件,无,否,WARN,WARN,HAS的NIC监控插件运行超时,NICTimeOut*,无,无,带内,20s,无影响,关注；检查驱动/插件配置/重启插件,否,P2,是,,"ps aux | grep has; systemctl status has-nic; dmesg | grep -i ""has.*timeout"""

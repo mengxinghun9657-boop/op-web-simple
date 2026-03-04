@@ -1,0 +1,5 @@
+# Gemini需要在此目录生成Pinia状态管理:
+# - operational.js    (运营分析状态)
+# - resource.js       (资源分析状态)
+# - monitoring.js     (监控分析状态)
+# - eip.js           (EIP监控状态)

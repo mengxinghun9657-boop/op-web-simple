@@ -1,0 +1,33 @@
+# 依赖目录 - 避免传输到 Docker context
+node_modules
+
+# 构建产物
+dist
+
+# 开发文件
+.git
+.gitignore
+*.md
+.DS_Store
+
+# IDE 配置
+.vscode
+.idea
+*.swp
+*.swo
+
+# 测试文件
+coverage
+*.test.js
+*.spec.js
+__tests__
+
+# 日志
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 环境文件（敏感信息）
+.env.local
+.env.*.local

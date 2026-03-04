@@ -1,0 +1,21 @@
+{
+  "base_url": "https://console.bce.baidu.com/api/cce/service/v2/grafana/proxy",
+  "datasource_id": 166,
+  "headers": {
+    "Accept": "application/json, text/plain, */*",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "X-Grafana-Org-Id": "1",
+    "Referer": "https://console.bce.baidu.com/api/cce/service/v2/grafana/proxy/d/SecZmPmSz/ji-qun-gai-lan"
+  },
+  "cookies": {
+    "bce-session": "681700d37468494182cc52e535b9f6c5abf9814528a647c180e7955ffa65f499|3596b188515c359d07164efc0304d7c0",
+    "bce-login-accountid": "f008db4751894afe9b851e32a2068335",
+    "bce-org-id": "c357ef63d0624d5fbeb2b2d72c9973d9",
+    "bce-sessionid": "000d548c6e0a29c4335b6508e072c0754ad",
+    "JSESSIONID": "E24C345EE52EA7EFE1428A44F7A652F7"
+  },
+  "query_config": {
+    "default_time_range": 900,
+    "query_step": 15
+  }
+}

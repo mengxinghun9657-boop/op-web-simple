@@ -1,0 +1,161 @@
+/**
+ * 全局光效样式 - 优化版
+ */
+
+:root {
+  --glow-color: rgba(100, 180, 220, 0.6);
+  --glow-color-strong: rgba(100, 180, 220, 0.8);
+  --glow-dark: #333;
+}
+
+/* ==================== 按钮光效 ==================== */
+.glow-button,
+.glow-btn {
+  position: relative;
+  overflow: visible;
+  --x: 50%;
+  --y: 50%;
+  z-index: 0;
+}
+
+body:not(.glow-disabled) .glow-button::before,
+body:not(.glow-disabled) .glow-btn::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: 10px;
+  background: radial-gradient(
+    circle at var(--x, 50%) var(--y, 50%),
+    var(--glow-color) 0%,
+    var(--glow-dark) 100%
+  );
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.4s ease, background 0.15s ease;
+}
+
+body:not(.glow-disabled) .el-button.glow-btn {
+  overflow: visible;
+}
+
+body:not(.glow-disabled) .el-button.glow-btn:hover::before {
+  opacity: 0.9;
+}
+
+/* ==================== 卡片光效 ==================== */
+.glow-card {
+  position: relative;
+  overflow: hidden;
+  --x: 50%;
+  --y: 50%;
+}
+
+body:not(.glow-disabled) .glow-card::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  z-index: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle 500px at var(--x) var(--y),
+    var(--glow-color) 0%,
+    transparent 60%
+  );
+  opacity: 0.12;
+  pointer-events: none;
+  transition: opacity 0.4s ease, background 0.15s ease;
+}
+
+body:not(.glow-disabled) .glow-card:hover::before {
+  opacity: 0.2;
+}
+
+/* ==================== 菜单项光效 ==================== */
+.glow-menu-item {
+  position: relative;
+  overflow: hidden;
+  --x: 50%;
+  --y: 50%;
+}
+
+body:not(.glow-disabled) .glow-menu-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(
+    circle 250px at var(--x) var(--y),
+    var(--glow-color) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, background 0.15s ease;
+}
+
+body:not(.glow-disabled) .glow-menu-item:hover::before {
+  opacity: 0.18;
+}
+
+body:not(.glow-disabled) .glow-menu-item.active::before,
+body:not(.glow-disabled) .glow-menu-item.is-active::before {
+  opacity: 0.22;
+}
+
+/* ==================== 输入框光效 ==================== */
+body:not(.glow-disabled) .glow-input .el-input__wrapper,
+body:not(.glow-disabled) .glow-input .el-select__wrapper,
+body:not(.glow-disabled) .glow-input .el-textarea__inner {
+  transition: box-shadow 0.3s ease;
+}
+
+body:not(.glow-disabled) .glow-input .el-input__wrapper:hover,
+body:not(.glow-disabled) .glow-input .el-input__wrapper:focus-within,
+body:not(.glow-disabled) .glow-input .el-select__wrapper:hover,
+body:not(.glow-disabled) .glow-input .el-textarea__inner:hover,
+body:not(.glow-disabled) .glow-input .el-textarea__inner:focus {
+  box-shadow: 0 0 12px var(--glow-color) !important;
+}
+
+/* ==================== 表格行光效 ==================== */
+body:not(.glow-disabled) .glow-table .el-table__row:hover {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(100, 180, 220, 0.08) 0%,
+    transparent 100%
+  ) !important;
+}
+
+/* ==================== 禁用状态 ==================== */
+body.glow-disabled .glow-button::before,
+body.glow-disabled .glow-btn::before,
+body.glow-disabled .glow-card::before,
+body.glow-disabled .glow-menu-item::before {
+  display: none !important;
+}
+
+/* ==================== 性能优化 ==================== */
+.glow-button, .glow-btn, .glow-card, .glow-menu-item {
+  will-change: auto;
+}
+
+.glow-button::before, .glow-btn::before, .glow-card::before, .glow-menu-item::before {
+  will-change: opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* 移动端降低强度 */
+@media (max-width: 768px) {
+  body:not(.glow-disabled) .glow-card::before {
+    opacity: 0.08;
+  }
+}
+
+/* 减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .glow-button::before, .glow-btn::before, .glow-card::before, .glow-menu-item::before {
+    transition: none !important;
+  }
+}

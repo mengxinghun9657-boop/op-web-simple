@@ -94,10 +94,14 @@ class ERNIEClient:
         self.last_request_time = 0.0  # 上次请求时间戳
         self._rate_limit_lock = asyncio.Lock()  # 频率限制锁
         
-        # 创建 HTTP 客户端
+        # 创建 HTTP 客户端（禁用连接池复用，避免连接关闭错误）
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(timeout),
-            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
+            limits=httpx.Limits(
+                max_keepalive_connections=0,  # 禁用 keep-alive，每次请求使用新连接
+                max_connections=10
+            ),
+            http2=False  # 禁用 HTTP/2，使用更稳定的 HTTP/1.1
         )
         
         logger.info(f"ERNIEClient initialized: url={self.api_url}, primary_model={self.primary_model}, timeout={timeout}s, max_retries={max_retries}")
@@ -171,7 +175,7 @@ class ERNIEClient:
     @retry(
         stop=stop_after_attempt(3),  # 最多尝试 3 次（1 次原始 + 2 次重试）
         wait=wait_exponential(multiplier=1, min=1, max=10),  # 指数退避：1s, 2s, 4s
-        retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError)),
+        retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError, RuntimeError)),  # 增加 RuntimeError 重试
         reraise=True
     )
     async def _make_request(
@@ -296,6 +300,22 @@ class ERNIEClient:
         
         except Exception as e:
             elapsed_time = (time.time() - start_time) * 1000
+            
+            # 特殊处理 RuntimeError（TCP 连接关闭错误）
+            if isinstance(e, RuntimeError) and "TCPTransport closed" in str(e):
+                logger.warning(f"ERNIE API connection closed: model={self.current_model}, elapsed_time={elapsed_time:.2f}ms, will retry with new connection")
+                # 关闭并重新创建客户端
+                await self.client.aclose()
+                self.client = httpx.AsyncClient(
+                    timeout=httpx.Timeout(self.timeout),
+                    limits=httpx.Limits(
+                        max_keepalive_connections=0,
+                        max_connections=10
+                    ),
+                    http2=False
+                )
+                raise  # 让 tenacity 重试
+            
             logger.error(f"ERNIE API unexpected error: model={self.current_model}, elapsed_time={elapsed_time:.2f}ms, error={str(e)}")
             
             # 检查是否是额度相关错误

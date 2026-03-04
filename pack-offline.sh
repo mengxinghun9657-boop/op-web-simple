@@ -293,19 +293,23 @@ done
 
 # 导入故障手册（如果存在）
 if [ -f "knowledge/故障维修手册.csv" ]; then
-    echo "� 导入故障手册..."
-    docker compose -f docker-compose.prod.yml exec backend python3 -c "
+    echo "📚 导入故障手册..."
+    # 等待后端服务完全启动
+    sleep 10
+    docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
 import sys
 sys.path.append('/app')
 from scripts.import_fault_manual import main
 main()
-" 2>/dev/null || echo "⚠️  故障手册导入失败，请手动执行"
+" || echo "⚠️  故障手册导入失败，请手动执行"
 fi
 
 # 初始化系统配置
 if [ -f "init_system_configs.py" ]; then
     echo "⚙️  初始化系统配置..."
-    docker compose -f docker-compose.prod.yml exec backend python3 init_system_configs.py 2>/dev/null || echo "⚠️  系统配置初始化失败，请手动执行"
+    # 确保后端服务已完全启动
+    sleep 5
+    docker compose -f docker-compose.prod.yml exec -T backend python3 init_system_configs.py || echo "⚠️  系统配置初始化失败，请手动执行"
 fi
 
 echo ""

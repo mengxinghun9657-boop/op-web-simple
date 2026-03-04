@@ -209,11 +209,41 @@ class FilenameCorrectorService:
                 logger.info(f"[DRY RUN] 将修正文件名: {filename} -> {new_filename}")
                 return str(new_file_path)
             
-            # 执行重命名
+            # 执行重命名（如果是只读文件系统，则复制到可写的临时目录）
             try:
                 os.rename(file_path, new_file_path)
                 logger.info(f"✅ 文件名修正成功: {filename} -> {new_filename}")
                 return str(new_file_path)
+            except OSError as e:
+                # 只读文件系统错误（Errno 30），复制到可写的临时目录
+                if e.errno == 30:  # Read-only file system
+                    logger.info(f"⚠️  源目录为只读，复制文件到临时目录: {filename} -> {new_filename}")
+                    try:
+                        import shutil
+                        import tempfile
+                        
+                        # 创建临时目录（在 /app/data/alerts_corrected/ 下）
+                        temp_dir = Path("/app/data/alerts_corrected")
+                        temp_dir.mkdir(parents=True, exist_ok=True)
+                        
+                        # 目标文件路径（使用正确的文件名）
+                        corrected_file_path = temp_dir / new_filename
+                        
+                        # 检查目标文件是否已存在
+                        if corrected_file_path.exists():
+                            logger.warning(f"临时目录中目标文件已存在，跳过: {new_filename}")
+                            return str(corrected_file_path)
+                        
+                        # 复制文件到临时目录
+                        shutil.copy2(file_path, corrected_file_path)
+                        logger.info(f"✅ 文件复制成功（只读文件系统）: {filename} -> {corrected_file_path}")
+                        return str(corrected_file_path)
+                    except Exception as copy_error:
+                        logger.error(f"❌ 文件复制失败: {filename} -> {new_filename}, 错误={copy_error}")
+                        return None
+                else:
+                    logger.error(f"❌ 文件重命名失败: {filename} -> {new_filename}, 错误={e}")
+                    return None
             except Exception as e:
                 logger.error(f"❌ 文件重命名失败: {filename} -> {new_filename}, 错误={e}")
                 return None

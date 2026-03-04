@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from loguru import logger
 
 from app.services.alert.alert_processor import AlertProcessor
-from app.services.alert.filename_corrector import get_filename_corrector
+from app.services.alert.file_sync_service import get_file_sync_service
 from app.core.config_alert import settings
 
 
@@ -33,6 +33,7 @@ class PathSpecificHandler(FileSystemEventHandler):
         self.redis_client = redis_client  # Redis客户端，用于跨进程去重
         self.redis_key_prefix = "alert:processed_file:"  # Redis key前缀
         self.redis_ttl = 3600  # 1小时过期（避免Redis无限增长）
+        self.file_sync_service = get_file_sync_service()  # 文件同步服务
     
     def try_acquire_file_lock(self, file_path: str) -> bool:
         """
@@ -78,17 +79,16 @@ class PathSpecificHandler(FileSystemEventHandler):
         return fnmatch.fnmatch(filename, self.path_config.file_pattern)
     
     def process_file(self, file_path: str):
-        """处理文件（文件级别去重 + 文件名修正）"""
+        """处理文件（文件同步 + 文件级别去重）"""
         # 验证文件格式
         if not self.match_pattern(file_path):
             return
         
-        # 步骤1: 文件名修正（如果需要）
-        corrector = get_filename_corrector()
-        corrected_path = corrector.correct_filename_if_needed(file_path, dry_run=False)
+        # 步骤1: 文件同步（从只读源目录复制到可写处理目录，支持文件名修正）
+        synced_file_path = self.file_sync_service.sync_file(file_path)
         
-        # 如果文件名被修正，使用新的路径
-        actual_file_path = corrected_path if corrected_path else file_path
+        # 如果同步失败，使用原文件路径
+        actual_file_path = synced_file_path if synced_file_path else file_path
         
         # 使用Redis原子操作获取文件处理锁（防止多worker重复处理）
         if not self.try_acquire_file_lock(actual_file_path):
@@ -96,8 +96,8 @@ class PathSpecificHandler(FileSystemEventHandler):
             return
         
         logger.info(f"检测到新文件: {actual_file_path} (路径: {self.path_config.path}, 优先级: {self.path_config.priority})")
-        if corrected_path:
-            logger.info(f"文件名已修正: {file_path} -> {actual_file_path}")
+        if synced_file_path and synced_file_path != file_path:
+            logger.info(f"文件已同步并修正: {file_path} -> {actual_file_path}")
         
         try:
             # 使用线程池执行异步任务

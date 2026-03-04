@@ -161,7 +161,8 @@ services:
       - backend_logs:/app/logs
       - backend_data:/app/data
       - backend_vector_store:/app/vector_store
-      - /data/HAS_file/changan:/app/alerts:ro
+      - /data/HAS_file/changan:/app/alerts_source:ro  # 源文件目录（只读）
+      - backend_alerts:/app/alerts  # 处理目录（读写，支持文件名修正）
       - /data/HAS_file:/data/HAS_file:ro
     depends_on:
       mysql:
@@ -224,3 +225,4 @@ volumes:
   backend_logs:
   backend_data:
   backend_vector_store:
+  backend_alerts:  # 新增：告警文件处理目录（读写，支持文件名修正）

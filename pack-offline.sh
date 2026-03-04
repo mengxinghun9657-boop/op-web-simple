@@ -291,24 +291,60 @@ for i in {1..30}; do
     sleep 2
 done
 
+# 等待后端容器完全启动并能连接到MySQL
+echo "等待后端服务启动..."
+for i in {1..30}; do
+    # 在后端容器内测试MySQL连接
+    if docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
+import pymysql
+try:
+    conn = pymysql.connect(host='mysql', user='root', password='Zhang~~1', database='cluster_management')
+    conn.close()
+    exit(0)
+except:
+    exit(1)
+" 2>/dev/null; then
+        echo "✓ 后端服务已启动，MySQL连接正常"
+        break
+    fi
+    if [ $i -eq 30 ]; then
+        echo "❌ 后端服务启动超时或无法连接MySQL"
+        exit 1
+    fi
+    echo "  等待中... ($i/30)"
+    sleep 2
+done
+
 # 导入故障手册（如果存在）
 if [ -f "knowledge/故障维修手册.csv" ]; then
     echo "📚 导入故障手册..."
-    # 等待后端服务完全启动
-    sleep 10
+    # 先复制文件到容器内
+    docker cp knowledge/故障维修手册.csv $(docker compose -f docker-compose.prod.yml ps -q backend):/knowledge/故障维修手册.csv
+    # 然后执行导入
     docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
 import sys
 sys.path.append('/app')
 from scripts.import_fault_manual import main
 main()
 " || echo "⚠️  故障手册导入失败，请手动执行"
+elif [ -f "knowledge/故障维修手册.md" ]; then
+    echo "📚 导入故障手册（MD格式）..."
+    # 先复制文件到容器内
+    docker cp knowledge/故障维修手册.md $(docker compose -f docker-compose.prod.yml ps -q backend):/knowledge/故障维修手册.md
+    # 然后执行导入
+    docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
+import sys
+sys.path.append('/app')
+from scripts.import_fault_manual import main
+main()
+" || echo "⚠️  故障手册导入失败，请手动执行"
+else
+    echo "⚠️  未找到故障手册文件，跳过导入"
 fi
 
 # 初始化系统配置
 if [ -f "init_system_configs.py" ]; then
     echo "⚙️  初始化系统配置..."
-    # 确保后端服务已完全启动
-    sleep 5
     docker compose -f docker-compose.prod.yml exec -T backend python3 init_system_configs.py || echo "⚠️  系统配置初始化失败，请手动执行"
 fi
 

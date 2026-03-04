@@ -6,6 +6,10 @@
 1. 数据库中的记录状态
 2. 解析逻辑是否正确
 3. 诊断判断逻辑是否正确
+
+注意：此脚本使用测试路径，实际生产环境使用双卷架构：
+- 源目录：/app/alerts_source（只读）
+- 处理目录：/app/alerts（读写）
 """
 import sys
 import os
@@ -96,6 +100,7 @@ def diagnose():
             'case_dev_name': 'cce-test123-node01',
             'case_type': 'ERROR',
         }
+        # 注意：测试使用旧路径，实际生产使用 /app/alerts_source 和 /app/alerts
         test_file = '/app/alerts/长安-cce-test123-node01-10.90.1.100.txt'
         
         records = AlertParserService._parse_alert(test_data, test_file)

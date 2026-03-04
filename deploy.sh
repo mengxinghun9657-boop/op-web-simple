@@ -207,10 +207,27 @@ echo ""
 echo "🚀 启动生产环境..."
 docker compose -f docker-compose.prod.yml up -d
 
-# 等待服务启动
+# 等待 MySQL 完全启动
 echo ""
-echo "⏳ 等待服务启动..."
-sleep 15
+echo "⏳ 等待 MySQL 服务启动..."
+for i in {1..30}; do
+    if docker compose -f docker-compose.prod.yml exec -T mysql mysqladmin ping -h localhost -u root -p'Zhang~~1' --silent 2>/dev/null; then
+        echo "✓ MySQL服务已启动"
+        break
+    fi
+    echo "  等待中... ($i/30)"
+    sleep 2
+done
+
+# 检查 MySQL 是否成功启动
+if ! docker compose -f docker-compose.prod.yml exec -T mysql mysqladmin ping -h localhost -u root -p'Zhang~~1' --silent 2>/dev/null; then
+    echo "❌ MySQL 启动超时"
+    exit 1
+fi
+
+# 额外等待，确保 MySQL 完全就绪
+echo "  等待 MySQL 完全就绪..."
+sleep 5
 
 # 检查服务状态
 echo ""
@@ -264,8 +281,10 @@ with open('/app/app/services/alert/alert_processor.py', 'r') as f:
 # 初始化系统配置
 echo ""
 echo "⚙️  初始化系统配置..."
-docker compose -f docker-compose.prod.yml exec -T backend python3 init_system_configs.py 2>/dev/null || {
-    echo -e "${YELLOW}⚠️  系统配置初始化失败或已存在，跳过${NC}"
+# 等待后端服务完全启动
+sleep 10
+docker compose -f docker-compose.prod.yml exec -T backend python3 init_system_configs.py || {
+    echo -e "${YELLOW}⚠️  系统配置初始化失败，请手动执行${NC}"
 }
 
 # 导入故障手册

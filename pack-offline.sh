@@ -316,28 +316,18 @@ done
 echo "等待后端应用启动和网络初始化..."
 sleep 15
 
-# 检查后端容器内的网络连接（关键修复）
-echo "检查后端容器网络连接..."
-for i in {1..30}; do
-    # 先测试 DNS 解析
-    if docker compose -f docker-compose.prod.yml exec -T backend sh -c "ping -c 1 -W 2 mysql > /dev/null 2>&1"; then
-        echo "✓ 后端容器可以 ping 通 MySQL (用时 ${i} 秒)"
-        break
-    fi
-    if [ $i -eq 30 ]; then
-        echo "❌ 后端容器无法连接到 MySQL（网络问题）"
-        echo "   诊断信息："
-        docker compose -f docker-compose.prod.yml exec -T backend sh -c "cat /etc/hosts | grep mysql" || true
-        docker compose -f docker-compose.prod.yml exec -T backend sh -c "getent hosts mysql" || true
-        exit 1
-    fi
-    echo "  等待网络 DNS 生效... (${i}/30)"
-    sleep 2
-done
+# 检查 DNS 解析（不依赖 ping）
+echo "检查 DNS 解析..."
+DNS_CHECK=$(docker compose -f docker-compose.prod.yml exec -T backend sh -c "getent hosts mysql 2>/dev/null | awk '{print \$1}'" || echo "")
+if [ -n "$DNS_CHECK" ]; then
+    echo "✓ DNS 解析成功: mysql -> $DNS_CHECK"
+else
+    echo "⚠️  DNS 解析失败，但继续尝试数据库连接..."
+fi
 
 # 测试 MySQL 数据库连接（关键修复）
 echo "测试 MySQL 数据库连接..."
-for i in {1..20}; do
+for i in {1..30}; do
     if docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
 import pymysql
 import sys
@@ -359,14 +349,20 @@ except Exception as e:
         echo "✓ MySQL 数据库连接正常 (用时 ${i} 秒)"
         break
     fi
-    if [ $i -eq 20 ]; then
+    if [ $i -eq 30 ]; then
         echo "❌ MySQL 数据库连接失败"
-        echo "   请检查："
-        echo "   1. docker compose -f docker-compose.prod.yml logs backend --tail=100"
-        echo "   2. docker compose -f docker-compose.prod.yml logs mysql --tail=100"
+        echo "   诊断信息："
+        echo "   1. 检查 DNS 解析："
+        docker compose -f docker-compose.prod.yml exec -T backend sh -c "getent hosts mysql" || true
+        echo "   2. 检查 MySQL 容器状态："
+        docker compose -f docker-compose.prod.yml ps mysql
+        echo "   3. 查看后端日志："
+        echo "      docker compose -f docker-compose.prod.yml logs backend --tail=50"
+        echo "   4. 查看 MySQL 日志："
+        echo "      docker compose -f docker-compose.prod.yml logs mysql --tail=50"
         exit 1
     fi
-    echo "  等待数据库连接... (${i}/20)"
+    echo "  等待数据库连接... (${i}/30，每次间隔3秒)"
     sleep 3
 done
 

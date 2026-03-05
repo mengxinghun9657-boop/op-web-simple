@@ -243,22 +243,8 @@ export function setupAxiosInterceptors(axios) {
     }
   );
 
-  // 响应拦截器
-  axios.interceptors.response.use(
-    response => {
-      // 统一返回 response.data，符合 API 响应格式规范
-      // 格式: { success: boolean, data: any, message: string, error: string }
-      return response.data
-    },
-    error => {
-      // 处理 401 错误
-      if (error.response?.status === 401) {
-        handleUnauthorized();
-      }
-      
-      return Promise.reject(error);
-    }
-  );
+  // 注意：响应拦截器已在 axios.js 中统一配置
+  // 不要在这里重复添加拦截器，避免冲突
 }
 
 /**

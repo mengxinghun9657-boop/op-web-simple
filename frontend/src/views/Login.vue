@@ -127,10 +127,22 @@ const handleLogin = async () => {
     
     // 确保跳转在 ElMessage 之后执行
     const redirect = route.query.redirect || '/'
-    await router.push(redirect)
+    
+    // 使用 router.replace 避免导航重复错误
+    // 并捕获导航错误（如果路由守卫已经处理了重定向）
+    router.replace(redirect).catch(err => {
+      // 忽略导航重复或取消的错误
+      if (err.name !== 'NavigationDuplicated' && err.name !== 'NavigationCancelled') {
+        console.error('导航错误:', err)
+      }
+    })
   } catch (error) {
     console.error('登录失败:', error)
-    ElMessage.error(error.message || '登录失败，请重试')
+    // 只在真正的登录错误时显示错误消息
+    // 排除导航相关的错误
+    if (!error.name || (error.name !== 'NavigationDuplicated' && error.name !== 'NavigationCancelled')) {
+      ElMessage.error(error.message || '登录失败，请重试')
+    }
   } finally {
     loading.value = false
   }

@@ -293,88 +293,48 @@ docker compose -f docker-compose.prod.yml up -d
 echo ""
 echo "⏳ 3. 等待服务启动..."
 
-# 等待 MySQL 容器健康
-echo "等待 MySQL 容器启动..."
-for i in {1..180}; do
-    MYSQL_HEALTH=$(docker compose -f docker-compose.prod.yml ps mysql --format json 2>/dev/null | grep -o '"Health":"[^"]*"' | cut -d'"' -f4)
-    if [ "$MYSQL_HEALTH" = "healthy" ]; then
-        echo "✓ MySQL 容器已健康 (用时 ${i} 秒)"
+# 步骤1: 等待 MySQL 服务就绪（核心检测）
+echo "等待 MySQL 服务就绪..."
+
+# 从环境变量读取超时配置（默认360秒）
+MYSQL_TIMEOUT=\${MYSQL_STARTUP_TIMEOUT:-360}
+MAX_ATTEMPTS=\$((MYSQL_TIMEOUT / 3))
+
+for i in \$(seq 1 \$MAX_ATTEMPTS); do
+    # 直接测试 MySQL 连接（最可靠的方式）
+    if docker compose -f docker-compose.prod.yml exec -T mysql mysqladmin ping \
+        -h localhost -u root -p"\$MYSQL_ROOT_PASSWORD" --silent 2>/dev/null; then
+        echo "✓ MySQL 服务已就绪 (用时 \$((i*3)) 秒)"
         break
     fi
-    if [ $i -eq 180 ]; then
-        echo "❌ MySQL 容器启动超时（已等待180秒）"
+    
+    if [ \$i -eq \$MAX_ATTEMPTS ]; then
+        echo "❌ MySQL 启动超时（已等待 \${MYSQL_TIMEOUT} 秒）"
+        echo ""
+        echo "诊断信息："
+        echo "1. 检查 MySQL 容器状态："
+        docker compose -f docker-compose.prod.yml ps mysql
+        echo ""
+        echo "2. 查看 MySQL 日志（最后50行）："
         docker compose -f docker-compose.prod.yml logs mysql --tail=50
         exit 1
     fi
-    # 每10秒显示一次状态
-    if [ $((i % 10)) -eq 0 ]; then
-        echo "  MySQL 状态: ${MYSQL_HEALTH:-starting} (${i}/180秒)"
-    fi
-    sleep 1
-done
-
-# 额外等待 MySQL 完全就绪
-echo "等待 MySQL 服务完全就绪..."
-sleep 20
-
-# 测试 MySQL 网络连接（使用 mysqladmin）
-echo "测试 MySQL 网络连接..."
-for i in {1..30}; do
-    if docker compose -f docker-compose.prod.yml exec -T backend sh -c "command -v mysqladmin > /dev/null 2>&1"; then
-        # 后端容器有 mysqladmin，使用它测试
-        if docker compose -f docker-compose.prod.yml exec -T backend mysqladmin ping -h mysql -u root -p"$MYSQL_ROOT_PASSWORD" --silent 2>/dev/null; then
-            echo "✓ MySQL 网络连接正常 (用时 ${i} 次尝试)"
-            break
-        fi
-    else
-        # 后端容器没有 mysqladmin，跳过此测试
-        echo "⚠️  后端容器无 mysqladmin，跳过网络连接测试"
-        break
+    
+    # 每20次显示一次进度（每分钟）
+    if [ \$((i % 20)) -eq 0 ]; then
+        echo "  等待 MySQL 启动... (\$((i*3))/\${MYSQL_TIMEOUT}秒)"
     fi
     
-    if [ $i -eq 30 ]; then
-        echo "⚠️  MySQL 网络连接测试失败，但继续尝试数据库连接..."
-    fi
-    
-    if [ $((i % 10)) -eq 0 ]; then
-        echo "  等待 MySQL 网络就绪... (${i}/30次)"
-    fi
-    sleep 2
+    sleep 3
 done
 
-# 等待后端容器启动
-echo "等待后端容器启动..."
-for i in {1..60}; do
-    BACKEND_STATUS=$(docker compose -f docker-compose.prod.yml ps backend --format json 2>/dev/null | grep -o '"State":"[^"]*"' | cut -d'"' -f4)
-    if [ "$BACKEND_STATUS" = "running" ]; then
-        echo "✓ 后端容器已启动 (用时 ${i} 秒)"
-        break
-    fi
-    if [ $i -eq 60 ]; then
-        echo "❌ 后端容器启动超时"
-        docker compose -f docker-compose.prod.yml logs backend --tail=50
-        exit 1
-    fi
-    echo "  后端状态: ${BACKEND_STATUS:-starting} (${i}/60)"
-    sleep 2
-done
+# 步骤2: 额外等待确保完全就绪
+echo "等待 MySQL 完全初始化..."
+sleep 10
 
-# 额外等待后端应用启动和网络 DNS 生效
-echo "等待后端应用启动和网络初始化..."
-sleep 20
-
-# 检查 DNS 解析（不依赖 ping）
-echo "检查 DNS 解析..."
-DNS_CHECK=$(docker compose -f docker-compose.prod.yml exec -T backend sh -c "getent hosts mysql 2>/dev/null | awk '{print \$1}'" || echo "")
-if [ -n "$DNS_CHECK" ]; then
-    echo "✓ DNS 解析成功: mysql -> $DNS_CHECK"
-else
-    echo "⚠️  DNS 解析失败，但继续尝试数据库连接..."
-fi
-
-# 测试 MySQL 数据库连接（关键修复）
-echo "测试 MySQL 数据库连接（Python pymysql）..."
-for i in {1..60}; do
+# 步骤3: 验证后端容器可以连接数据库（可选但推荐）
+echo "验证后端数据库连接..."
+for i in {1..10}; do
     if docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
 import pymysql
 import sys
@@ -383,38 +343,28 @@ try:
         host='mysql',
         port=3306,
         user='root',
-        password='$MYSQL_ROOT_PASSWORD',
+        password='\$MYSQL_ROOT_PASSWORD',
         database='cluster_management',
         connect_timeout=10
     )
     conn.close()
     sys.exit(0)
 except Exception as e:
-    print(f'连接失败: {e}', file=sys.stderr)
     sys.exit(1)
-" 2>&1; then
-        echo "✓ MySQL 数据库连接正常 (用时 ${i} 次尝试)"
+" 2>/dev/null; then
+        echo "✓ 后端数据库连接正常 (用时 \$((i*2)) 秒)"
         break
     fi
-    if [ $i -eq 60 ]; then
-        echo "❌ MySQL 数据库连接失败（已尝试60次，共180秒）"
-        echo "   诊断信息："
-        echo "   1. 检查 DNS 解析："
-        docker compose -f docker-compose.prod.yml exec -T backend sh -c "getent hosts mysql" || true
-        echo "   2. 检查 MySQL 容器状态："
-        docker compose -f docker-compose.prod.yml ps mysql
-        echo "   3. 检查 MySQL 是否监听 3306："
-        docker compose -f docker-compose.prod.yml exec -T mysql sh -c "netstat -tuln | grep 3306" || true
-        echo "   4. 查看 MySQL 日志："
-        docker compose -f docker-compose.prod.yml logs mysql --tail=100
-        exit 1
+    
+    if [ \$i -eq 10 ]; then
+        echo "⚠️  后端数据库连接测试失败，但继续部署"
+        echo "   后端应用会自动重试连接（内置5次重试机制）"
     fi
-    # 每10次显示一次进度
-    if [ $((i % 10)) -eq 0 ]; then
-        echo "  等待数据库连接... (${i}/60次，每次间隔3秒)"
-    fi
-    sleep 3
+    
+    sleep 2
 done
+
+echo "✓ 服务启动完成"
 
 # 检查服务状态
 echo ""

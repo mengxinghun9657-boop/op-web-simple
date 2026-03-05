@@ -22,27 +22,35 @@ export const useUserStore = defineStore('user', () => {
 
   // 登录
   async function login(credentials) {
-    // 使用 users.js 的 login 函数
-    const response = await loginAPI({
-      username: credentials.username,
-      password: credentials.password
-    })
-    
-    // 统一响应格式处理
-    if (response.success) {
-      const data = response.data
-      token.value = data.access_token
-      refreshToken.value = data.refresh_token
-      user.value = data.user
+    try {
+      // 使用 users.js 的 login 函数
+      const response = await loginAPI({
+        username: credentials.username,
+        password: credentials.password
+      })
       
-      // 持久化
-      localStorage.setItem('token', data.access_token)
-      localStorage.setItem('refreshToken', data.refresh_token)
-      localStorage.setItem('user', JSON.stringify(data.user))
+      console.log('登录响应:', response)
       
-      return data
-    } else {
-      throw new Error(response.message || '登录失败')
+      // 统一响应格式处理
+      if (response.success) {
+        const data = response.data
+        token.value = data.access_token
+        refreshToken.value = data.refresh_token
+        user.value = data.user
+        
+        // 持久化
+        localStorage.setItem('token', data.access_token)
+        localStorage.setItem('refreshToken', data.refresh_token)
+        localStorage.setItem('user', JSON.stringify(data.user))
+        
+        console.log('登录成功，token已保存:', token.value)
+        return data
+      } else {
+        throw new Error(response.message || '登录失败')
+      }
+    } catch (error) {
+      console.error('登录错误:', error)
+      throw error
     }
   }
 

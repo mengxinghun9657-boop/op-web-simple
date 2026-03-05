@@ -44,6 +44,8 @@
                 placeholder="用户名 / 邮箱" 
                 prefix-icon="User"
                 class="login-input"
+                autocomplete="username"
+                name="username"
               />
             </el-form-item>
             
@@ -55,6 +57,8 @@
                 prefix-icon="Lock"
                 show-password
                 class="login-input"
+                autocomplete="current-password"
+                name="password"
               />
             </el-form-item>
 
@@ -109,22 +113,27 @@ const rules = {
 
 const handleLogin = async () => {
   if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
-    if (valid) {
-      loading.value = true
-      try {
-        // userStore.login 内部已使用 users.js 的 login() 函数
-        await userStore.login(form)
-        ElMessage.success('登录成功')
-        const redirect = route.query.redirect || '/'
-        router.push(redirect)
-      } catch (error) {
-        // 错误已由拦截器处理
-      } finally {
-        loading.value = false
-      }
-    }
-  })
+  
+  try {
+    const valid = await formRef.value.validate()
+    if (!valid) return
+    
+    loading.value = true
+    
+    // userStore.login 内部已使用 users.js 的 login() 函数
+    await userStore.login(form)
+    
+    ElMessage.success('登录成功')
+    
+    // 确保跳转在 ElMessage 之后执行
+    const redirect = route.query.redirect || '/'
+    await router.push(redirect)
+  } catch (error) {
+    console.error('登录失败:', error)
+    ElMessage.error(error.message || '登录失败，请重试')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

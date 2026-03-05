@@ -120,36 +120,24 @@ const handleLogin = async () => {
     
     loading.value = true
     
-    console.log('=== 开始登录流程 ===')
-    console.log('登录表单数据:', { username: form.username, password: '***' })
-    
     // userStore.login 内部已使用 users.js 的 login() 函数
-    const result = await userStore.login(form)
-    console.log('=== userStore.login 返回结果 ===', result)
+    await userStore.login(form)
     
     ElMessage.success('登录成功')
     
     // 确保跳转在 ElMessage 之后执行
     const redirect = route.query.redirect || '/'
-    console.log('=== 准备跳转到 ===', redirect)
     
     // 使用 router.replace 避免导航重复错误
-    // 并捕获导航错误（如果路由守卫已经处理了重定向）
     router.replace(redirect).catch(err => {
-      console.log('=== 路由跳转错误 ===', err.name, err.message)
       // 忽略导航重复或取消的错误
       if (err.name !== 'NavigationDuplicated' && err.name !== 'NavigationCancelled') {
         console.error('导航错误:', err)
       }
     })
   } catch (error) {
-    console.error('=== 登录流程捕获到错误 ===')
-    console.error('错误类型:', error.name)
-    console.error('错误消息:', error.message)
-    console.error('完整错误:', error)
-    
+    console.error('登录失败:', error)
     // 只在真正的登录错误时显示错误消息
-    // 排除导航相关的错误
     if (!error.name || (error.name !== 'NavigationDuplicated' && error.name !== 'NavigationCancelled')) {
       ElMessage.error(error.message || '登录失败，请重试')
     }

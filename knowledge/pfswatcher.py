@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-PFS 监控数据交互式查询工具
-功能：查询/对比/导出 PFS 性能指标
-支持：当前数据 | 历史数据 | 同比对比 | CSV导出
+PFS 监控数据交互式查询工具 v3.0
 基于 Dashboard: PFS-ONLINE (uid: Yr0GA4PHz2)
+功能：查询/对比/导出 PFS 性能指标
+支持：集群级别 | 客户端级别 | 同比对比 | CSV 导出 | 模糊搜索
 """
 
 import requests
@@ -36,6 +36,7 @@ TOKEN = os.getenv("PROM_TOKEN",
 DEFAULT_REGION = "cd"
 DEFAULT_INSTANCE_TYPE = "plusl2"
 DEFAULT_INSTANCE_ID = "pfs-mTYGr6"
+DEFAULT_CLIENT = ".*"
 DEFAULT_STEP = "5m"
 
 HEADERS = {
@@ -44,8 +45,7 @@ HEADERS = {
 }
 # ========================================================
 
-# 📊 指标中文映射字典（含说明和正常范围）
-# 基于 Dashboard JSON 中所有面板的指标整理
+# 📊 指标中文映射字典（基于 Dashboard JSON 所有面板）
 METRIC_CONFIG = {
     # ===== Usage Summary (容量) =====
     "FsUsage": {
@@ -92,7 +92,7 @@ METRIC_CONFIG = {
         "unit": "binBps",
         "unit_zh": "二进制字节/秒",
         "normal_range": "取决于业务负载",
-        "warn_threshold": -0.50,  # 下降 50% 告警
+        "warn_threshold": -0.50,
         "critical_threshold": -0.90,
         "category": "吞吐",
         "level": "cluster",
@@ -192,11 +192,10 @@ METRIC_CONFIG = {
     "VfsxStatfsAvgLatency": {"zh_name": "Statfs 平均延迟", "desc": "文件系统状态查询平均响应时间", "unit": "µs", "unit_zh": "微秒", "normal_range": "< 200 µs", "warn_threshold": 500, "critical_threshold": 2000, "category": "元数据延迟", "level": "cluster", "promql_template": 'VfsxStatfsAvgLatency{region="$region", InstanceType=~"$instanceType", InstanceId="$instanceId"}'},
 }
 
-# Client 级别指标前缀（自动生成配置）
+# ✅ Client 级别指标前缀（从 Dashboard JSON 提取）
 CLIENT_METRIC_PREFIXES = [
     "FisReadThroughput", "FisWriteThroughput",
     "FisReadQps", "FisWriteQps",
-    "VfsxReadAvgLatency", "VfsxWriteAvgLatency",
     "VfsxLookupQps", "VfsxGetattrQps", "VfsxSetattrQps", "VfsxLinkQps",
     "VfsxRemoveQps", "VfsxMkdirQps", "VfsxRmdirQps", "VfsxSymlinkQps",
     "VfsxReadlinkQps", "VfsxReaddirQps", "VfsxRenameQps", "VfsxStatfsQps",
@@ -211,7 +210,7 @@ for prefix in CLIENT_METRIC_PREFIXES:
     cluster_config = METRIC_CONFIG.get(prefix, {})
     client_key = f"Client{prefix}"
     
-    # Client 级别 PromQL 模板（从 Dashboard 提取）
+    # Client 级别 PromQL 模板（从 Dashboard 精确提取）
     if "AvgLatency" in prefix:
         promql_template = f'Client{prefix}{{region="$region", InstanceType=~"$instanceType", InstanceId="$instanceId", ClientId=~"$client"}}'
     else:
@@ -306,7 +305,6 @@ def query_prometheus(promql, start_ts, end_ts, step="5m"):
                 return data.get("data", {}).get("result", [])
         return []
     except Exception as e:
-        print(f"❌ 查询异常：{e}")
         return []
 
 def get_label_values(label_name, match_query):
@@ -325,12 +323,81 @@ def get_label_values(label_name, match_query):
     except:
         return []
 
+def get_client_info_with_metrics():
+    """✅ 获取客户端信息及其最新指标（优化版 - 一次查询）"""
+    end_ts = int(time.time())
+    start_ts = end_ts - 300  # 最近 5 分钟
+    
+    # 🔑 优化：一次查询获取所有客户端的最新读吞吐
+    promql = f'ClientFisReadThroughput{{region="{DEFAULT_REGION}", InstanceId="{DEFAULT_INSTANCE_ID}"}}'
+    results = query_prometheus(promql, start_ts, end_ts, "1m")
+    
+    client_map = {}
+    
+    if results:
+        for series in results:
+            metric = series.get("metric", {})
+            client_id = metric.get("ClientId", "unknown")
+            client_ip = metric.get("ClientIp", "unknown")
+            values = series.get("values", [])
+            
+            latest_val = 0
+            if values:
+                latest_val = float(values[-1][1]) if values[-1][1] else 0
+            
+            key = f"{client_id}=>{client_ip}"
+            client_map[key] = {
+                "client_id": client_id,
+                "client_ip": client_ip,
+                "read_throughput": latest_val,
+                "has_read": latest_val > 0
+            }
+    
+    # 如果没有读数据，尝试查询写吞吐
+    if not client_map:
+        promql = f'ClientFisWriteThroughput{{region="{DEFAULT_REGION}", InstanceId="{DEFAULT_INSTANCE_ID}"}}'
+        results = query_prometheus(promql, start_ts, end_ts, "1m")
+        
+        if results:
+            for series in results:
+                metric = series.get("metric", {})
+                client_id = metric.get("ClientId", "unknown")
+                client_ip = metric.get("ClientIp", "unknown")
+                values = series.get("values", [])
+                
+                latest_val = 0
+                if values:
+                    latest_val = float(values[-1][1]) if values[-1][1] else 0
+                
+                key = f"{client_id}=>{client_ip}"
+                client_map[key] = {
+                    "client_id": client_id,
+                    "client_ip": client_ip,
+                    "write_throughput": latest_val,
+                    "has_write": latest_val > 0
+                }
+    
+    # 如果还是没有，只获取 ClientId 列表
+    if not client_map:
+        client_ids = get_label_values("ClientId", f'ClientFisReadThroughput{{region="{DEFAULT_REGION}", InstanceId="{DEFAULT_INSTANCE_ID}"}}')
+        for cid in client_ids[:50]:
+            client_map[cid] = {
+                "client_id": cid,
+                "client_ip": "N/A",
+                "has_activity": False
+            }
+    
+    return client_map
+
 def flatten_results(results, metric_name, period_label=""):
     """展平查询结果为列表"""
     rows = []
     for series in results:
         labels = series.get("metric", {})
-        label_str = ";".join([f"{k}={v}" for k, v in labels.items()])
+        client_id = labels.get("ClientId", "")
+        client_ip = labels.get("ClientIp", "")
+        client_info = f"{client_id}=>{client_ip}" if client_id and client_ip else ";".join([f"{k}={v}" for k, v in labels.items()])
+        
         for ts, val in series.get("values", []):
             if val and val != "NaN":
                 try:
@@ -340,7 +407,10 @@ def flatten_results(results, metric_name, period_label=""):
                         "timestamp": datetime.fromtimestamp(int(float(ts))).strftime("%Y-%m-%d %H:%M:%S"),
                         "timestamp_ts": int(float(ts)),
                         "value": float(val),
-                        "labels": label_str,
+                        "client_id": client_id,
+                        "client_ip": client_ip,
+                        "client_info": client_info,
+                        "labels": ";".join([f"{k}={v}" for k, v in labels.items()]),
                         "config": METRIC_CONFIG.get(metric_name, {})
                     })
                 except (ValueError, TypeError):
@@ -385,10 +455,7 @@ def show_metric_info(metric_key):
     print(f"   级别：{'🌐 集群' if config.get('level')=='cluster' else '👤 客户端'}")
 
 def select_time_range():
-    """
-    交互式选择时间范围
-    ✅ 已修复：对比模式昨天时间计算错误
-    """
+    """交互式选择时间范围"""
     print("\n🕐 选择查询时间范围:")
     print("  1) 最近 1 小时")
     print("  2) 最近 4 小时")
@@ -424,11 +491,9 @@ def select_time_range():
     elif choice == "5":
         # ✅ 对比模式：今天 vs 昨天同期（已修复）
         end_today = int(time.time())
-        start_today = end_today - 4 * 3600  # 最近 4 小时
-        
-        # 🔑 关键修复：昨天 = 今天时间 - 24 小时（不是减去当前时间）
-        end_yesterday = end_today - 24 * 3600      # 昨天同一结束时间
-        start_yesterday = start_today - 24 * 3600  # 昨天同一开始时间
+        start_today = end_today - 4 * 3600
+        end_yesterday = end_today - 24 * 3600
+        start_yesterday = start_today - 24 * 3600
         
         print(f"\n📅 对比时间范围:")
         print(f"   今天：{datetime.fromtimestamp(start_today)} ~ {datetime.fromtimestamp(end_today)}")
@@ -440,6 +505,74 @@ def select_time_range():
         ]
     else:
         return []
+
+def select_client():
+    """✅ 选择客户端（支持模糊匹配）"""
+    print("\n👤 选择客户端:")
+    print("  1) 所有客户端 (ClientId=~\".*\")")
+    print("  2) 从列表选择（支持模糊搜索）")
+    print("  3) 直接输入 ClientId")
+    print("  0) 使用默认配置")
+    
+    choice = input("\n请输入选项 (0-3, 默认 2): ").strip() or "2"
+    
+    if choice == "0":
+        return DEFAULT_CLIENT
+    elif choice == "1":
+        return ".*"
+    elif choice == "2":
+        client_map = get_client_info_with_metrics()
+        
+        if not client_map:
+            print("⚠️  未找到活跃的客户端，将查询所有客户端")
+            return ".*"
+        
+        client_list = []
+        for key, info in client_map.items():
+            client_list.append({
+                "key": key,
+                "client_id": info.get("client_id", ""),
+                "client_ip": info.get("client_ip", "")
+            })
+        
+        client_list.sort(key=lambda x: x["client_id"])
+        
+        print(f"\n✅ 找到 {len(client_list)} 个客户端:")
+        print(f"\n{'序号':<6} | {'ClientId':<45} | {'ClientIp':<18}")
+        print("-"*75)
+        
+        for i, client in enumerate(client_list[:20], 1):
+            print(f"{i:<6} | {client['client_id']:<45} | {client['client_ip']:<18}")
+        
+        if len(client_list) > 20:
+            print(f"\n... 还有 {len(client_list)-20} 个客户端")
+        
+        print(f"\n💡 输入序号选择，或输入关键词模糊搜索 (ClientId/IP):")
+        sub_choice = input("请输入：").strip()
+        
+        if sub_choice == "0" or not sub_choice:
+            return ".*"
+        elif sub_choice.isdigit() and 1 <= int(sub_choice) <= min(20, len(client_list)):
+            return client_list[int(sub_choice)-1]["client_id"]
+        else:
+            matched = [c for c in client_list 
+                      if sub_choice.lower() in c["client_id"].lower() or sub_choice in c["client_ip"]]
+            if matched:
+                print(f"\n✅ 找到 {len(matched)} 个匹配客户端:")
+                for i, c in enumerate(matched[:10], 1):
+                    print(f"   [{i}] {c['client_id']} => {c['client_ip']}")
+                sel = input("输入序号选择 (回车选择第一个): ").strip()
+                if sel.isdigit() and 1 <= int(sel) <= len(matched):
+                    return matched[int(sel)-1]["client_id"]
+                return matched[0]["client_id"]
+            else:
+                print(f"⚠️  未找到匹配，将查询所有客户端")
+                return ".*"
+    elif choice == "3":
+        client_id = input("请输入 ClientId: ").strip()
+        return client_id if client_id else ".*"
+    else:
+        return ".*"
 
 def select_metrics(level_filter=None):
     """交互式选择指标"""
@@ -454,7 +587,7 @@ def select_metrics(level_filter=None):
     selected = []
     for i, (category, metrics) in enumerate(sorted(categories.items()), 1):
         print(f"\n  [{i}] {category}")
-        for key, config in metrics[:8]:  # 每类最多显示 8 个
+        for key, config in metrics[:8]:
             print(f"      • {config.get('zh_name', key)}")
     
     print(f"\n  [0] 全选当前类别  [99] 返回")
@@ -463,16 +596,13 @@ def select_metrics(level_filter=None):
     if choice == "99":
         return []
     elif choice == "0":
-        # 全选
         for metrics in categories.values():
             selected.extend([k for k, _ in metrics])
         return selected
     elif choice.isdigit() and int(choice) in range(1, len(categories)+1):
-        # 选择某个类别
         cat_name = list(categories.keys())[int(choice)-1]
         return [k for k, _ in categories[cat_name]]
     else:
-        # 搜索指标
         matched = [(k, c) for k, c in METRIC_CONFIG.items() 
                   if choice.lower() in k.lower() or choice in c.get('zh_name', '')]
         if matched:
@@ -486,16 +616,12 @@ def select_metrics(level_filter=None):
     
     return selected
 
-def display_results(rows, show_detail=False, compare_mode=False):
-    """
-    展示查询结果
-    ✅ 已添加：对比模式显示 today vs yesterday
-    """
+def display_results(rows, show_detail=False, compare_mode=False, group_by_client=False):
+    """展示查询结果"""
     if not rows:
         print("⚠️  无数据返回")
         return
     
-    # 按指标分组统计
     grouped = defaultdict(list)
     for row in rows:
         grouped[row["metric"]].append(row)
@@ -508,11 +634,9 @@ def display_results(rows, show_detail=False, compare_mode=False):
         config = METRIC_CONFIG.get(metric, {})
         stats = calculate_stats(metric_rows)
         
-        # 格式化显示
         avg_val = format_value(metric, stats["avg"])
         max_val = format_value(metric, stats["max"])
         
-        # 状态判断
         status = "✅ 正常"
         if config.get("critical_threshold"):
             threshold = config["critical_threshold"]
@@ -537,7 +661,6 @@ def display_results(rows, show_detail=False, compare_mode=False):
         for metric, metric_rows in grouped.items():
             config = METRIC_CONFIG.get(metric, {})
             
-            # 分离 today/yesterday 数据
             today_vals = [r["value"] for r in metric_rows if r.get("period") == "today"]
             yesterday_vals = [r["value"] for r in metric_rows if r.get("period") == "yesterday"]
             
@@ -545,13 +668,11 @@ def display_results(rows, show_detail=False, compare_mode=False):
                 today_avg = sum(today_vals) / len(today_vals)
                 yesterday_avg = sum(yesterday_vals) / len(yesterday_vals)
                 
-                # 避免除零
                 if yesterday_avg != 0:
                     change_pct = (today_avg - yesterday_avg) / abs(yesterday_avg) * 100
                 else:
                     change_pct = 0
                 
-                # 状态判断
                 if abs(change_pct) > 50:
                     status = "🔴 剧变" if change_pct < 0 else "🟡 上升"
                 elif abs(change_pct) > 20:
@@ -562,14 +683,34 @@ def display_results(rows, show_detail=False, compare_mode=False):
                 zh_name = config.get("zh_name", metric)
                 print(f"{zh_name:<25} | {format_value(metric, today_avg):>15} | {format_value(metric, yesterday_avg):>15} | {change_pct:+.1f}% | {status}")
     
+    # ✅ 按客户端分组展示
+    if group_by_client:
+        client_grouped = defaultdict(lambda: defaultdict(list))
+        for row in rows:
+            client_info = row.get("client_info", "unknown")
+            client_grouped[client_info][row["metric"]].append(row)
+        
+        print(f"\n👤 按客户端分组统计 ({len(client_grouped)} 个客户端):")
+        for client_info, client_metrics in client_grouped.items():
+            print(f"\n   📍 {client_info}")
+            print(f"   {'指标名称':<25} | {'数据点':>8} | {'平均值':>15} | {'峰值':>15}")
+            print(f"   {'-'*75}")
+            for metric, metric_rows in client_metrics.items():
+                config = METRIC_CONFIG.get(metric, {})
+                stats = calculate_stats(metric_rows)
+                zh_name = config.get("zh_name", metric)
+                avg_val = format_value(metric, stats["avg"])
+                max_val = format_value(metric, stats["max"])
+                print(f"   {zh_name:<25} | {stats['count']:>8} | {avg_val:>15} | {max_val:>15}")
+    
     if show_detail and len(grouped) == 1:
-        # 显示单个指标的详细时间序列
         metric = list(grouped.keys())[0]
         print(f"\n📈 {METRIC_CONFIG.get(metric, {}).get('zh_name', metric)} 详细数据 (前 20 点):")
-        print(f"{'时间':<20} | {'数值':>20} | {'标签'}")
+        print(f"{'时间':<20} | {'数值':>20} | {'客户端/标签'}")
         print("-"*70)
         for row in sorted(grouped[metric], key=lambda x: x["timestamp_ts"])[:20]:
-            print(f"{row['timestamp']:<20} | {format_value(metric, row['value']):>20} | {row['labels'][:30]}")
+            client_display = row.get("client_info", row.get("labels", ""))[:30]
+            print(f"{row['timestamp']:<20} | {format_value(metric, row['value']):>20} | {client_display}")
 
 def export_csv(rows, filename=None):
     """导出 CSV 文件"""
@@ -581,7 +722,6 @@ def export_csv(rows, filename=None):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M")
         filename = f"pfs_export_{timestamp}.csv"
     
-    # 准备导出字段
     export_rows = []
     for row in rows:
         config = row.get("config", {})
@@ -593,6 +733,9 @@ def export_csv(rows, filename=None):
             "数值": row["value"],
             "单位": config.get("unit_zh", config.get("unit", "")),
             "正常范围": config.get("normal_range", ""),
+            "客户端 ID": row.get("client_id", ""),
+            "客户端 IP": row.get("client_ip", ""),
+            "客户端信息": row.get("client_info", ""),
             "标签": row["labels"],
             "时间段": row.get("period", "")
         })
@@ -608,20 +751,22 @@ def export_csv(rows, filename=None):
 def main_menu():
     """主菜单"""
     while True:
-        print_header("🗄️  PFS 监控数据交互式查询工具")
+        print_header("🗄️  PFS 监控数据交互式查询工具 v3.0")
         print(f"📍 Prometheus: {PROM_INSTANCE_ID}")
         print(f"📍 PFS 实例：{DEFAULT_INSTANCE_ID}")
         print(f"📍 区域：{DEFAULT_REGION}")
+        print(f"📍 客户端过滤：{DEFAULT_CLIENT}")
         
         print("\n📋 主菜单:")
         print("  1) 🔍 查询指标数据")
         print("  2) 📊 查看指标说明")
         print("  3) 📥 导出历史数据")
         print("  4) ⚙️  修改查询配置")
-        print("  5) ℹ️  查看帮助")
+        print("  5) 👤 管理客户端列表")
+        print("  6) ℹ️  查看帮助")
         print("  0) 🚪 退出")
         
-        choice = input("\n请输入选项 (0-5): ").strip()
+        choice = input("\n请输入选项 (0-6): ").strip()
         
         if choice == "0":
             print("👋 再见!")
@@ -635,6 +780,8 @@ def main_menu():
         elif choice == "4":
             config_flow()
         elif choice == "5":
+            client_management()
+        elif choice == "6":
             show_help()
         else:
             print("❌ 无效选项")
@@ -644,7 +791,6 @@ def query_flow():
     """查询流程"""
     print_header("🔍 指标查询")
     
-    # 1. 选择指标级别
     print("\n📐 选择指标级别:")
     print("  1) 🌐 集群级别 (整体性能)")
     print("  2) 👤 客户端级别 (单客户端性能)")
@@ -657,52 +803,40 @@ def query_flow():
     elif level_choice == "2":
         level_filter = "client"
     
-    # 2. 选择指标
+    client_filter = ".*"
+    if level_filter != "cluster":
+        client_filter = select_client()
+        print(f"📍 已选择客户端：{client_filter}")
+    
     metrics = select_metrics(level_filter)
     if not metrics:
         print("⚠️  未选择指标")
         return
     
-    # 3. 选择时间范围
     time_ranges = select_time_range()
     if not time_ranges:
         return
     
-    # 4. 执行查询
     all_rows = []
     for period_label, start_ts, end_ts in time_ranges:
         print(f"\n🔄 查询 [{period_label}]: {datetime.fromtimestamp(start_ts)} ~ {datetime.fromtimestamp(end_ts)}")
         for metric in metrics:
             config = METRIC_CONFIG.get(metric, {})
             
-            # 构建 PromQL
             if config.get("level") == "client":
-                # 客户端指标需要 ClientId
-                client_ids = get_label_values(
-                    "ClientId",
-                    f'ClientFisReadThroughput{{region="{DEFAULT_REGION}", InstanceId="{DEFAULT_INSTANCE_ID}"}}'
-                )
-                if not client_ids:
-                    print(f"   ⚠️  {metric}: 无可用客户端")
-                    continue
-                # 查询前 3 个客户端
-                for cid in client_ids[:3]:
-                    promql = config.get("promql_template", f'{metric}{{region="{DEFAULT_REGION}", InstanceId="{DEFAULT_INSTANCE_ID}", ClientId="{cid}"}}')
-                    promql = promql.replace("$region", DEFAULT_REGION).replace("$instanceId", DEFAULT_INSTANCE_ID).replace("$client", cid).replace("$instanceType", DEFAULT_INSTANCE_TYPE)
-                    results = query_prometheus(promql, start_ts, end_ts, DEFAULT_STEP)
-                    all_rows.extend(flatten_results(results, metric, period_label))
+                promql = config.get("promql_template", f'{metric}{{region="$region", InstanceId="$instanceId", ClientId=~"$client"}}')
+                promql = promql.replace("$region", DEFAULT_REGION).replace("$instanceId", DEFAULT_INSTANCE_ID).replace("$client", client_filter).replace("$instanceType", DEFAULT_INSTANCE_TYPE)
             else:
-                # 集群指标
-                promql = config.get("promql_template", f'{metric}{{region="{DEFAULT_REGION}", InstanceId="{DEFAULT_INSTANCE_ID}"}}')
+                promql = config.get("promql_template", f'{metric}{{region="$region", InstanceId="$instanceId"}}')
                 promql = promql.replace("$region", DEFAULT_REGION).replace("$instanceId", DEFAULT_INSTANCE_ID).replace("$instanceType", DEFAULT_INSTANCE_TYPE)
-                results = query_prometheus(promql, start_ts, end_ts, DEFAULT_STEP)
-                all_rows.extend(flatten_results(results, metric, period_label))
+            
+            results = query_prometheus(promql, start_ts, end_ts, DEFAULT_STEP)
+            all_rows.extend(flatten_results(results, metric, period_label))
     
-    # 5. 展示结果
-    is_compare = len(time_ranges) == 2  # 对比模式有 2 个时间段
-    display_results(all_rows, show_detail=True, compare_mode=is_compare)
+    is_compare = len(time_ranges) == 2
+    group_by_client = (client_filter == ".*" and any(METRIC_CONFIG.get(m, {}).get("level") == "client" for m in metrics))
+    display_results(all_rows, show_detail=True, compare_mode=is_compare, group_by_client=group_by_client)
     
-    # 6. 导出选项
     if all_rows:
         export = input("\n📥 是否导出 CSV? (y/n, 默认 n): ").strip().lower()
         if export == "y":
@@ -728,7 +862,6 @@ def export_flow():
     """导出流程"""
     print_header("📥 数据导出")
     
-    # 简化：导出最近 24 小时所有集群指标
     print("🔄 正在导出最近 24 小时集群级别指标...")
     
     end_ts = int(time.time())
@@ -737,7 +870,7 @@ def export_flow():
     all_rows = []
     cluster_metrics = [k for k, v in METRIC_CONFIG.items() if v.get("level") == "cluster"]
     
-    for metric in cluster_metrics[:10]:  # 限制数量避免超时
+    for metric in cluster_metrics[:10]:
         config = METRIC_CONFIG.get(metric, {})
         promql = config.get("promql_template", f'{metric}{{region="{DEFAULT_REGION}", InstanceId="{DEFAULT_INSTANCE_ID}"}}')
         promql = promql.replace("$region", DEFAULT_REGION).replace("$instanceId", DEFAULT_INSTANCE_ID).replace("$instanceType", DEFAULT_INSTANCE_TYPE)
@@ -758,12 +891,13 @@ def config_flow():
     """配置修改流程"""
     print_header("⚙️  查询配置")
     
-    global DEFAULT_REGION, DEFAULT_INSTANCE_TYPE, DEFAULT_INSTANCE_ID, DEFAULT_STEP
+    global DEFAULT_REGION, DEFAULT_INSTANCE_TYPE, DEFAULT_INSTANCE_ID, DEFAULT_STEP, DEFAULT_CLIENT
     
     print(f"\n当前配置:")
     print(f"  Region: {DEFAULT_REGION}")
     print(f"  InstanceType: {DEFAULT_INSTANCE_TYPE}")
     print(f"  InstanceId: {DEFAULT_INSTANCE_ID}")
+    print(f"  Client 过滤：{DEFAULT_CLIENT}")
     print(f"  Step: {DEFAULT_STEP}")
     
     print("\n🔄 修改配置 (回车跳过):")
@@ -780,12 +914,99 @@ def config_flow():
     if new_id:
         DEFAULT_INSTANCE_ID = new_id
     
+    new_client = input("  Client 过滤 (.* 表示所有): ").strip()
+    if new_client:
+        DEFAULT_CLIENT = new_client
+    
     new_step = input("  Step (5m/15m/1h): ").strip()
     if new_step:
         DEFAULT_STEP = new_step
     
     print("\n✅ 配置已更新")
     input("按回车返回...")
+
+def client_management():
+    """✅ 客户端管理功能（优化版）"""
+    print_header("👤 客户端管理")
+    
+    print("\n🔄 正在获取客户端列表和最新指标...")
+    client_map = get_client_info_with_metrics()
+    
+    if not client_map:
+        print("⚠️  未找到活跃的客户端")
+        input("\n按回车返回...")
+        return
+    
+    client_list = []
+    for key, info in client_map.items():
+        throughput = info.get("read_throughput", 0) or info.get("write_throughput", 0)
+        client_list.append({
+            "key": key,
+            "client_id": info.get("client_id", ""),
+            "client_ip": info.get("client_ip", ""),
+            "throughput": throughput,
+            "has_read": info.get("has_read", False),
+            "has_write": info.get("has_write", False)
+        })
+    
+    client_list.sort(key=lambda x: x["throughput"], reverse=True)
+    
+    print(f"\n✅ 找到 {len(client_list)} 个活跃客户端（按吞吐排序）")
+    print(f"\n{'序号':<6} | {'ClientId':<45} | {'ClientIp':<18} | {'最新吞吐':>15} | {'类型'}")
+    print("-"*95)
+    
+    for i, client in enumerate(client_list[:20], 1):
+        throughput_str = format_bytes(client["throughput"]) + "/s" if client["throughput"] > 0 else "N/A"
+        client_type = "📖 读" if client["has_read"] else ("📝 写" if client["has_write"] else "⏸ 空闲")
+        print(f"{i:<6} | {client['client_id']:<45} | {client['client_ip']:<18} | {throughput_str:>15} | {client_type}")
+    
+    if len(client_list) > 20:
+        print(f"\n⚠️  还有 {len(client_list)-20} 个客户端未显示")
+    
+    print(f"\n💡 选择客户端方式:")
+    print(f"   • 输入序号选择（如：1）")
+    print(f"   • 输入 ClientId 模糊匹配（如：xx7r1ote）")
+    print(f"   • 输入 ClientIp 模糊匹配（如：10.0.0.1）")
+    print(f"   • 输入 0 选择所有客户端")
+    
+    choice = input("\n请输入选择 (回车返回): ").strip()
+    
+    selected_client = ".*"
+    
+    if choice == "0":
+        selected_client = ".*"
+        print("✅ 已选择：所有客户端")
+    elif choice.isdigit() and 1 <= int(choice) <= min(20, len(client_list)):
+        selected_client = client_list[int(choice)-1]["client_id"]
+        print(f"✅ 已选择：{selected_client}")
+    elif choice:
+        matched = [c for c in client_list 
+                  if choice.lower() in c["client_id"].lower() or choice in c["client_ip"]]
+        if matched:
+            print(f"\n✅ 找到 {len(matched)} 个匹配客户端:")
+            for i, c in enumerate(matched[:10], 1):
+                print(f"   [{i}] {c['client_id']} => {c['client_ip']}")
+            if len(matched) > 10:
+                print(f"   ... 还有 {len(matched)-10} 个")
+            
+            sub_choice = input("输入序号选择 (回车选择第一个): ").strip()
+            if sub_choice.isdigit() and 1 <= int(sub_choice) <= len(matched):
+                selected_client = matched[int(sub_choice)-1]["client_id"]
+            else:
+                selected_client = matched[0]["client_id"]
+            print(f"✅ 已选择：{selected_client}")
+        else:
+            print(f"⚠️  未找到匹配的客户端，将查询所有客户端")
+            selected_client = ".*"
+    else:
+        print("⚠️  未选择，返回主菜单")
+        input("\n按回车返回...")
+        return
+    
+    global DEFAULT_CLIENT
+    DEFAULT_CLIENT = selected_client
+    
+    input("\n按回车返回...")
 
 def show_help():
     """显示帮助"""
@@ -794,8 +1015,9 @@ def show_help():
 🔍 查询功能:
   • 支持集群/客户端级别指标
   • 支持当前/历史/对比时间范围
-  • 结果自动格式化显示 + 状态判断
-  • ✅ 对比模式自动计算同比变化百分比
+  • ✅ 按客户端分组展示数据
+  • ✅ 客户端管理列表（按吞吐排序）
+  • ✅ 支持 ClientId/IP/序号 模糊搜索
 
 📊 指标说明:
   • 每个指标含中文名、说明、单位、正常范围
@@ -804,27 +1026,24 @@ def show_help():
 
 📥 导出功能:
   • 支持 CSV 导出，含完整中文映射
+  • ✅ 包含 ClientId/ClientIp 字段
   • 文件可直接用 Excel 打开分析
-  • 包含时间段标识 (today/yesterday)
 
 💡 使用技巧:
-  1. 先查看"指标说明"了解各指标含义
-  2. 对比模式可快速发现性能变化
-  3. 导出后建议用 Excel 透视表分析趋势
-  4. 客户端指标需要实例有活跃连接
+  1. 先查看"客户端管理"了解活跃客户端
+  2. 查询时选择特定客户端可下钻分析
+  3. 对比模式可快速发现性能变化
+  4. 导出后建议用 Excel 透视表分析趋势
 
 🔧 常见问题:
-  Q: 查询返回空数据？
-  A: 检查 InstanceId 是否正确，或扩大时间范围
-  
   Q: 客户端指标查不到？
   A: 该实例当前可能无客户端活跃连接
   
-  Q: 对比模式昨天时间不对？
-  A: 已修复，昨天=今天时间-24 小时
+  Q: 如何查看特定客户端？
+  A: 查询时选择"客户端级别"→"选择特定客户端"
   
-  Q: 导出文件乱码？
-  A: 用 Excel 打开时选择"UTF-8"编码
+  Q: ClientId 太多怎么办？
+  A: 导出 CSV 后用 Excel 筛选，或修改 Client 过滤配置
     """)
     input("\n按回车返回...")
 
@@ -832,16 +1051,14 @@ def show_help():
 # ================= 入口 =================
 
 if __name__ == "__main__":
-    print("🚀 PFS 监控查询工具 启动中...")
+    print("🚀 PFS 监控查询工具 v3.0 启动中...")
     
-    # 依赖检查
     try:
         import pandas
         print("✅ pandas 已安装 (支持高级分析)")
     except ImportError:
         print("⚠️  提示：安装 pandas 可启用高级分析：pip install pandas")
     
-    # 验证连接
     test_promql = f'FsUsage{{region="{DEFAULT_REGION}", InstanceId="{DEFAULT_INSTANCE_ID}"}}'
     results = query_prometheus(test_promql, int(time.time())-300, int(time.time()))
     if results:
@@ -850,7 +1067,6 @@ if __name__ == "__main__":
         print("⚠️  连接测试无返回，请检查配置后继续")
         time.sleep(2)
     
-    # 启动主菜单
     try:
         main_menu()
     except KeyboardInterrupt:

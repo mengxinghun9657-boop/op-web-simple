@@ -187,7 +187,7 @@ fi
 echo "📖 读取 .env 配置..."
 if [ -f ".env" ]; then
     # 使用 source 读取 .env 文件（支持注释和空行）
-    export $(grep -v '^#' .env | grep -v '^$' | xargs)
+    export $(grep -v '^#' .env | grep -v '^[[:space:]]*$' | xargs)
     
     if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
         echo "❌ 未找到 MYSQL_ROOT_PASSWORD 配置"

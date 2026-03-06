@@ -29,27 +29,42 @@ export const useUserStore = defineStore('user', () => {
         password: credentials.password
       })
       
-      console.log('登录响应:', response)
+      console.log('=== 登录响应原始数据 ===', response)
+      console.log('response.success:', response.success)
+      console.log('response.data:', response.data)
       
-      // 统一响应格式处理
-      if (response.success) {
-        const data = response.data
-        token.value = data.access_token
-        refreshToken.value = data.refresh_token
-        user.value = data.user
-        
-        // 持久化
-        localStorage.setItem('token', data.access_token)
-        localStorage.setItem('refreshToken', data.refresh_token)
-        localStorage.setItem('user', JSON.stringify(data.user))
-        
-        console.log('登录成功，token已保存:', token.value)
-        return data
+      // 兼容多种响应格式
+      let data
+      if (response.success !== undefined) {
+        // 统一响应格式: {success, data, message}
+        if (response.success) {
+          data = response.data
+        } else {
+          throw new Error(response.error || response.message || '登录失败')
+        }
+      } else if (response.access_token) {
+        // 旧格式: 直接返回 {access_token, refresh_token, user}
+        data = response
       } else {
-        throw new Error(response.message || '登录失败')
+        throw new Error('响应格式错误')
       }
+      
+      console.log('=== 提取的数据 ===', data)
+      
+      // 保存token和用户信息
+      token.value = data.access_token
+      refreshToken.value = data.refresh_token
+      user.value = data.user
+      
+      // 持久化
+      localStorage.setItem('token', data.access_token)
+      localStorage.setItem('refreshToken', data.refresh_token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+      
+      console.log('=== 登录成功，token已保存 ===', token.value)
+      return data
     } catch (error) {
-      console.error('登录错误:', error)
+      console.error('=== 登录错误 ===', error)
       throw error
     }
   }

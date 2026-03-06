@@ -139,7 +139,7 @@ class AlertProcessor:
                             if self.manual_matcher is None:
                                 self.manual_matcher = ManualMatchService(db)
                             if self.webhook_notifier is None:
-                                self.webhook_notifier = WebhookNotifier(db)
+                                self.webhook_notifier = WebhookNotifier(db, redis_client=self.redis_client)
                             
                             # 解析文件
                             alerts_data = self.parser.parse_file(file_path)
@@ -592,11 +592,18 @@ class AlertProcessor:
             
             # 更新所有诊断记录（共享同一个诊断结果）
             for diagnosis_id in diagnosis_ids:
+                # 🔄 每次循环都重新查询，确保获取最新的 notified 状态
+                db_session.expire_all()  # 清除session缓存
                 diagnosis = db_session.query(DiagnosisResult).filter(
                     DiagnosisResult.id == diagnosis_id
                 ).first()
                 
                 if diagnosis:
+                    # 🔒 检查是否已发送通知（防止重复发送）
+                    if diagnosis.notified:
+                        logger.info(f"⏭️ 跳过已通知的诊断: 诊断ID={diagnosis.id}, 告警ID={diagnosis.alert_id}")
+                        continue
+                    
                     diagnosis.api_status = parsed_result.get('task_result', 'unknown')
                     # 保存完整的诊断报告（包含 raw_report 和解析后的数据）
                     diagnosis.api_diagnosis = parsed_result
@@ -618,10 +625,13 @@ class AlertProcessor:
                     
                     if alert:
                         # 使用诊断结果重新进行AI解读
-                        await self._ai_interpret(alert, diagnosis, api_result=parsed_result)
+                        await self._ai_interpret(alert, diagnosis, api_result=parsed_result, db=db_session)
                         
                         # 发送更新通知（包含诊断结果和AI解读）
                         await self.webhook_notifier.send_alert_notification(alert, diagnosis)
+                        
+                        # 🔄 刷新 session 以获取最新的 notified 状态
+                        db_session.refresh(diagnosis)
                     
                     db_session.commit()
             

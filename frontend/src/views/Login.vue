@@ -115,18 +115,34 @@ const handleLogin = async () => {
   if (!formRef.value) return
   
   try {
+    // 表单验证
     const valid = await formRef.value.validate()
     if (!valid) return
-    
-    loading.value = true
+  } catch (error) {
+    // 表单验证失败，不显示"登录失败"提示
+    // Element Plus 会自动显示字段级别的验证错误
+    console.log('表单验证失败:', error)
+    return
+  }
+  
+  // 表单验证通过，开始登录
+  loading.value = true
+  
+  try {
+    console.log('=== 开始登录流程 ===')
+    console.log('登录表单数据:', { username: form.username, password: '***' })
     
     // userStore.login 内部已使用 users.js 的 login() 函数
-    await userStore.login(form)
+    const result = await userStore.login(form)
+    
+    console.log('=== userStore.login 返回结果 ===', result)
     
     ElMessage.success('登录成功')
     
     // 确保跳转在 ElMessage 之后执行
     const redirect = route.query.redirect || '/'
+    
+    console.log('=== 准备跳转到 ===', redirect)
     
     // 使用 router.replace 避免导航重复错误
     router.replace(redirect).catch(err => {
@@ -136,7 +152,11 @@ const handleLogin = async () => {
       }
     })
   } catch (error) {
-    console.error('登录失败:', error)
+    console.log('=== 登录流程捕获到错误 ===')
+    console.log('错误类型:', error.constructor.name)
+    console.log('错误消息:', error.message)
+    console.log('完整错误:', error)
+    
     // 只在真正的登录错误时显示错误消息
     if (!error.name || (error.name !== 'NavigationDuplicated' && error.name !== 'NavigationCancelled')) {
       ElMessage.error(error.message || '登录失败，请重试')

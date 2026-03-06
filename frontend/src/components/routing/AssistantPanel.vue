@@ -141,15 +141,19 @@ export default {
   props: {
     pattern: String,
     intentType: String,
-    patternType: String
+    patternType: String,
+    currentDescription: String,
+    currentKeywords: Array,
+    currentTables: Array,
+    currentPriority: Number
   },
-  emits: ['update:description', 'update:tables', 'update:priority'],
-  setup(props) {
-    const description = ref('')
+  emits: ['update:description', 'update:keywords', 'update:tables', 'update:priority'],
+  setup(props, { emit }) {
+    const description = ref(props.currentDescription || '')
     const keywords = ref([])
     const recommendedTables = ref([])
-    const selectedTables = ref([])
-    const priority = ref(50)
+    const selectedTables = ref(props.currentTables || [])
+    const priority = ref(props.currentPriority || 50)
     const prioritySuggestion = ref(null)
     
     const generating = ref(false)
@@ -160,8 +164,33 @@ export default {
     const showKeywordInput = ref(false)
     const newKeyword = ref('')
 
+    // 监听 props 变化，同步内部状态
+    watch(() => props.currentDescription, (newVal) => {
+      if (newVal !== undefined) description.value = newVal
+    })
+    
+    watch(() => props.currentTables, (newVal) => {
+      if (newVal) selectedTables.value = newVal
+    }, { deep: true })
+    
+    watch(() => props.currentPriority, (newVal) => {
+      if (newVal !== undefined) priority.value = newVal
+    })
+    
+    watch(() => props.currentKeywords, (newVal) => {
+      if (newVal && newVal.length > 0) {
+        // 转换为内部格式
+        keywords.value = newVal.map(k => 
+          typeof k === 'string' ? { word: k, weight: 0.5, type: 'custom' } : k
+        )
+      }
+    }, { deep: true, immediate: true })
+
     const handleGenerateDescription = async () => {
-      if (!props.pattern) return
+      if (!props.pattern) {
+        ElMessage.warning('请先输入匹配模式')
+        return
+      }
       
       generating.value = true
       try {
@@ -172,9 +201,13 @@ export default {
         )
         if (response.success) {
           description.value = response.data.description
+          emit('update:description', description.value)
           ElMessage.success('描述生成成功')
+        } else {
+          ElMessage.error(response.message || '描述生成失败')
         }
       } catch (error) {
+        console.error('描述生成失败:', error)
         ElMessage.error('描述生成失败')
       } finally {
         generating.value = false
@@ -182,16 +215,29 @@ export default {
     }
 
     const handleExtractKeywords = async () => {
-      if (!props.pattern) return
+      if (!props.pattern) {
+        ElMessage.warning('请先输入匹配模式')
+        return
+      }
+      
+      if (!props.patternType) {
+        ElMessage.warning('无法确定模式类型')
+        return
+      }
       
       extracting.value = true
       try {
         const response = await extractKeywords(props.pattern, props.patternType)
         if (response.success) {
           keywords.value = response.data.keywords
+          // 发送更新事件
+          emit('update:keywords', keywords.value.map(k => k.word))
           ElMessage.success('关键词提取成功')
+        } else {
+          ElMessage.error(response.message || '关键词提取失败')
         }
       } catch (error) {
+        console.error('关键词提取失败:', error)
         ElMessage.error('关键词提取失败')
       } finally {
         extracting.value = false
@@ -213,8 +259,11 @@ export default {
         if (response.success) {
           recommendedTables.value = response.data.tables
           ElMessage.success('表推荐成功')
+        } else {
+          ElMessage.error(response.message || '表推荐失败')
         }
       } catch (error) {
+        console.error('表推荐失败:', error)
         ElMessage.error('表推荐失败')
       } finally {
         recommending.value = false
@@ -222,7 +271,10 @@ export default {
     }
 
     const handleSuggestPriority = async () => {
-      if (!props.pattern) return
+      if (!props.pattern) {
+        ElMessage.warning('请先输入匹配模式')
+        return
+      }
       
       suggesting.value = true
       try {
@@ -234,9 +286,13 @@ export default {
         if (response.success) {
           prioritySuggestion.value = response.data
           priority.value = response.data.suggested_priority
+          emit('update:priority', priority.value)
           ElMessage.success('优先级建议成功')
+        } else {
+          ElMessage.error(response.message || '优先级建议失败')
         }
       } catch (error) {
+        console.error('优先级建议失败:', error)
         ElMessage.error('优先级建议失败')
       } finally {
         suggesting.value = false
@@ -250,6 +306,7 @@ export default {
           weight: 0.5,
           type: 'custom'
         })
+        emit('update:keywords', keywords.value.map(k => k.word))
         newKeyword.value = ''
       }
       showKeywordInput.value = false
@@ -257,7 +314,23 @@ export default {
 
     const removeKeyword = (index) => {
       keywords.value.splice(index, 1)
+      emit('update:keywords', keywords.value.map(k => k.word))
     }
+    
+    // 监听 description 变化
+    watch(description, (newVal) => {
+      emit('update:description', newVal)
+    })
+    
+    // 监听 selectedTables 变化
+    watch(selectedTables, (newVal) => {
+      emit('update:tables', newVal)
+    }, { deep: true })
+    
+    // 监听 priority 变化
+    watch(priority, (newVal) => {
+      emit('update:priority', newVal)
+    })
 
     return {
       description,

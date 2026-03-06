@@ -94,7 +94,7 @@ import { debounceCancelable } from '@/utils/debounce'
 export default {
   name: 'IntelligentInput',
   props: {
-    modelValue: {
+    pattern: {
       type: String,
       default: ''
     },
@@ -108,23 +108,31 @@ export default {
       required: true
     }
   },
-  emits: ['update:modelValue', 'update:mode', 'convert', 'validate'],
+  emits: ['update:pattern', 'update:mode', 'converted', 'validated'],
   setup(props, { emit }) {
     const currentMode = ref(props.mode)
     const naturalLanguageInput = ref('')
-    const regexInput = ref(props.modelValue)
+    const regexInput = ref(props.pattern)
     const converting = ref(false)
     const convertResult = ref(null)
     
     // 使用可取消的防抖函数进行验证（500ms）
-    const debouncedValidate = debounceCancelable((value) => {
-      if (value.trim()) {
-        emit('validate', value)
+    const debouncedValidate = debounceCancelable(async (value) => {
+      if (value.trim() && props.intentType) {
+        try {
+          const { validateRegex } = await import('@/api/routing-assistant')
+          const response = await validateRegex(value, props.intentType)
+          if (response.success) {
+            emit('validated', response.data)
+          }
+        } catch (error) {
+          console.error('验证失败:', error)
+        }
       }
     }, 500)
 
     // 监听外部值变化
-    watch(() => props.modelValue, (newValue) => {
+    watch(() => props.pattern, (newValue) => {
       if (currentMode.value === 'regex') {
         regexInput.value = newValue
       }
@@ -137,7 +145,7 @@ export default {
       // 切换到正则模式时，如果有转换结果，使用转换的正则
       if (mode === 'regex' && convertResult.value) {
         regexInput.value = convertResult.value.regex
-        emit('update:modelValue', convertResult.value.regex)
+        emit('update:pattern', convertResult.value.regex)
       }
     }
 
@@ -162,9 +170,11 @@ export default {
           props.intentType
         )
         
+        console.log('🔍 转换API响应:', response)
+        
         if (response.success) {
           convertResult.value = response.data
-          emit('convert', response.data)
+          emit('converted', response.data)
           ElMessage.success('转换成功')
         } else {
           ElMessage.error(response.message || '转换失败')
@@ -179,7 +189,7 @@ export default {
 
     // 正则表达式输入（带防抖）
     const handleRegexInput = () => {
-      emit('update:modelValue', regexInput.value)
+      emit('update:pattern', regexInput.value)
       debouncedValidate(regexInput.value)
     }
 

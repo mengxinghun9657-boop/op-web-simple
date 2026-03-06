@@ -44,22 +44,17 @@ export const testRoutingRules = (data) => {
  * 导出路由规则
  */
 export const exportRoutingRules = () => {
-  return axios.get('/api/v1/routing/rules/export', {
-    responseType: 'blob'
-  })
+  // 后端返回JSON格式，不是blob
+  return axios.get('/api/v1/routing/rules/export')
 }
 
 /**
  * 导入路由规则
+ * @param {Object} data - 导入数据 { rules: Array, conflict_strategy: string }
  */
-export const importRoutingRules = (file) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  return axios.post('/api/v1/routing/rules/import', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  })
+export const importRoutingRules = (data) => {
+  // 后端期望JSON格式，不是FormData
+  return axios.post('/api/v1/routing/rules/import', data)
 }
 
 // ==================== 规则建议 API ====================

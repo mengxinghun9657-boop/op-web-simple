@@ -30,6 +30,7 @@ const routes = [
       { path: 'monitoring/eip', name: 'EIPMonitoring', component: () => import('@/views/EIPMonitoring.vue'), meta: { title: 'EIP带宽监控' } },
       { path: 'monitoring/bos', name: 'BOSMonitoring', component: () => import('@/views/BOSMonitoring.vue'), meta: { title: 'BOS存储分析' } },
       { path: 'monitoring/bcc', name: 'BCCMonitoring', component: () => import('@/views/BCCMonitoring.vue'), meta: { title: 'BCC实例监控' } },
+      { path: 'monitoring/pfs', name: 'PFSMonitoring', component: () => import('@/views/monitoring/PFSMonitoring.vue'), meta: { title: 'PFS监控分析' } },
       { path: 'cluster-fetch', name: 'ClusterDataFetch', component: () => import('@/views/ClusterDataFetch.vue'), meta: { title: '多集群数据获取' } },
       { path: 'task-history', name: 'TaskHistory', component: () => import('@/views/TaskHistory.vue'), meta: { title: '历史任务' } },
       { path: 'admin/users', name: 'UserManagement', component: () => import('@/views/admin/UserManagement.vue'), meta: { title: '用户管理', roles: ['super_admin', 'admin'] } },

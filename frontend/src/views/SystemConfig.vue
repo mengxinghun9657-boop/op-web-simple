@@ -40,6 +40,10 @@
             <el-icon><TrendCharts /></el-icon>
             <span>分析配置</span>
           </el-menu-item>
+          <el-menu-item index="pfs">
+            <el-icon><Histogram /></el-icon>
+            <span>PFS配置</span>
+          </el-menu-item>
         </el-menu>
       </aside>
 
@@ -55,11 +59,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Setting, User, DataBoard, Monitor, TrendCharts } from '@element-plus/icons-vue'
+import { Setting, User, DataBoard, Monitor, TrendCharts, Histogram } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import CMDBConfig from '@/components/config/CMDBConfig.vue'
 import MonitoringConfig from '@/components/config/MonitoringConfig.vue'
 import AnalysisConfig from '@/components/config/AnalysisConfig.vue'
+import PFSConfig from '@/components/config/PFSConfig.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -81,7 +86,8 @@ const currentComponent = computed(() => {
   const components = {
     cmdb: CMDBConfig,
     monitoring: MonitoringConfig,
-    analysis: AnalysisConfig
+    analysis: AnalysisConfig,
+    pfs: PFSConfig
   }
   return components[activeSection.value] || CMDBConfig
 })

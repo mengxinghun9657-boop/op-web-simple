@@ -28,13 +28,13 @@ router = APIRouter(prefix="/config", tags=["系统配置管理"])
 
 class ConfigSaveRequest(BaseModel):
     """配置保存请求"""
-    module: str = Field(..., description="模块名称: cmdb, monitoring, analysis")
+    module: str = Field(..., description="模块名称: cmdb, monitoring, analysis, pfs")
     config: Dict[str, Any] = Field(..., description="配置内容（JSON对象）")
     
     @validator('module')
     def validate_module(cls, v):
         """验证模块名称"""
-        allowed_modules = ['cmdb', 'monitoring', 'analysis']
+        allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs']
         if v not in allowed_modules:
             raise ValueError(f'无效的模块名称：{v}，允许的值：{", ".join(allowed_modules)}')
         return v
@@ -62,10 +62,27 @@ class ConfigSaveRequest(BaseModel):
 
 class ConfigLoadResponse(BaseModel):
     """配置加载响应"""
-    module: str
-    config: Dict[str, Any]
-    updated_at: Optional[str]
-    updated_by: Optional[int]
+    success: bool = Field(True, description="操作是否成功")
+    data: Dict[str, Any] = Field(..., description="配置数据")
+    message: Optional[str] = Field(None, description="提示信息")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "data": {
+                    "module": "pfs",
+                    "config": {
+                        "grafana_url": "https://cprom.cd.baidubce.com/select/prometheus",
+                        "token": "eyJhbGci...",
+                        "pfs_instance_ids": ["pfs-mTYGr6"]
+                    },
+                    "updated_at": "2024-01-01T00:00:00",
+                    "updated_by": 1
+                },
+                "message": "配置加载成功"
+            }
+        }
 
 
 class ConfigSaveResponse(BaseModel):
@@ -103,6 +120,7 @@ async def save_config(
     - cmdb: CMDB配置（Cookie、同步设置等）
     - monitoring: 监控配置（EIP、BCC、BOS实例ID）
     - analysis: 分析配置（资源分析集群ID）
+    - pfs: PFS监控配置（Grafana URL、Token等）
     """
     # 检查管理员权限
     check_admin_permission(current_user)
@@ -170,9 +188,10 @@ async def load_config(
     - cmdb: CMDB配置
     - monitoring: 监控配置
     - analysis: 分析配置
+    - pfs: PFS监控配置
     """
     # 验证模块名称
-    allowed_modules = ['cmdb', 'monitoring', 'analysis']
+    allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs']
     if module not in allowed_modules:
         raise HTTPException(
             status_code=400,
@@ -189,10 +208,14 @@ async def load_config(
         if not config_record:
             # 如果配置不存在，返回空配置
             return ConfigLoadResponse(
-                module=module,
-                config={},
-                updated_at=None,
-                updated_by=None
+                success=True,
+                data={
+                    "module": module,
+                    "config": {},
+                    "updated_at": None,
+                    "updated_by": None
+                },
+                message="配置不存在，返回默认值"
             )
         
         # 解析JSON配置
@@ -203,10 +226,14 @@ async def load_config(
             config = {}
         
         return ConfigLoadResponse(
-            module=module,
-            config=config,
-            updated_at=config_record.updated_at.isoformat() if config_record.updated_at else None,
-            updated_by=config_record.updated_by
+            success=True,
+            data={
+                "module": module,
+                "config": config,
+                "updated_at": config_record.updated_at.isoformat() if config_record.updated_at else None,
+                "updated_by": config_record.updated_by
+            },
+            message="配置加载成功"
         )
         
     except Exception as e:

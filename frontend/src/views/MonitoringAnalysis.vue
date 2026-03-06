@@ -1,6 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import { Monitor, Connection, Coin, ArrowRight } from '@element-plus/icons-vue'
+import { Monitor, Connection, Coin, Folder, ArrowRight } from '@element-plus/icons-vue'
 import { Card } from '@/components/common'
 
 const router = useRouter()
@@ -26,6 +26,13 @@ const modules = [
     icon: 'Monitor',
     path: '/monitoring/bcc',
     variant: 'info'
+  },
+  {
+    title: 'PFS监控分析',
+    desc: '并行文件系统容量、吞吐、QPS、延迟监控',
+    icon: 'Folder',
+    path: '/monitoring/pfs',
+    variant: 'warning'
   }
 ]
 
@@ -41,7 +48,7 @@ const navigateTo = (path) => router.push(path)
       </div>
       <div class="page-header-content">
         <h2 class="page-title">监控数据分析中心</h2>
-        <p class="page-subtitle">EIP带宽 · BOS存储 · BCC实例监控</p>
+        <p class="page-subtitle">EIP带宽 · BOS存储 · BCC实例 · PFS文件系统监控</p>
       </div>
     </div>
 

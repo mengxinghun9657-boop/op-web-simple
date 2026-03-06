@@ -353,8 +353,17 @@ async def resend_alert_notification(
         
         # 发送通知
         from app.services.alert.webhook_notifier import WebhookNotifier
+        from app.core.redis_client import get_redis_client
         
-        notifier = WebhookNotifier(db)
+        # 获取Redis客户端
+        redis_client = None
+        try:
+            redis_wrapper = get_redis_client()
+            redis_client = redis_wrapper.client
+        except Exception as e:
+            logger.warning(f"无法获取Redis客户端: {str(e)}")
+        
+        notifier = WebhookNotifier(db, redis_client=redis_client)
         success = await notifier.send_alert_notification(alert, diagnosis)
         
         if success:
@@ -411,8 +420,17 @@ async def batch_resend_notifications(
         
         # 批量发送通知
         from app.services.alert.webhook_notifier import WebhookNotifier
+        from app.core.redis_client import get_redis_client
         
-        notifier = WebhookNotifier(db)
+        # 获取Redis客户端
+        redis_client = None
+        try:
+            redis_wrapper = get_redis_client()
+            redis_client = redis_wrapper.client
+        except Exception as e:
+            logger.warning(f"无法获取Redis客户端: {str(e)}")
+        
+        notifier = WebhookNotifier(db, redis_client=redis_client)
         success_count = 0
         failed_count = 0
         

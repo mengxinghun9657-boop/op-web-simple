@@ -33,6 +33,8 @@ class TaskType(str, enum.Enum):
     MONITORING_EIP = "monitoring_eip"        # EIP监控分析
     MONITORING_BCC = "monitoring_bcc"        # BCC监控分析
     MONITORING_BOS = "monitoring_bos"        # BOS监控分析
+    # PFS监控
+    PFS_EXPORT = "pfs_export"                # PFS数据导出
 
 
 # 保留旧的ModuleType以兼容

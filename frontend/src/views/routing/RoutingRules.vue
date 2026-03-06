@@ -223,7 +223,7 @@
             label-width="100px"
           >
             <!-- 智能输入组件 -->
-            <el-form-item label="匹配模式" prop="pattern">
+            <el-form-item label="匹配模式">
               <IntelligentInput
                 v-model:pattern="ruleForm.pattern"
                 v-model:mode="inputMode"
@@ -268,7 +268,7 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="优先级" prop="priority">
+        <el-form-item label="优先级" prop="priority" :validate-event="false">
           <el-input-number
             v-model="ruleForm.priority"
             :min="1"
@@ -403,7 +403,7 @@
         >
           <TestMatchPanel
             v-if="ruleForm.pattern"
-            :pattern="ruleForm.pattern"
+            :regex="ruleForm.pattern"
             aria-label="规则匹配测试"
           />
           <el-empty 
@@ -424,6 +424,7 @@
             v-if="ruleForm.pattern && ruleForm.intent_type"
             :pattern="ruleForm.pattern"
             :intent-type="ruleForm.intent_type"
+            :pattern-type="inputMode === 'regex' ? 'regex' : 'natural_language'"
             :current-description="ruleForm.description"
             :current-keywords="simpleMetadata.keywords"
             :current-tables="simpleMetadata.tableHints"
@@ -717,11 +718,11 @@ const simpleMetadata = reactive({
 })
 
 const ruleFormRules = {
-  pattern: [{ required: true, message: '请输入匹配模式', trigger: 'blur' }],
+  pattern: [{ required: true, message: '请输入匹配模式', trigger: 'submit' }],
   intent_type: [{ required: true, message: '请选择意图类型', trigger: 'change' }],
   priority: [
-    { required: true, message: '请输入优先级', trigger: 'blur' },
-    { type: 'number', min: 1, max: 100, message: '优先级范围：1-100', trigger: 'blur' }
+    { required: true, message: '请输入优先级', trigger: 'submit' },
+    { type: 'number', min: 1, max: 100, message: '优先级范围：1-100', trigger: 'submit' }
   ]
 }
 
@@ -908,13 +909,31 @@ const handleConverted = (result) => {
   conversionResult.value = result
   if (result.regex) {
     ruleForm.pattern = result.regex
+    // 清除 pattern 字段的验证错误
+    ruleFormRef.value?.clearValidate('pattern')
   }
 }
 
 // 处理验证结果
 const handleValidated = (result) => {
   validationResult.value = result
+  // 如果有验证结果，也清除 pattern 字段的验证错误
+  if (result) {
+    ruleFormRef.value?.clearValidate('pattern')
+  }
 }
+
+// 监听输入模式变化，切换模式时清除验证错误
+watch(inputMode, () => {
+  ruleFormRef.value?.clearValidate('pattern')
+})
+
+// 监听 pattern 变化，有内容时清除验证错误
+watch(() => ruleForm.pattern, (newVal) => {
+  if (newVal && newVal.trim()) {
+    ruleFormRef.value?.clearValidate('pattern')
+  }
+})
 
 // 应用模板
 const handleApplyTemplate = (template) => {
@@ -1027,6 +1046,12 @@ const handleSaveRule = async () => {
   console.log('🔍 handleSaveRule 开始执行')
   console.log('🔍 metadataError:', metadataError.value)
   console.log('🔍 ruleForm:', JSON.stringify(ruleForm, null, 2))
+  
+  // 手动验证 pattern 字段
+  if (!ruleForm.pattern || !ruleForm.pattern.trim()) {
+    ElMessage.warning('请输入匹配模式')
+    return
+  }
   
   if (metadataError.value) {
     ElMessage.warning('请修正元数据格式错误')
@@ -1210,7 +1235,21 @@ const handleImport = async () => {
 
   importing.value = true
   try {
-    const response = await importRoutingRules(importFile.value)
+    // 读取JSON文件内容
+    const fileContent = await importFile.value.text()
+    const importData = JSON.parse(fileContent)
+    
+    // 验证数据格式
+    if (!importData.rules || !Array.isArray(importData.rules)) {
+      ElMessage.error('文件格式错误：缺少 rules 数组')
+      return
+    }
+    
+    // 调用导入API（发送JSON数据，不是FormData）
+    const response = await importRoutingRules({
+      rules: importData.rules,
+      conflict_strategy: 'skip'  // 默认跳过冲突
+    })
 
     if (response.success) {
       ElMessage.success(
@@ -1223,7 +1262,11 @@ const handleImport = async () => {
     }
   } catch (error) {
     console.error('导入失败:', error)
-    ElMessage.error('导入失败')
+    if (error instanceof SyntaxError) {
+      ElMessage.error('文件格式错误：不是有效的JSON文件')
+    } else {
+      ElMessage.error(error.response?.data?.message || error.message || '导入失败')
+    }
   } finally {
     importing.value = false
   }

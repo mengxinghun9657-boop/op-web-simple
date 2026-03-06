@@ -17,10 +17,55 @@ from app.core.config_alert import settings
 class WebhookNotifier:
     """Webhook 通知服务"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, redis_client=None):
         self.db = db
         self.timeout = settings.WEBHOOK_TIMEOUT
         self.retry_times = settings.WEBHOOK_RETRY_TIMES
+        self.redis_client = redis_client
+        
+        # 如果未传入Redis客户端，尝试获取
+        if not self.redis_client:
+            try:
+                from app.core.deps import get_redis_client
+                self.redis_client = get_redis_client()
+            except Exception as e:
+                logger.warning(f"无法获取Redis客户端，节点级通知去重将被禁用: {str(e)}")
+    
+    def _try_acquire_node_notification_lock(self, alert: AlertRecord) -> bool:
+        """
+        尝试获取节点级通知锁（15分钟窗口）
+        
+        Args:
+            alert: 告警记录
+            
+        Returns:
+            True: 获取锁成功，可以发送通知
+            False: 锁已被占用，跳过通知（15分钟内已发送过）
+        """
+        if not self.redis_client:
+            # Redis不可用时，允许发送（降级策略）
+            return True
+        
+        try:
+            # 构造节点级锁键：cluster_id + ip（或仅ip）
+            if alert.cluster_id:
+                lock_key = f"alert:node_notification_lock:{alert.cluster_id}:{alert.ip}"
+            else:
+                lock_key = f"alert:node_notification_lock:{alert.ip}"
+            
+            # 尝试获取锁（15分钟 = 900秒）
+            acquired = self.redis_client.set(lock_key, "1", nx=True, ex=900)
+            
+            if acquired:
+                logger.info(f"✅ 获取节点通知锁成功: {lock_key}")
+                return True
+            else:
+                logger.info(f"⏭️ 节点通知锁已存在，跳过通知: {lock_key}（15分钟内已发送过）")
+                return False
+                
+        except Exception as e:
+            logger.warning(f"Redis锁检查失败，允许发送通知（降级策略）: {str(e)}")
+            return True
     
     async def send_alert_notification(
         self, 
@@ -37,6 +82,26 @@ class WebhookNotifier:
         Returns:
             是否发送成功
         """
+        # 🔒 检查是否已发送通知（防止重复发送）
+        if diagnosis and diagnosis.notified:
+            logger.info(f"⏭️ 跳过通知: 诊断ID={diagnosis.id}, 告警ID={alert.id}, 已在 {diagnosis.notified_at} 发送过通知")
+            return True
+        
+        # 🔒 节点级通知去重（15分钟窗口）
+        if not self._try_acquire_node_notification_lock(alert):
+            logger.info(f"⏭️ 跳过通知: 节点 {alert.cluster_id or 'physical'}:{alert.ip} 在15分钟内已发送过通知")
+            # 虽然跳过通知，但仍标记为已通知（避免后续重复尝试）
+            if diagnosis:
+                try:
+                    from datetime import datetime
+                    diagnosis.notified = True
+                    diagnosis.notified_at = datetime.now()
+                    self.db.commit()
+                except Exception as e:
+                    logger.error(f"更新通知状态失败: {str(e)}")
+                    self.db.rollback()
+            return True
+        
         # 获取启用的 Webhook 配置
         webhooks = self.db.query(WebhookConfig).filter(
             WebhookConfig.enabled == True

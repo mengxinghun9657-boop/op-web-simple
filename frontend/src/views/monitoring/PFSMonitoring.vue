@@ -38,8 +38,8 @@
 
     <!-- 数据展示区域 -->
     <div v-if="hasData" class="data-display">
-      <!-- 概览卡片 -->
-      <div class="overview-cards">
+      <!-- 概览卡片（仅普通模式显示） -->
+      <div v-if="!compareMode" class="overview-cards">
         <MetricCard
           v-for="metric in overviewMetrics"
           :key="metric.metric_name"

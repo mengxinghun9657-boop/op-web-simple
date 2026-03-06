@@ -138,6 +138,7 @@
           v-model="queryForm.compareMode"
           active-text="开启"
           inactive-text="关闭"
+          @change="handleCompareModeChange"
         />
         <span class="form-tip">开启后将对比今天与昨天同期数据</span>
       </el-form-item>
@@ -375,6 +376,11 @@ const handleCustomTimeChange = (value) => {
       end: parseInt(value[1])
     })
   }
+}
+
+// 处理对比模式变化
+const handleCompareModeChange = (value) => {
+  emit('update:compareMode', value)
 }
 
 // 处理查询

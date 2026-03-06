@@ -2,35 +2,37 @@
   <div class="data-dashboard">
     <!-- 图表区域 -->
     <div v-if="hasData" class="charts-section">
-      <!-- 按分类显示图表 -->
-      <div
-        v-for="category in metricCategories"
-        :key="category"
-        class="chart-container"
-      >
-        <div class="chart-header">
-          <h3 class="chart-title">{{ category }} - 趋势图</h3>
-          <el-button-group>
-            <el-button
-              :type="chartType === 'line' ? 'primary' : ''"
-              size="small"
-              @click="chartType = 'line'"
-            >
-              折线图
-            </el-button>
-            <el-button
-              :type="chartType === 'area' ? 'primary' : ''"
-              size="small"
-              @click="chartType = 'area'"
-            >
-              面积图
-            </el-button>
-          </el-button-group>
+      <!-- 普通模式：按分类显示图表 -->
+      <template v-if="!compareMode">
+        <div
+          v-for="category in metricCategories"
+          :key="category"
+          class="chart-container"
+        >
+          <div class="chart-header">
+            <h3 class="chart-title">{{ category }} - 趋势图</h3>
+            <el-button-group>
+              <el-button
+                :type="chartType === 'line' ? 'primary' : ''"
+                size="small"
+                @click="chartType = 'line'"
+              >
+                折线图
+              </el-button>
+              <el-button
+                :type="chartType === 'area' ? 'primary' : ''"
+                size="small"
+                @click="chartType = 'area'"
+              >
+                面积图
+              </el-button>
+            </el-button-group>
+          </div>
+          <div :ref="el => setCategoryChartRef(category, el)" class="chart" style="height: 400px;"></div>
         </div>
-        <div :ref="el => setCategoryChartRef(category, el)" class="chart" style="height: 400px;"></div>
-      </div>
+      </template>
 
-      <!-- 对比图表（仅对比模式显示） -->
+      <!-- 对比模式：对比图表 -->
       <div v-if="compareMode" class="chart-container">
         <div class="chart-header">
           <h3 class="chart-title">对比分析图</h3>
@@ -274,12 +276,14 @@ const formatTimestamp = (timestamp) => {
 const formatValue = (value, unit) => {
   if (value === null || value === undefined) return '-'
   
-  if (unit === 'bytes' || unit === 'binBps') {
+  if (unit === 'bytes' || unit === 'binBps' || unit === '字节') {
     return formatBytes(value)
-  } else if (unit === 'percentunit') {
+  } else if (unit === 'percentunit' || unit === '百分比') {
     return (value * 100).toFixed(2) + '%'
-  } else if (unit === 'µs') {
+  } else if (unit === 'µs' || unit === '微秒') {
     return value.toFixed(2) + ' µs'
+  } else if (unit === 'ops' || unit === 'iops') {
+    return value.toFixed(2) + ' ops'
   } else {
     return value.toFixed(2)
   }
@@ -360,16 +364,31 @@ const initChart = () => {
   })
   chartInstances = {}
   
-  // 为每个分类创建图表
-  nextTick(() => {
-    metricCategories.value.forEach(category => {
-      const chartEl = categoryChartRefs.value[category]
-      if (chartEl) {
-        chartInstances[category] = echarts.init(chartEl)
-        updateCategoryChart(category)
+  if (compareChartInstance) {
+    compareChartInstance.dispose()
+    compareChartInstance = null
+  }
+  
+  // 对比模式：创建对比图表
+  if (props.compareMode) {
+    nextTick(() => {
+      if (compareChartRef.value) {
+        compareChartInstance = echarts.init(compareChartRef.value)
+        updateCompareChart()
       }
     })
-  })
+  } else {
+    // 普通模式：为每个分类创建图表
+    nextTick(() => {
+      metricCategories.value.forEach(category => {
+        const chartEl = categoryChartRefs.value[category]
+        if (chartEl) {
+          chartInstances[category] = echarts.init(chartEl)
+          updateCategoryChart(category)
+        }
+      })
+    })
+  }
 }
 
 // 更新分类图表
@@ -447,18 +466,155 @@ const updateCategoryChart = (category) => {
     series: series,
     dataZoom: [
       {
-        type: 'inside',
+        type: 'slider',
         start: 0,
-        end: 100
-      },
-      {
-        start: 0,
-        end: 100
+        end: 100,
+        bottom: 10
       }
     ]
   }
   
   chartInstance.setOption(option)
+}
+
+// 更新对比图表
+const updateCompareChart = () => {
+  if (!compareChartInstance) return
+  
+  const series = []
+  const legend = []
+  
+  // 为每个指标创建今天和昨天两条线
+  props.metricsData.forEach(metric => {
+    // 今天的数据
+    if (metric.today && metric.today.data_points) {
+      const todayData = metric.today.data_points.map(point => [
+        point.timestamp * 1000,
+        point.value
+      ])
+      
+      legend.push(`${metric.zh_name} (今天)`)
+      series.push({
+        name: `${metric.zh_name} (今天)`,
+        type: 'line',
+        data: todayData,
+        smooth: true,
+        itemStyle: { color: '#409EFF' },
+        emphasis: { focus: 'series' }
+      })
+    }
+    
+    // 昨天的数据 - 时间轴对齐到今天
+    if (metric.yesterday && metric.yesterday.data_points) {
+      const yesterdayData = metric.yesterday.data_points.map(point => {
+        // 将昨天的时间戳调整到今天的时间轴（+24小时）
+        const alignedTimestamp = (point.timestamp + 24 * 3600) * 1000
+        return [alignedTimestamp, point.value]
+      })
+      
+      legend.push(`${metric.zh_name} (昨天)`)
+      series.push({
+        name: `${metric.zh_name} (昨天)`,
+        type: 'line',
+        data: yesterdayData,
+        smooth: true,
+        itemStyle: { color: '#E6A23C' },
+        lineStyle: { type: 'dashed' },
+        emphasis: { focus: 'series' }
+      })
+    }
+  })
+  
+  const option = {
+    title: {
+      text: '对比分析图',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross'
+      },
+      confine: true,
+      formatter: (params) => {
+        if (!params || params.length === 0) return ''
+        
+        // 显示相对时间（HH:mm）
+        const date = new Date(params[0].value[0])
+        const timeStr = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        
+        let result = `<div style="font-weight: bold;">时间: ${timeStr}</div>`
+        
+        // 按指标分组，避免重复显示
+        const metricGroups = {}
+        params.forEach(param => {
+          const metricName = param.seriesName.replace(' (今天)', '').replace(' (昨天)', '')
+          if (!metricGroups[metricName]) {
+            metricGroups[metricName] = { today: null, yesterday: null }
+          }
+          
+          if (param.seriesName.includes('(今天)')) {
+            metricGroups[metricName].today = param
+          } else if (param.seriesName.includes('(昨天)')) {
+            metricGroups[metricName].yesterday = param
+          }
+        })
+        
+        // 按指标显示今天和昨天的数据
+        Object.entries(metricGroups).forEach(([metricName, data]) => {
+          const metric = props.metricsData.find(m => m.zh_name === metricName)
+          result += `<div style="margin-top: 8px; font-weight: bold;">${metricName}</div>`
+          
+          if (data.today) {
+            const value = formatValue(data.today.value[1], metric?.unit_zh)
+            result += `<div>${data.today.marker} 今天: ${value}</div>`
+          }
+          if (data.yesterday) {
+            const value = formatValue(data.yesterday.value[1], metric?.unit_zh)
+            result += `<div>${data.yesterday.marker} 昨天: ${value}</div>`
+          }
+        })
+        
+        return result
+      }
+    },
+    legend: {
+      data: legend,
+      top: 30,
+      type: 'scroll'
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      top: 80,
+      containLabel: true
+    },
+    xAxis: {
+      type: 'time',
+      boundaryGap: false,
+      axisLabel: {
+        formatter: (value) => {
+          const date = new Date(value)
+          return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        }
+      }
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: series,
+    dataZoom: [
+      {
+        type: 'slider',
+        start: 0,
+        end: 100,
+        bottom: 10
+      }
+    ]
+  }
+  
+  compareChartInstance.setOption(option)
 }
 
 // 导出表格数据

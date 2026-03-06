@@ -530,15 +530,32 @@ class PFSService:
                 "metric_name": metric_name,
                 "zh_name": today_result.zh_name,
                 "unit_zh": today_result.unit_zh,
+                "category": today_result.category,
                 "today": {
                     "avg": today_avg,
                     "max": today_result.statistics.max,
-                    "status": today_result.statistics.status
+                    "min": today_result.statistics.min,
+                    "status": today_result.statistics.status,
+                    "data_points": [
+                        {
+                            "timestamp": point.timestamp,
+                            "value": point.value
+                        }
+                        for point in today_result.data_points
+                    ]
                 },
                 "yesterday": {
                     "avg": yesterday_avg,
                     "max": yesterday_result.statistics.max,
-                    "status": yesterday_result.statistics.status
+                    "min": yesterday_result.statistics.min,
+                    "status": yesterday_result.statistics.status,
+                    "data_points": [
+                        {
+                            "timestamp": point.timestamp,
+                            "value": point.value
+                        }
+                        for point in yesterday_result.data_points
+                    ]
                 },
                 "change": {
                     "percent": change_percent,

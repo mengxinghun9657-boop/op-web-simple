@@ -33,9 +33,9 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # 暴露端口
 EXPOSE 80
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+# 健康检查（已禁用，由 docker-compose 管理）
+# HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+#     CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
 
 # 启动 Nginx
 CMD ["nginx", "-g", "daemon off;"]

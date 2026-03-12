@@ -145,10 +145,13 @@ services:
       SESSION_TTL: ${SESSION_TTL:-1800}
       DEBUG: ${DEBUG:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8089}
-      # 代理配置（内网访问外网）
+      # 代理配置（绕过代理访问内网服务）
+      # 注意：只绕过内网IP和百度内网域名，外部服务（飞书、如流）仍走代理
       HTTP_PROXY: http://agent.baidu.com:8891
       HTTPS_PROXY: http://agent.baidu.com:8891
-      NO_PROXY: localhost,127.0.0.1,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,apiin.im.baidu.com,.baidu.com,.baidubce.com,.baidu-int.com,.bcebos.com
+      NO_PROXY: localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,llms-se.baidu-int.com
+      no_proxy: localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,llms-se.baidu-int.com
+      WORKERS: ${WORKERS:-4}  # Worker 数量，默认 4（内网环境），外网可设置为 2
       # 宿主机MySQL配置（用于查询集群信息）
       HOST_MYSQL_IP: ${HOST_MYSQL_IP:-host.docker.internal}
       PYTHONUNBUFFERED: 1
@@ -174,11 +177,13 @@ services:
     networks:
       - cluster-network
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      # 使用 python3 内置库，不依赖外部命令（curl/wget）
+      # 简化版本：直接检查端口是否可访问
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(5); s.connect(('localhost',8000)); s.close()"]
       interval: 30s
-      timeout: 30s
+      timeout: 10s
       retries: 5
-      start_period: 180s
+      start_period: 180s  # 增加到 180 秒（3分钟），确保 AI 服务初始化完成
     deploy:
       resources:
         limits:

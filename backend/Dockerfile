@@ -36,9 +36,20 @@ RUN mkdir -p uploads results logs data/reports config
 # 暴露端口
 EXPOSE 8000
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/api/v1/health')"
+# 健康检查（由docker-compose管理，这里注释掉）
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+#     CMD python -c "import requests; requests.get('http://localhost:8000/api/v1/health')"
 
 # 启动命令（使用 gunicorn 生产环境）
-CMD ["gunicorn", "main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "300", "--access-logfile", "-", "--error-logfile", "-"]
+# 根据环境调整 worker 数量：
+# - 内网环境（192GB RAM）：4 workers，充分利用资源
+# - 外网环境（8GB RAM）：2 workers，避免资源不足
+# 使用环境变量 WORKERS 控制，默认 4
+CMD gunicorn main:app \
+    -w ${WORKERS:-4} \
+    -k uvicorn.workers.UvicornWorker \
+    -b 0.0.0.0:8000 \
+    --timeout 300 \
+    --graceful-timeout 120 \
+    --access-logfile - \
+    --error-logfile -

@@ -487,7 +487,28 @@ finally:
 
 # 检查并导入故障手册
 if [ -f "knowledge/故障维修手册.csv" ]; then
-    import_fault_manual "knowledge/故障维修手册.csv"
+    # 额外等待确保MySQL完全就绪（数据库初始化完成）
+    echo "⏳ 等待MySQL数据库完全就绪..."
+    for i in {1..20}; do
+        if docker compose -f docker-compose.prod.yml exec -T mysql mysql -uroot -p'Zhang~~1' -e "USE cluster_management; SELECT 1;" >/dev/null 2>&1; then
+            echo "✓ MySQL数据库已就绪"
+            sleep 5  # 额外等待5秒确保连接池稳定
+            break
+        fi
+        if [ $i -eq 20 ]; then
+            echo "⚠️  MySQL数据库未就绪，跳过故障手册导入"
+            echo "   请稍后手动执行："
+            echo "   docker compose -f docker-compose.prod.yml exec backend python3 backend/scripts/import_fault_manual.py"
+        else
+            echo "  等待中... ($i/20)"
+            sleep 3
+        fi
+    done
+    
+    # 只有在MySQL完全就绪后才执行导入
+    if docker compose -f docker-compose.prod.yml exec -T mysql mysql -uroot -p'Zhang~~1' -e "USE cluster_management; SELECT 1;" >/dev/null 2>&1; then
+        import_fault_manual "knowledge/故障维修手册.csv"
+    fi
 elif [ -f "knowledge/故障维修手册.md" ]; then
     import_fault_manual "knowledge/故障维修手册.md"
 else

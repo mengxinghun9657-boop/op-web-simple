@@ -185,7 +185,7 @@ def init_system_configs():
         # 检查iCafe配置是否已存在
         existing_icafe = db.query(SystemConfig).filter(
             SystemConfig.module == 'icafe',
-            SystemConfig.config_key == 'api_config'
+            SystemConfig.config_key == 'main'
         ).first()
         
         if existing_icafe:
@@ -194,7 +194,7 @@ def init_system_configs():
             # 创建iCafe配置
             icafe_record = SystemConfig(
                 module='icafe',
-                config_key='api_config',
+                config_key='main',
                 config_value=json.dumps(icafe_config, ensure_ascii=False),
                 updated_by=1  # 系统管理员ID
             )

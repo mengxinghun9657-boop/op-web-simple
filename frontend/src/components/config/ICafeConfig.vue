@@ -21,18 +21,16 @@
           <el-input
             v-model="form.api_url"
             placeholder="iCafe API 地址"
-            readonly
           />
-          <div class="form-tip">默认使用内网 API 地址，无需修改</div>
+          <div class="form-tip">默认使用内网 API 地址：http://icafeapi.baidu-int.com/api/v2</div>
         </el-form-item>
 
         <el-form-item label="空间ID" prop="space_id">
           <el-input
             v-model="form.space_id"
             placeholder="iCafe 空间标识"
-            readonly
           />
-          <div class="form-tip">长安HMLCC售后服务支持空间</div>
+          <div class="form-tip">长安HMLCC售后服务支持空间ID：HMLCC</div>
         </el-form-item>
 
         <el-form-item label="用户名" prop="username" required>
@@ -121,8 +119,8 @@ const testResultClass = ref('')
 const loadICafeConfig = async () => {
   try {
     const response = await loadConfig('icafe')
-    if (response.success && response.data.icafe) {
-      const config = response.data.icafe.api_config || {}
+    if (response.success && response.data.config) {
+      const config = response.data.config
       Object.assign(form, {
         api_url: config.api_url || 'http://icafeapi.baidu-int.com/api/v2',
         space_id: config.space_id || 'HMLCC',
@@ -178,8 +176,16 @@ const handleTestConnection = async () => {
     testing.value = true
     testResult.value = ''
     
+    // 使用当前表单数据测试连接
+    const testConfig = {
+      api_url: form.api_url,
+      space_id: form.space_id,
+      username: form.username,
+      password: form.password
+    }
+    
     // 调用后端测试连接API
-    const response = await testICafeConnection()
+    const response = await testICafeConnection(testConfig)
     
     if (response.success) {
       testResult.value = '✅ 连接测试成功'

@@ -244,11 +244,16 @@ async def load_config(
 
 @router.post("/icafe/test-connection", summary="测试iCafe连接")
 async def test_icafe_connection(
+    config: Optional[Dict[str, Any]] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
     测试iCafe API连接
+    
+    支持两种模式：
+    1. 传入配置数据：使用传入的配置测试（保存前测试）
+    2. 不传配置：使用数据库中的配置测试（保存后测试）
     
     需要管理员权限
     """
@@ -257,29 +262,33 @@ async def test_icafe_connection(
         if current_user.role not in ['admin', 'super_admin']:
             raise HTTPException(status_code=403, detail="仅管理员可以测试连接")
         
-        # 获取iCafe配置
-        config_record = db.query(SystemConfig).filter(
-            SystemConfig.module == 'icafe',
-            SystemConfig.config_key == 'main'
-        ).first()
-        
-        if not config_record:
-            return {
-                "success": False,
-                "message": "iCafe配置不存在，请先保存配置"
-            }
-        
-        # 解析配置
-        try:
-            if isinstance(config_record.config_value, str):
-                config_data = json.loads(config_record.config_value)
-            else:
-                config_data = config_record.config_value
-        except json.JSONDecodeError:
-            return {
-                "success": False,
-                "message": "配置格式错误"
-            }
+        # 如果传入了配置，使用传入的配置
+        if config:
+            config_data = config
+        else:
+            # 否则从数据库读取配置
+            config_record = db.query(SystemConfig).filter(
+                SystemConfig.module == 'icafe',
+                SystemConfig.config_key == 'main'
+            ).first()
+            
+            if not config_record:
+                return {
+                    "success": False,
+                    "message": "iCafe配置不存在，请先保存配置"
+                }
+            
+            # 解析配置
+            try:
+                if isinstance(config_record.config_value, str):
+                    config_data = json.loads(config_record.config_value)
+                else:
+                    config_data = config_record.config_value
+            except json.JSONDecodeError:
+                return {
+                    "success": False,
+                    "message": "配置格式错误"
+                }
         
         # 验证必要字段
         required_fields = ['api_url', 'space_id', 'username', 'password']

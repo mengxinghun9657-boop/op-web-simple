@@ -120,22 +120,39 @@ def import_manual_data(db: Session, records: list):
 def main():
     """主函数"""
     # 故障手册文件路径（优先使用CSV）
-    # 脚本位置: /app/backend/scripts/import_fault_manual.py
-    # 文件位置: /knowledge/故障维修手册.csv
-    csv_file = Path('/knowledge/故障维修手册.csv')
-    md_file = Path('/knowledge/故障维修手册.md')
+    # 支持两个位置：
+    # 1. /app/knowledge/ (pack-offline.sh 部署时使用)
+    # 2. /app/scripts/ (deploy.sh 部署时使用)
+    csv_paths = [
+        Path('/app/knowledge/故障维修手册.csv'),
+        Path('/app/scripts/故障维修手册.csv')
+    ]
+    md_paths = [
+        Path('/app/knowledge/故障维修手册.md'),
+        Path('/app/scripts/故障维修手册.md')
+    ]
     
     # 优先使用CSV文件
-    if csv_file.exists():
-        manual_file = csv_file
-        logger.info(f"使用CSV文件: {manual_file}")
-    elif md_file.exists():
-        manual_file = md_file
-        logger.info(f"使用MD文件（降级）: {manual_file}")
-    else:
+    manual_file = None
+    for csv_file in csv_paths:
+        if csv_file.exists():
+            manual_file = csv_file
+            logger.info(f"使用CSV文件: {manual_file}")
+            break
+    
+    # 如果CSV不存在，尝试MD文件
+    if not manual_file:
+        for md_file in md_paths:
+            if md_file.exists():
+                manual_file = md_file
+                logger.info(f"使用MD文件（降级）: {manual_file}")
+                break
+    
+    if not manual_file:
         logger.error("故障手册文件不存在（CSV和MD都未找到）")
-        logger.error(f"  检查路径: {csv_file}")
-        logger.error(f"  检查路径: {md_file}")
+        logger.error("  检查路径:")
+        for p in csv_paths + md_paths:
+            logger.error(f"    {p}")
         return
     
     logger.info(f"开始解析故障手册: {manual_file}")

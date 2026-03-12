@@ -388,7 +388,7 @@ import_fault_manual() {
     echo "📚 导入故障手册（${file_name}）..."
     
     # 确保容器内目录存在
-    docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /knowledge 2>/dev/null || true
+    docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /app/knowledge 2>/dev/null || true
     docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /app/backend/scripts 2>/dev/null || true
     
     # 获取后端容器 ID
@@ -399,7 +399,7 @@ import_fault_manual() {
     fi
     
     # 复制故障手册文件到容器内
-    if docker cp "$file_path" "${BACKEND_CONTAINER}:/knowledge/${file_name}"; then
+    if docker cp "$file_path" "${BACKEND_CONTAINER}:/app/knowledge/${file_name}"; then
         echo "✓ 故障手册文件已复制到容器"
     else
         echo "❌ 故障手册文件复制失败"
@@ -490,7 +490,7 @@ if [ -f "knowledge/故障维修手册.csv" ]; then
     # 额外等待确保MySQL完全就绪（数据库初始化完成）
     echo "⏳ 等待MySQL数据库完全就绪..."
     for i in {1..20}; do
-        if docker compose -f docker-compose.prod.yml exec -T mysql mysql -uroot -p'Zhang~~1' -e "USE cluster_management; SELECT 1;" >/dev/null 2>&1; then
+        if docker compose -f docker-compose.prod.yml exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "USE cluster_management; SELECT 1;" >/dev/null 2>&1; then
             echo "✓ MySQL数据库已就绪"
             sleep 5  # 额外等待5秒确保连接池稳定
             break
@@ -506,7 +506,7 @@ if [ -f "knowledge/故障维修手册.csv" ]; then
     done
     
     # 只有在MySQL完全就绪后才执行导入
-    if docker compose -f docker-compose.prod.yml exec -T mysql mysql -uroot -p'Zhang~~1' -e "USE cluster_management; SELECT 1;" >/dev/null 2>&1; then
+    if docker compose -f docker-compose.prod.yml exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "USE cluster_management; SELECT 1;" >/dev/null 2>&1; then
         import_fault_manual "knowledge/故障维修手册.csv"
     fi
 elif [ -f "knowledge/故障维修手册.md" ]; then

@@ -92,9 +92,21 @@ class ReportVectorizationService:
         lock_timeout = 60  # 60 秒超时
         
         try:
-            # 尝试获取锁
+            # 尝试获取锁（带重试机制）
             from app.core.redis_client import get_redis_client
-            redis_client = get_redis_client()
+            redis_client = None
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    redis_client = get_redis_client()
+                    break
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"⚠️ Redis连接失败（尝试 {attempt + 1}/{max_retries}）: {e}")
+                        await asyncio.sleep(2 ** attempt)  # 指数退避
+                    else:
+                        logger.error(f"❌ Redis连接失败（已重试 {max_retries} 次）: {e}")
+                        return False
             
             # SET NX EX：如果 key 不存在则设置，并设置过期时间
             lock_acquired = redis_client.set(lock_key, "1", nx=True, ex=lock_timeout)
@@ -299,7 +311,7 @@ class ReportVectorizationService:
         vector_id: str
     ) -> bool:
         """
-        更新 MySQL report_index 表
+        更新 MySQL report_index 表（带重试机制）
         
         Args:
             task_id: 任务ID
@@ -317,56 +329,69 @@ class ReportVectorizationService:
         """
         conn = None
         cursor = None
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            
-            # 确定文件格式
-            file_format = 'html' if file_path.endswith('.html') else 'json'
-            
-            # 使用 INSERT ... ON DUPLICATE KEY UPDATE 避免并发冲突
-            cursor.execute("""
-                INSERT INTO report_index
-                (task_id, report_type, file_path, file_format, summary, conclusion,
-                 generated_at, vectorized, vector_id, indexed_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, TRUE, %s, NOW())
-                ON DUPLICATE KEY UPDATE
-                    summary = VALUES(summary),
-                    conclusion = VALUES(conclusion),
-                    vectorized = TRUE,
-                    vector_id = VALUES(vector_id),
-                    indexed_at = NOW()
-            """, (
-                task_id, report_type, file_path, file_format,
-                summary, conclusion, generated_at, vector_id
-            ))
-            
-            conn.commit()
-            
-            logger.info(f"✅ 更新 report_index 成功: {task_id}")
-            return True
-            
-        except Exception as e:
-            # 捕获 Duplicate entry 错误，视为成功（数据已存在）
-            error_msg = str(e)
-            if 'Duplicate entry' in error_msg and 'task_id' in error_msg:
-                logger.warning(f"⚠️ 报告索引已存在（并发插入），跳过: {task_id}")
+        max_retries = 3
+        
+        for attempt in range(max_retries):
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                
+                # 确定文件格式
+                file_format = 'html' if file_path.endswith('.html') else 'json'
+                
+                # 使用 INSERT ... ON DUPLICATE KEY UPDATE 避免并发冲突
+                cursor.execute("""
+                    INSERT INTO report_index
+                    (task_id, report_type, file_path, file_format, summary, conclusion,
+                     generated_at, vectorized, vector_id, indexed_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, TRUE, %s, NOW())
+                    ON DUPLICATE KEY UPDATE
+                        summary = VALUES(summary),
+                        conclusion = VALUES(conclusion),
+                        vectorized = TRUE,
+                        vector_id = VALUES(vector_id),
+                        indexed_at = NOW()
+                """, (
+                    task_id, report_type, file_path, file_format,
+                    summary, conclusion, generated_at, vector_id
+                ))
+                
+                conn.commit()
+                
+                logger.info(f"✅ 更新 report_index 成功: {task_id}")
                 return True
-            
-            # 其他错误记录日志并返回失败
-            logger.error(f"❌ 更新 report_index 失败: {task_id}, 错误: {e}")
-            return False
-        finally:
-            if cursor is not None:
-                try:
-                    cursor.close()
-                except Exception as e:
-                    logger.warning(f"⚠️ 关闭游标失败: {e}")
-            if conn is not None:
-                try:
-                    conn.close()
-                except Exception as e:
-                    logger.warning(f"⚠️ 关闭数据库连接失败: {e}")
+                
+            except Exception as e:
+                # 捕获 Duplicate entry 错误，视为成功（数据已存在）
+                error_msg = str(e)
+                if 'Duplicate entry' in error_msg and 'task_id' in error_msg:
+                    logger.warning(f"⚠️ 报告索引已存在（并发插入），跳过: {task_id}")
+                    return True
+                
+                # MySQL连接错误，重试
+                if 'Connection refused' in error_msg or '2003' in error_msg:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"⚠️ MySQL连接失败（尝试 {attempt + 1}/{max_retries}）: {task_id}")
+                        await asyncio.sleep(2 ** attempt)  # 指数退避
+                        continue
+                    else:
+                        logger.error(f"❌ MySQL连接失败（已重试 {max_retries} 次）: {task_id}")
+                        return False
+                
+                # 其他错误记录日志并返回失败
+                logger.error(f"❌ 更新 report_index 失败: {task_id}, 错误: {e}")
+                return False
+            finally:
+                if cursor is not None:
+                    try:
+                        cursor.close()
+                    except Exception as e:
+                        logger.warning(f"⚠️ 关闭游标失败: {e}")
+                if conn is not None:
+                    try:
+                        conn.close()
+                    except Exception as e:
+                        logger.warning(f"⚠️ 关闭数据库连接失败: {e}")
     
     async def _create_knowledge_entry(
         self,
@@ -376,7 +401,7 @@ class ReportVectorizationService:
         generated_at: datetime
     ) -> Optional[int]:
         """
-        自动创建知识库条目（防止重复创建）
+        自动创建知识库条目（防止重复创建，带重试机制）
         
         Args:
             task_id: 任务ID
@@ -394,81 +419,96 @@ class ReportVectorizationService:
         """
         conn = None
         cursor = None
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            
-            # 1. 检查是否已存在相同 source_id 的知识条目（防止重复创建）
-            cursor.execute("""
-                SELECT id FROM knowledge_entries
-                WHERE source = 'auto' AND source_id = %s AND deleted_at IS NULL
-                LIMIT 1
-            """, (task_id,))
-            
-            existing = cursor.fetchone()
-            if existing:
-                knowledge_entry_id = existing[0]
-                logger.info(f"⏭️ 知识条目已存在，跳过创建: ID={knowledge_entry_id}, task_id={task_id}")
+        max_retries = 3
+        
+        for attempt in range(max_retries):
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                
+                # 1. 检查是否已存在相同 source_id 的知识条目（防止重复创建）
+                cursor.execute("""
+                    SELECT id FROM knowledge_entries
+                    WHERE source = 'auto' AND source_id = %s AND deleted_at IS NULL
+                    LIMIT 1
+                """, (task_id,))
+                
+                existing = cursor.fetchone()
+                if existing:
+                    knowledge_entry_id = existing[0]
+                    logger.info(f"⏭️ 知识条目已存在，跳过创建: ID={knowledge_entry_id}, task_id={task_id}")
+                    return knowledge_entry_id
+                
+                # 2. 生成标题
+                report_type_names = {
+                    'resource_analysis': '资源分析',
+                    'bcc_monitoring': 'BCC 监控',
+                    'bos_monitoring': 'BOS 监控',
+                    'operational_analysis': '运营分析'
+                }
+                report_type_name = report_type_names.get(report_type, report_type)
+                title = f"{report_type_name} - {generated_at.strftime('%Y-%m-%d')}"
+                
+                # 3. 准备元数据（详情层）
+                metadata = {
+                    "detail_level": "summary_and_conclusion",
+                    "full_report_url": f"/cluster-files/{content_layers.get('file_path', '')}",
+                    "detailed_data": content_layers.get('details', {})
+                }
+                
+                # 4. 插入知识条目
+                cursor.execute("""
+                    INSERT INTO knowledge_entries
+                    (title, content, metadata, category, tags, priority,
+                     source, source_type, source_id, author, auto_generated)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    title,
+                    content_layers['conclusion'],  # content 字段存储结论层
+                    json.dumps(metadata, ensure_ascii=False),  # metadata 字段存储详情层
+                    '分析报告',  # category
+                    json.dumps([report_type_name, task_id], ensure_ascii=False),  # tags
+                    'medium',  # priority
+                    'auto',  # source
+                    report_type,  # source_type
+                    task_id,  # source_id
+                    'system',  # author
+                    True  # auto_generated
+                ))
+                
+                knowledge_entry_id = cursor.lastrowid
+                
+                conn.commit()
+                
+                logger.info(f"✅ 创建知识条目成功: ID={knowledge_entry_id}, task_id={task_id}")
                 return knowledge_entry_id
-            
-            # 2. 生成标题
-            report_type_names = {
-                'resource_analysis': '资源分析',
-                'bcc_monitoring': 'BCC 监控',
-                'bos_monitoring': 'BOS 监控',
-                'operational_analysis': '运营分析'
-            }
-            report_type_name = report_type_names.get(report_type, report_type)
-            title = f"{report_type_name} - {generated_at.strftime('%Y-%m-%d')}"
-            
-            # 3. 准备元数据（详情层）
-            metadata = {
-                "detail_level": "summary_and_conclusion",
-                "full_report_url": f"/cluster-files/{content_layers.get('file_path', '')}",
-                "detailed_data": content_layers.get('details', {})
-            }
-            
-            # 4. 插入知识条目
-            cursor.execute("""
-                INSERT INTO knowledge_entries
-                (title, content, metadata, category, tags, priority,
-                 source, source_type, source_id, author, auto_generated)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                title,
-                content_layers['conclusion'],  # content 字段存储结论层
-                json.dumps(metadata, ensure_ascii=False),  # metadata 字段存储详情层
-                '分析报告',  # category
-                json.dumps([report_type_name, task_id], ensure_ascii=False),  # tags
-                'medium',  # priority
-                'auto',  # source
-                report_type,  # source_type
-                task_id,  # source_id
-                'system',  # author
-                True  # auto_generated
-            ))
-            
-            knowledge_entry_id = cursor.lastrowid
-            
-            conn.commit()
-            
-            logger.info(f"✅ 创建知识条目成功: ID={knowledge_entry_id}, task_id={task_id}")
-            return knowledge_entry_id
-            
-        except Exception as e:
-            logger.error(f"❌ 创建知识条目失败: {task_id}, 错误: {e}")
-            return None
-        finally:
-            if cursor is not None:
-                try:
-                    cursor.close()
-                except Exception as close_err:
-                    logger.warning(f"⚠️ 关闭游标失败: {close_err}")
-            if conn is not None:
-                try:
-                    conn.close()
-                except Exception as close_err:
-                    logger.warning(f"⚠️ 关闭数据库连接失败: {close_err}")
+                
+            except Exception as e:
+                error_msg = str(e)
+                
+                # MySQL连接错误，重试
+                if 'Connection refused' in error_msg or '2003' in error_msg:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"⚠️ MySQL连接失败（尝试 {attempt + 1}/{max_retries}）: {task_id}")
+                        await asyncio.sleep(2 ** attempt)  # 指数退避
+                        continue
+                    else:
+                        logger.error(f"❌ MySQL连接失败（已重试 {max_retries} 次）: {task_id}")
+                        return None
+                
+                logger.error(f"❌ 创建知识条目失败: {task_id}, 错误: {e}")
+                return None
+            finally:
+                if cursor is not None:
+                    try:
+                        cursor.close()
+                    except Exception as close_err:
+                        logger.warning(f"⚠️ 关闭游标失败: {close_err}")
+                if conn is not None:
+                    try:
+                        conn.close()
+                    except Exception as close_err:
+                        logger.warning(f"⚠️ 关闭数据库连接失败: {close_err}")
     
     async def _log_vectorization_failure(
         self,
@@ -714,19 +754,40 @@ def get_vectorization_service() -> ReportVectorizationService:
     return _vectorization_service
 
 
-# 后台任务：定期扫描和向量化新报告
+# 后台任务：定期扫描和向量化新报告（带MySQL就绪检查）
 async def background_vectorization_task(interval_seconds: int = 300):
     """
-    后台任务：定期扫描和向量化新报告
+    后台任务：定期扫描和向量化新报告（带MySQL就绪检查）
     
     Args:
         interval_seconds: 扫描间隔（秒），默认 5 分钟
     
     Validates: Requirements 14.1
     """
+    # 等待MySQL就绪
+    logger.info("⏳ 后台向量化任务等待MySQL就绪...")
+    max_wait_time = 360  # 最多等待6分钟
+    check_interval = 10  # 每10秒检查一次
+    
+    for elapsed in range(0, max_wait_time, check_interval):
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            cursor.close()
+            conn.close()
+            logger.info(f"✅ MySQL就绪，后台向量化任务启动（等待了 {elapsed} 秒）")
+            break
+        except Exception as e:
+            if elapsed + check_interval >= max_wait_time:
+                logger.warning(f"⚠️ MySQL等待超时（{max_wait_time}秒），后台向量化任务将继续尝试")
+                break
+            logger.debug(f"MySQL尚未就绪（已等待 {elapsed} 秒）: {str(e)}")
+            await asyncio.sleep(check_interval)
+    
     service = get_vectorization_service()
     
-    logger.info(f"🚀 启动后台向量化任务，扫描间隔: {interval_seconds} 秒")
+    logger.info(f"🚀 后台向量化任务已启动，扫描间隔: {interval_seconds} 秒")
     
     while True:
         try:
@@ -739,6 +800,10 @@ async def background_vectorization_task(interval_seconds: int = 300):
             await asyncio.sleep(interval_seconds)
             
         except Exception as e:
-            logger.error(f"❌ 后台向量化任务异常: {e}")
+            error_msg = str(e)
+            if 'Connection refused' in error_msg or '2003' in error_msg:
+                logger.warning(f"⚠️ 后台向量化任务MySQL连接失败，60秒后重试: {e}")
+            else:
+                logger.error(f"❌ 后台向量化任务异常: {e}")
             # 发生异常后等待一段时间再继续
             await asyncio.sleep(60)

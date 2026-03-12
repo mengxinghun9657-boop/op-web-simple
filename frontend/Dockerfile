@@ -8,6 +8,9 @@ WORKDIR /app
 # 复制 package.json 和 package-lock.json
 COPY package*.json ./
 
+# 配置 npm 使用淘宝镜像源（解决外网网络问题）
+RUN npm config set registry https://registry.npmmirror.com
+
 # 安装依赖
 # 使用 npm install 代替 npm ci，更宽容的依赖安装方式
 RUN npm install --production=false

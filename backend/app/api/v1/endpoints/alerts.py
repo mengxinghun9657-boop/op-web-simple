@@ -770,7 +770,7 @@ async def create_icafe_card(
         from app.models.system_config import SystemConfig
         icafe_config_record = db.query(SystemConfig).filter(
             SystemConfig.module == 'icafe',
-            SystemConfig.config_key == 'api_config'
+            SystemConfig.config_key == 'main'
         ).first()
         
         if not icafe_config_record:
@@ -1060,7 +1060,9 @@ async def update_alert_fields(
 
 
 @router.get("/alerts/test-host-connection", response_model=APIResponse)
-async def test_host_database_connection():
+async def test_host_database_connection(
+    db: Session = Depends(get_db)
+):
     """
     测试宿主机数据库连接
     

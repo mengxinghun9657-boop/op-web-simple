@@ -61,35 +61,53 @@ class CleanupScheduler:
     
     async def _run_cleanup(self) -> None:
         """
-        执行一次清理任务
+        执行一次清理任务（带MySQL重试机制）
         """
-        db = SessionLocal()
-        try:
-            logger.info("=" * 60)
-            logger.info("开始执行定时清理任务...")
-            logger.info(f"清理条件: 软删除超过 {self.days_threshold} 天的条目")
-            
-            # 创建知识库管理器
-            knowledge_manager = KnowledgeManager(db)
-            
-            # 执行清理
-            result = await knowledge_manager.cleanup_deleted_entries(
-                days_threshold=self.days_threshold
-            )
-            
-            # 记录结果
-            logger.info(f"✅ 清理任务完成: {result['message']}")
-            logger.info(f"   删除数量: {result['deleted_count']}")
-            if result['deleted_count'] > 0:
-                logger.info(f"   删除的条目ID: {result['deleted_ids']}")
-                logger.info(f"   删除的条目标题: {result['deleted_titles']}")
-            logger.info("=" * 60)
+        max_retries = 3
         
-        except Exception as e:
-            logger.error(f"❌ 定时清理任务执行失败: {e}")
-        
-        finally:
-            db.close()
+        for attempt in range(max_retries):
+            db = None
+            try:
+                db = SessionLocal()
+                logger.info("=" * 60)
+                logger.info("开始执行定时清理任务...")
+                logger.info(f"清理条件: 软删除超过 {self.days_threshold} 天的条目")
+                
+                # 创建知识库管理器
+                knowledge_manager = KnowledgeManager(db)
+                
+                # 执行清理
+                result = await knowledge_manager.cleanup_deleted_entries(
+                    days_threshold=self.days_threshold
+                )
+                
+                # 记录结果
+                logger.info(f"✅ 清理任务完成: {result['message']}")
+                logger.info(f"   删除数量: {result['deleted_count']}")
+                if result['deleted_count'] > 0:
+                    logger.info(f"   删除的条目ID: {result['deleted_ids']}")
+                    logger.info(f"   删除的条目标题: {result['deleted_titles']}")
+                logger.info("=" * 60)
+                break  # 成功则跳出重试循环
+            
+            except Exception as e:
+                error_msg = str(e)
+                
+                # MySQL连接错误，重试
+                if 'Connection refused' in error_msg or '2003' in error_msg:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"⚠️ MySQL连接失败（尝试 {attempt + 1}/{max_retries}）: {e}")
+                        await asyncio.sleep(2 ** attempt)  # 指数退避
+                        continue
+                    else:
+                        logger.error(f"❌ MySQL连接失败（已重试 {max_retries} 次）: {e}")
+                else:
+                    logger.error(f"❌ 定时清理任务执行失败: {e}")
+                    break
+            
+            finally:
+                if db is not None:
+                    db.close()
     
     async def _schedule_loop(self) -> None:
         """
@@ -182,8 +200,27 @@ def get_cleanup_scheduler() -> CleanupScheduler:
 
 async def start_cleanup_scheduler() -> None:
     """
-    启动全局清理调度器
+    启动全局清理调度器（带MySQL就绪检查）
     """
+    # 等待MySQL就绪
+    logger.info("⏳ 清理调度器等待MySQL就绪...")
+    max_wait_time = 360  # 最多等待6分钟
+    check_interval = 10  # 每10秒检查一次
+    
+    for elapsed in range(0, max_wait_time, check_interval):
+        try:
+            db = SessionLocal()
+            db.execute("SELECT 1")
+            db.close()
+            logger.info(f"✅ MySQL就绪，清理调度器启动（等待了 {elapsed} 秒）")
+            break
+        except Exception as e:
+            if elapsed + check_interval >= max_wait_time:
+                logger.warning(f"⚠️ MySQL等待超时（{max_wait_time}秒），清理调度器将继续尝试")
+                break
+            logger.debug(f"MySQL尚未就绪（已等待 {elapsed} 秒）: {str(e)}")
+            await asyncio.sleep(check_interval)
+    
     scheduler = get_cleanup_scheduler()
     await scheduler.start()
 

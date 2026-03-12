@@ -97,7 +97,7 @@ class IcafeConfig:
                 # 查询 iCafe 配置
                 icafe_config_record = db.query(SystemConfig).filter(
                     SystemConfig.module == 'icafe',
-                    SystemConfig.config_key == 'api_config'
+                    SystemConfig.config_key == 'main'
                 ).first()
                 
                 if icafe_config_record and icafe_config_record.config_value:

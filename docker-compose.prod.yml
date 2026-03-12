@@ -154,11 +154,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '8'
-          memory: 16G
-        reservations:
           cpus: '4'
           memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
 
   frontend:
     build:

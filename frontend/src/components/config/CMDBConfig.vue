@@ -136,6 +136,69 @@
         </div>
       </el-tab-pane>
 
+      <!-- 自动同步标签页 -->
+      <el-tab-pane label="自动同步" name="schedule">
+        <div class="tab-content">
+          <el-form :model="scheduleForm" label-width="120px" class="config-form">
+            <el-form-item label="启用状态">
+              <el-switch
+                v-model="scheduleForm.enabled"
+                active-text="已启用"
+                inactive-text="已禁用"
+              />
+              <div class="form-tip">
+                <el-icon><InfoFilled /></el-icon>
+                启用后，系统将按照设定的时间间隔自动从 AMIS API 同步 CMDB 数据
+              </div>
+            </el-form-item>
+
+            <el-form-item label="同步间隔">
+              <el-input-number
+                v-model="scheduleForm.intervalHours"
+                :min="1"
+                :max="24"
+                :step="1"
+                :disabled="!scheduleForm.enabled"
+                style="width: 100%;"
+              />
+              <div class="form-tip">
+                <el-icon><InfoFilled /></el-icon>
+                设置自动同步的时间间隔（小时），建议值：6-12 小时
+              </div>
+            </el-form-item>
+
+            <el-form-item label="同步可用区">
+              <el-select
+                v-model="scheduleForm.azones"
+                multiple
+                placeholder="请选择要同步的可用区"
+                :disabled="!scheduleForm.enabled"
+                style="width: 100%;"
+              >
+                <el-option label="AZONE-cdhmlcc001" value="AZONE-cdhmlcc001" />
+                <el-option label="AZONE-bjhmlcc001" value="AZONE-bjhmlcc001" />
+                <el-option label="AZONE-gzhmlcc001" value="AZONE-gzhmlcc001" />
+              </el-select>
+              <div class="form-tip">
+                <el-icon><InfoFilled /></el-icon>
+                选择需要自动同步的可用区，可以选择多个
+              </div>
+            </el-form-item>
+
+            <el-form-item>
+              <el-button
+                type="primary"
+                :loading="savingSchedule"
+                @click="handleSaveSchedule"
+              >
+                <el-icon><Select /></el-icon>
+                保存配置
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </el-tab-pane>
+
       <!-- 同步日志标签页 -->
       <el-tab-pane label="同步日志" name="logs">
         <div class="tab-content">
@@ -236,6 +299,13 @@ const manualSyncForm = ref({
   perPage: 2000
 })
 
+// 自动同步表单
+const scheduleForm = ref({
+  enabled: false,
+  intervalHours: 6,
+  azones: ['AZONE-cdhmlcc001']
+})
+
 // 同步日志
 const syncLogs = ref([])
 
@@ -245,6 +315,7 @@ const saving = ref(false)
 const syncing = ref(false)
 const loadingLogs = ref(false)
 const isEditing = ref(false)
+const savingSchedule = ref(false)
 
 // 原始配置（用于取消编辑）
 const originalConfig = ref({})
@@ -267,6 +338,23 @@ const loadConfig = async () => {
     }
   } catch (error) {
     console.error('加载CMDB配置失败:', error)
+  }
+  
+  // 加载自动同步配置
+  await loadScheduleConfig()
+}
+
+// 加载自动同步配置
+const loadScheduleConfig = async () => {
+  try {
+    const response = await cmdbApi.getSyncSchedule()
+    if (response) {
+      scheduleForm.value.enabled = response.enabled || false
+      scheduleForm.value.intervalHours = response.interval_hours || 6
+      scheduleForm.value.azones = response.azones || ['AZONE-cdhmlcc001']
+    }
+  } catch (error) {
+    console.error('加载自动同步配置失败:', error)
   }
 }
 
@@ -407,9 +495,86 @@ const handleSyncNow = async () => {
       loadSyncLogs()
     }, 3000)
   } catch (error) {
-    ElMessage.error('启动同步失败: ' + (error.response?.data?.detail || error.message))
+    console.error('CMDB同步失败:', error)
+    
+    // 友好的错误提示
+    let errorMessage = '同步失败'
+    let suggestions = []
+    
+    if (error.response?.status === 500) {
+      errorMessage = '宿主机MySQL连接失败'
+      suggestions = [
+        '检查宿主机MySQL服务是否正常运行',
+        '验证数据库连接配置是否正确',
+        '确认网络连接是否畅通',
+        '检查数据库用户权限是否足够'
+      ]
+    } else if (error.response?.status === 401) {
+      errorMessage = 'Cookie认证失败'
+      suggestions = [
+        '请重新获取有效的Cookie',
+        '检查Cookie是否已过期',
+        '确认Cookie格式是否正确'
+      ]
+    } else if (error.response?.status === 404) {
+      errorMessage = 'API接口不存在'
+      suggestions = [
+        '检查AMIS API地址是否正确',
+        '确认API版本是否匹配'
+      ]
+    } else if (error.response?.status === 403) {
+      errorMessage = 'API访问权限不足'
+      suggestions = [
+        '检查Cookie对应的用户权限',
+        '确认是否有CMDB数据访问权限'
+      ]
+    } else if (error.message?.includes('timeout')) {
+      errorMessage = '连接超时'
+      suggestions = [
+        '检查网络连接是否稳定',
+        '稍后重试同步操作'
+      ]
+    } else {
+      errorMessage = error.response?.data?.detail || error.message || '未知错误'
+    }
+    
+    // 显示详细的错误信息
+    if (suggestions.length > 0) {
+      const suggestionText = suggestions.map(s => `• ${s}`).join('\n')
+      ElMessage({
+        message: `${errorMessage}\n\n建议检查：\n${suggestionText}`,
+        type: 'error',
+        duration: 8000,
+        showClose: true,
+        dangerouslyUseHTMLString: false
+      })
+    } else {
+      ElMessage.error(`${errorMessage}`)
+    }
   } finally {
     syncing.value = false
+  }
+}
+
+// 保存自动同步配置
+const handleSaveSchedule = async () => {
+  savingSchedule.value = true
+  try {
+    const config = {
+      enabled: scheduleForm.value.enabled,
+      interval_hours: scheduleForm.value.intervalHours,
+      azones: scheduleForm.value.azones
+    }
+    
+    await cmdbApi.updateSyncSchedule(config)
+    ElMessage.success(`自动同步已${scheduleForm.value.enabled ? '启用' : '禁用'}`)
+    
+    // 重新加载配置
+    await loadScheduleConfig()
+  } catch (error) {
+    ElMessage.error('保存配置失败: ' + (error.response?.data?.detail || error.message))
+  } finally {
+    savingSchedule.value = false
   }
 }
 

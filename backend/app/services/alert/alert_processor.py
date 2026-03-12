@@ -259,28 +259,46 @@ class AlertProcessor:
         Returns:
             是否处理成功
         """
+        print("=== NEW CODE VERSION 2026-03-11 ===")
         db = None
         try:
+            logger.info(f"🚀 开始处理单条告警: alert_type={alert_data.get('alert_type')}, ip={alert_data.get('ip')}")
+            
             # 创建独立Session
             db = self._get_db_session()
+            logger.info(f"✅ 数据库Session创建成功")
             
             # 按需初始化依赖
+            logger.info(f"🔧 初始化依赖服务...")
             if self.manual_matcher is None:
+                logger.info(f"📋 初始化ManualMatchService...")
                 self.manual_matcher = ManualMatchService(db)
-            if self.webhook_notifier is None:
-                self.webhook_notifier = WebhookNotifier(db)
+                logger.info(f"✅ ManualMatchService初始化完成")
             
-            # 处理基础流程
+            if self.webhook_notifier is None:
+                logger.info(f"📢 初始化WebhookNotifier...")
+                self.webhook_notifier = WebhookNotifier(db)
+                logger.info(f"✅ WebhookNotifier初始化完成")
+            
+            # 处理基础流程（手册匹配、AI解读、通知）
+            logger.info(f"🔄 调用基础流程处理...")
+            print(f"DEBUG: 调用 _process_alert_basic")
             alert, diagnosis = await self._process_alert_basic(alert_data, db)
             
+            print(f"DEBUG: _process_alert_basic 返回结果: alert={alert}, diagnosis={diagnosis}")
+            logger.info(f"🔄 基础流程处理结果: alert={'存在' if alert else 'None'}, diagnosis={'存在' if diagnosis else 'None'}")
+            
             if not alert or not diagnosis:
+                print(f"DEBUG: 基础流程处理失败: alert={alert}, diagnosis={diagnosis}")
+                logger.error(f"基础流程处理失败: alert={alert}, diagnosis={diagnosis}")
                 return False
             
             # 判断是否为CCE集群节点
             is_cce = alert.is_cce_cluster
+            logger.info(f"🏷️ 节点类型判断: is_cce={is_cce}, cluster_id={alert.cluster_id}, ip={alert.ip}")
             
             if is_cce and alert.cluster_id and alert.ip:
-                # 检查15分钟窗口
+                # 检查15分钟窗口（正常流程）
                 existing_diagnosis = await self._find_existing_diagnosis(alert.cluster_id, alert.ip, db)
                 
                 if existing_diagnosis:
@@ -289,15 +307,27 @@ class AlertProcessor:
                     db.commit()
                     logger.info(f"🔄 复用诊断: {alert.cluster_id}:{alert.ip} → {existing_diagnosis.api_task_id}")
                 else:
-                    # 创建新诊断任务
-                    await self._create_single_diagnosis(alert.cluster_id, alert.ip, [(alert, diagnosis)], db)
+                    # 尝试创建新诊断任务（允许失败）
+                    try:
+                        await self._create_single_diagnosis(alert.cluster_id, alert.ip, [(alert, diagnosis)], db)
+                        logger.info(f"✅ 诊断任务创建成功: {alert.cluster_id}:{alert.ip}")
+                    except Exception as diag_error:
+                        # 诊断API失败不影响整体流程
+                        logger.warning(f"⚠️ 诊断API失败但基础流程已完成: {alert.cluster_id}:{alert.ip}, 错误: {str(diag_error)}")
+                        # 更新诊断状态为失败
+                        db.refresh(diagnosis)
+                        diagnosis.api_status = 'failed'
+                        diagnosis.api_diagnosis = {'error': str(diag_error), 'timestamp': datetime.now().isoformat()}
+                        db.commit()
             else:
                 logger.info(f"📋 物理机节点跳过诊断: IP={alert.ip}, 告警类型={alert.alert_type}")
             
+            # 基础流程（手册匹配、AI解读、通知）已完成，返回成功
+            logger.info(f"✅ 告警处理完成: ID={alert.id}, 类型={alert.alert_type}, CCE诊断={'成功' if diagnosis.api_task_id else '跳过/失败'}")
             return True
             
         except Exception as e:
-            logger.error(f"处理单条告警异常: {str(e)}", exc_info=True)
+            logger.error(f"处理单条告警异常: alert_type={alert_data.get('alert_type')}, error={str(e)}", exc_info=True)
             if db:
                 db.rollback()
             return False
@@ -305,6 +335,7 @@ class AlertProcessor:
             if db:
                 try:
                     db.close()
+                    logger.info(f"🔒 数据库连接已关闭")
                 except Exception as e:
                     logger.error(f"关闭数据库连接失败: {str(e)}")
     
@@ -319,8 +350,14 @@ class AlertProcessor:
         Returns:
             (告警记录, 诊断结果) 元组
         """
+        print(f"DEBUG: 进入 _process_alert_basic")
+        logger.info(f"🚀 开始基础流程处理: alert_type={alert_data.get('alert_type')}, ip={alert_data.get('ip')}")
+        
         try:
+            print(f"DEBUG: 步骤1 - 检查重复告警")
             # 1. 检查是否已存在相同告警（防止重复）
+            # 注意：重新诊断场景下，会找到已存在的告警但诊断结果为空
+            logger.info(f"🔍 检查重复告警: alert_type={alert_data.get('alert_type')}, ip={alert_data.get('ip')}")
             existing_alert = db.query(AlertRecord).filter(
                 AlertRecord.alert_type == alert_data.get('alert_type', ''),
                 AlertRecord.ip == alert_data.get('ip'),
@@ -328,52 +365,138 @@ class AlertProcessor:
             ).first()
             
             if existing_alert:
-                logger.info(f"告警已存在，跳过: ID={existing_alert.id}, 类型={existing_alert.alert_type}, IP={existing_alert.ip}")
-                # 返回已存在的告警和诊断结果
+                print(f"DEBUG: 找到已存在告警: {existing_alert.id}")
+                logger.info(f"告警已存在: ID={existing_alert.id}, 类型={existing_alert.alert_type}, IP={existing_alert.ip}")
+                
+                # 强制从数据库重新查询最新数据（避免使用缓存的旧对象）
+                print(f"DEBUG: 强制从数据库重新查询最新告警数据")
+                old_cluster_id = existing_alert.cluster_id
+                logger.warning(f"🔍 [BUG-021] 重新查询前 cluster_id={old_cluster_id}")
+                
+                # 关键修复：使用主键重新查询，确保获取最新数据
+                alert = db.query(AlertRecord).filter(AlertRecord.id == existing_alert.id).first()
+                if not alert:
+                    logger.error(f"❌ 重新查询告警失败: alert_id={existing_alert.id}")
+                    alert = existing_alert  # 降级使用原对象
+                else:
+                    new_cluster_id = alert.cluster_id
+                    logger.warning(f"✅ [BUG-021] 重新查询后 cluster_id={new_cluster_id}")
+                    if old_cluster_id != new_cluster_id:
+                        logger.warning(f"⚠️ [BUG-021] 检测到cluster_id变化: {old_cluster_id} → {new_cluster_id}")
+                    else:
+                        logger.warning(f"✓ [BUG-021] cluster_id未变化: {new_cluster_id}")
+                
+                # 检查诊断结果
                 diagnosis = db.query(DiagnosisResult).filter(
-                    DiagnosisResult.alert_id == existing_alert.id
+                    DiagnosisResult.alert_id == alert.id
                 ).first()
-                return existing_alert, diagnosis
+                print(f"DEBUG: 已存在告警的诊断结果: {diagnosis}")
+                
+                if diagnosis:
+                    # 诊断结果存在，直接返回（正常的重复告警）
+                    print(f"DEBUG: 诊断结果存在，直接返回")
+                    logger.info(f"返回已存在告警: alert_id={alert.id}, diagnosis_id={diagnosis.id}")
+                    return alert, diagnosis
+                else:
+                    # 诊断结果不存在，这是重新诊断场景，继续处理
+                    print(f"DEBUG: 诊断结果为空（重新诊断场景），使用重新查询的告警继续处理")
+                    logger.info(f"重新诊断场景: alert_id={alert.id}，cluster_id={alert.cluster_id}，继续处理")
+                    # 注意：不要在这里return，要继续执行后续的手册匹配等流程
+            else:
+                print(f"DEBUG: 步骤2 - 创建新告警记录")
+                # 2. 创建新的告警记录
+                logger.info(f"📝 创建新告警记录: alert_type={alert_data.get('alert_type')}")
+                alert = self._create_new_alert_record(alert_data, db)
+                print(f"DEBUG: 新告警记录创建成功: alert_id={alert.id}")
+                logger.info(f"✅ 告警记录创建成功: alert_id={alert.id}")
             
-            # 2. 创建告警记录
-            # 将raw_data中的datetime对象转换为ISO格式字符串，以便JSON序列化
-            raw_data_serializable = self._make_json_serializable(alert_data)
-            
-            alert = AlertRecord(
-                alert_type=alert_data.get('alert_type', ''),
-                component=alert_data.get('component'),
-                severity=alert_data.get('severity', 'WARN'),
-                ip=alert_data.get('ip'),
-                cluster_id=alert_data.get('cluster_id'),
-                instance_id=alert_data.get('instance_id'),
-                hostname=alert_data.get('hostname'),
-                is_cce_cluster=alert_data.get('is_cce_cluster', False),
-                timestamp=alert_data.get('timestamp', datetime.now()),
-                raw_data=raw_data_serializable
-            )
-            
-            db.add(alert)
-            db.commit()
-            db.refresh(alert)
-            
-            logger.info(f"创建告警记录: ID={alert.id}, 类型={alert.alert_type}, 集群={alert.cluster_id}, IP={alert.ip}")
-            
+            print(f"DEBUG: 步骤3 - 匹配故障手册")
             # 3. 匹配故障手册
+            logger.info(f"📋 开始匹配故障手册: alert_id={alert.id}")
             diagnosis = await self._match_manual(alert, db)
+            print(f"DEBUG: 手册匹配结果: diagnosis={diagnosis}")
+            logger.info(f"📋 手册匹配完成: diagnosis={'成功' if diagnosis else '失败'}")
             
-            # 4. 初始AI解读（不包含诊断结果）
-            if diagnosis:
+            if not diagnosis:
+                print(f"DEBUG: 手册匹配返回None，尝试创建基础诊断结果")
+                logger.error(f"❌ 手册匹配返回None: alert_id={alert.id}")
+                # 手册匹配失败不应该导致整个流程失败，创建一个基础诊断结果
+                try:
+                    print(f"DEBUG: 开始创建基础诊断结果")
+                    logger.warning(f"⚠️ 手册匹配失败，创建基础诊断结果: alert_id={alert.id}")
+                    diagnosis = DiagnosisResult(
+                        alert_id=alert.id,
+                        manual_matched=False,
+                        source='none'
+                    )
+                    db.add(diagnosis)
+                    print(f"DEBUG: 诊断结果已添加到session，准备commit")
+                    db.commit()
+                    print(f"DEBUG: commit成功，准备refresh")
+                    db.refresh(diagnosis)
+                    print(f"DEBUG: 基础诊断结果创建成功: diagnosis_id={diagnosis.id}")
+                    logger.warning(f"⚠️ 基础诊断结果创建成功: diagnosis_id={diagnosis.id}, alert_id={alert.id}")
+                except Exception as fallback_error:
+                    print(f"DEBUG: 创建基础诊断结果失败: {str(fallback_error)}")
+                    logger.error(f"❌ 创建基础诊断结果也失败: alert_id={alert.id}, error={str(fallback_error)}", exc_info=True)
+                    return alert, None
+            
+            print(f"DEBUG: 步骤4 - AI解读")
+            # 4. 初始AI解读（不包含诊断结果）- 允许失败
+            logger.info(f"🤖 开始AI解读: alert_id={alert.id}")
+            try:
                 await self._ai_interpret(alert, diagnosis, api_result=None, db=db)
+                print(f"DEBUG: AI解读成功")
+                logger.info(f"✅ AI解读完成: alert_id={alert.id}")
+            except Exception as ai_error:
+                print(f"DEBUG: AI解读失败: {str(ai_error)}")
+                logger.warning(f"⚠️ AI解读失败但继续流程: 告警ID={alert.id}, 错误: {str(ai_error)}")
             
-            # 5. 发送初始Webhook通知
-            await self.webhook_notifier.send_alert_notification(alert, diagnosis)
+            print(f"DEBUG: 步骤5 - Webhook通知")
+            # 5. 发送初始Webhook通知 - 允许失败
+            logger.info(f"📢 开始Webhook通知: alert_id={alert.id}")
+            try:
+                await self.webhook_notifier.send_alert_notification(alert, diagnosis)
+                print(f"DEBUG: Webhook通知成功")
+                logger.info(f"✅ Webhook通知完成: alert_id={alert.id}")
+            except Exception as webhook_error:
+                print(f"DEBUG: Webhook通知失败: {str(webhook_error)}")
+                logger.warning(f"⚠️ Webhook通知失败但继续流程: 告警ID={alert.id}, 错误: {str(webhook_error)}")
             
+            print(f"DEBUG: 基础流程处理成功，返回结果")
+            logger.info(f"🎉 基础流程处理成功: alert_id={alert.id}, diagnosis_id={diagnosis.id}")
             return alert, diagnosis
             
         except Exception as e:
-            logger.error(f"处理单条告警基础流程异常: {str(e)}", exc_info=True)
+            print(f"DEBUG: 基础流程处理异常: {str(e)}")
+            logger.error(f"处理单条告警基础流程异常: alert_type={alert_data.get('alert_type')}, error={str(e)}", exc_info=True)
             db.rollback()
             return None, None
+    
+    def _create_new_alert_record(self, alert_data: Dict[str, Any], db: Session) -> AlertRecord:
+        """创建新的告警记录"""
+        # 将raw_data中的datetime对象转换为ISO格式字符串，以便JSON序列化
+        raw_data_serializable = self._make_json_serializable(alert_data)
+        
+        alert = AlertRecord(
+            alert_type=alert_data.get('alert_type', ''),
+            component=alert_data.get('component'),
+            severity=alert_data.get('severity', 'WARN'),
+            ip=alert_data.get('ip'),
+            cluster_id=alert_data.get('cluster_id'),
+            instance_id=alert_data.get('instance_id'),
+            hostname=alert_data.get('hostname'),
+            is_cce_cluster=alert_data.get('is_cce_cluster', False),
+            timestamp=alert_data.get('timestamp', datetime.now()),
+            raw_data=raw_data_serializable
+        )
+        
+        db.add(alert)
+        db.commit()
+        db.refresh(alert)
+        
+        logger.info(f"创建告警记录: ID={alert.id}, 类型={alert.alert_type}, 集群={alert.cluster_id}, IP={alert.ip}")
+        return alert
     
     
     async def _create_single_diagnosis(self, cluster_id: str, ip: str, alert_diagnosis_list: list, db: Session):
@@ -390,7 +513,9 @@ class AlertProcessor:
             first_alert = alert_diagnosis_list[0][0]
             
             # 创建诊断任务
-            task_id = await self.diagnosis_api.create_node_diagnosis(cluster_id, first_alert.ip)
+            logger.info(f"🔍 开始创建诊断任务: {cluster_id}:{ip}")
+            logger.info(f"📋 调用诊断API参数: cluster_id={cluster_id}, ip={ip}")
+            task_id = await self.diagnosis_api.create_node_diagnosis(cluster_id, ip)
             
             if task_id:
                 # 更新所有告警的诊断结果
@@ -400,27 +525,57 @@ class AlertProcessor:
                     diagnosis.api_status = 'processing'
                 
                 db.commit()
-                logger.info(f"✅ 创建新诊断任务: {cluster_id}:{ip} → {task_id}")
+                logger.warning(f"✅ [诊断任务] 创建成功: {cluster_id}:{ip} → {task_id}")
                 
                 # 启动后台线程等待诊断完成
                 diagnosis_ids = [diagnosis.id for _, diagnosis in alert_diagnosis_list]
+                logger.warning(f"🚀 [后台线程] 准备启动: task_id={task_id}, diagnosis_ids={diagnosis_ids}")
+                
                 import threading
-                threading.Thread(
+                thread = threading.Thread(
                     target=self._wait_diagnosis_in_thread,
                     args=(cluster_id, task_id, diagnosis_ids),
-                    daemon=True
-                ).start()
+                    daemon=True,
+                    name=f"DiagnosisWaiter-{task_id}"
+                )
+                thread.start()
+                logger.warning(f"✅ [后台线程] 已启动: thread_name={thread.name}, is_alive={thread.is_alive()}")
             else:
-                # 创建失败
+                # 创建失败，记录错误但不抛出异常
+                error_msg = f"CCE诊断API调用失败: {cluster_id}:{ip}"
+                logger.warning(f"⚠️ {error_msg}")
+                
                 for alert, diagnosis in alert_diagnosis_list:
                     db.refresh(diagnosis)
                     diagnosis.api_status = 'failed'
+                    diagnosis.api_diagnosis = {
+                        'error': error_msg,
+                        'timestamp': datetime.now().isoformat(),
+                        'reason': 'CCE API调用失败，可能是节点不存在或网络问题'
+                    }
                 db.commit()
-                logger.error(f"❌ 创建诊断任务失败: {cluster_id}:{ip}")
+                
+                # 不抛出异常，让基础流程继续
+                logger.info(f"📋 诊断API失败但基础流程已完成: {cluster_id}:{ip}")
                 
         except Exception as e:
-            logger.error(f"创建诊断任务异常: {cluster_id}:{ip}, {str(e)}", exc_info=True)
-            db.rollback()
+            # 记录错误但不抛出异常，让基础流程继续
+            error_msg = f"创建诊断任务异常: {cluster_id}:{ip}, {str(e)}"
+            logger.warning(f"⚠️ {error_msg}")
+            
+            try:
+                for alert, diagnosis in alert_diagnosis_list:
+                    db.refresh(diagnosis)
+                    diagnosis.api_status = 'failed'
+                    diagnosis.api_diagnosis = {
+                        'error': error_msg,
+                        'timestamp': datetime.now().isoformat(),
+                        'exception': str(e)
+                    }
+                db.commit()
+            except Exception as db_error:
+                logger.error(f"❌ 更新诊断状态失败: {str(db_error)}")
+                db.rollback()
     
     async def _find_existing_diagnosis(self, cluster_id: str, ip: str, db: Session) -> Optional[DiagnosisResult]:
         """查询15分钟内已有的诊断任务"""
@@ -461,11 +616,23 @@ class AlertProcessor:
         Returns:
             诊断结果
         """
+        logger.info(f"🔍 开始匹配手册: 告警ID={alert.id}, 类型={alert.alert_type}, 组件={alert.component}")
+        
         try:
+            # 检查manual_matcher是否已初始化
+            if self.manual_matcher is None:
+                logger.error(f"❌ manual_matcher未初始化: alert_id={alert.id}")
+                raise Exception("manual_matcher未初始化")
+            
+            logger.info(f"📋 调用手册匹配: alert_type={alert.alert_type}, component={alert.component}")
+            
             # 匹配手册
             manual = self.manual_matcher.match(alert.alert_type, alert.component)
             
+            logger.info(f"📋 手册匹配结果: manual={'找到' if manual else '未找到'}")
+            
             # 创建诊断结果
+            logger.info(f"💾 创建诊断结果: alert_id={alert.id}")
             diagnosis = DiagnosisResult(
                 alert_id=alert.id,
                 manual_matched=manual is not None,
@@ -478,9 +645,12 @@ class AlertProcessor:
                 source='manual' if manual else 'none'
             )
             
+            logger.info(f"💾 保存诊断结果到数据库: alert_id={alert.id}")
             db.add(diagnosis)
             db.commit()
             db.refresh(diagnosis)
+            
+            logger.info(f"✅ 诊断结果创建成功: diagnosis_id={diagnosis.id}, alert_id={alert.id}")
             
             if manual:
                 logger.info(f"✅ 手册匹配成功: 告警ID={alert.id}, 类型={alert.alert_type}, 手册={manual.get('name_zh')}")
@@ -492,8 +662,24 @@ class AlertProcessor:
             return diagnosis
             
         except Exception as e:
-            logger.error(f"匹配手册异常: {str(e)}", exc_info=True)
-            return None
+            logger.error(f"匹配手册异常: alert_id={alert.id}, error={str(e)}", exc_info=True)
+            # 即使匹配失败，也要创建基础诊断结果
+            try:
+                logger.warning(f"⚠️ 尝试创建基础诊断结果: alert_id={alert.id}")
+                diagnosis = DiagnosisResult(
+                    alert_id=alert.id,
+                    manual_matched=False,
+                    source='none'
+                )
+                db.add(diagnosis)
+                db.commit()
+                db.refresh(diagnosis)
+                logger.warning(f"⚠️ 手册匹配异常，创建基础诊断结果成功: diagnosis_id={diagnosis.id}, alert_id={alert.id}")
+                return diagnosis
+            except Exception as db_error:
+                logger.error(f"创建基础诊断结果失败: alert_id={alert.id}, error={str(db_error)}", exc_info=True)
+                db.rollback()
+                return None
     
     async def _ai_interpret(
         self, 
@@ -565,9 +751,10 @@ class AlertProcessor:
         db_session = db if db is not None else self.db
         
         try:
-            logger.info(f"等待诊断任务完成: {task_id}, 关联诊断记录数={len(diagnosis_ids)}")
+            logger.warning(f"⏳ [等待诊断] 开始: task_id={task_id}, diagnosis_ids={diagnosis_ids}")
             
             # 等待诊断完成（增加等待时间到15分钟）
+            logger.warning(f"📞 [等待诊断] 调用API轮询: cluster_id={cluster_id}, task_id={task_id}")
             report = await self.diagnosis_api.wait_for_diagnosis_complete(
                 cluster_id, 
                 task_id,
@@ -576,7 +763,7 @@ class AlertProcessor:
             )
             
             if not report:
-                logger.error(f"诊断任务超时或失败: {task_id}")
+                logger.warning(f"⏰ [等待诊断] 超时或失败: task_id={task_id}")
                 # 更新所有诊断记录的状态为失败
                 for diagnosis_id in diagnosis_ids:
                     diagnosis = db_session.query(DiagnosisResult).filter(
@@ -585,60 +772,85 @@ class AlertProcessor:
                     if diagnosis:
                         diagnosis.api_status = 'timeout'
                         db_session.commit()
+                        logger.warning(f"⏰ [等待诊断] 已更新超时状态: diagnosis_id={diagnosis_id}")
                 return
+            
+            logger.warning(f"✅ [等待诊断] API返回成功: task_id={task_id}, report_size={len(str(report))}")
             
             # 解析诊断报告
             parsed_result = self.diagnosis_api.parse_diagnosis_report(report)
+            logger.warning(f"📊 [等待诊断] 报告解析完成: items={len(parsed_result.get('all_items', []))}")
             
             # 更新所有诊断记录（共享同一个诊断结果）
             for diagnosis_id in diagnosis_ids:
-                # 🔄 每次循环都重新查询，确保获取最新的 notified 状态
-                db_session.expire_all()  # 清除session缓存
+                # 重新查询诊断记录（使用独立查询，不依赖缓存）
                 diagnosis = db_session.query(DiagnosisResult).filter(
                     DiagnosisResult.id == diagnosis_id
                 ).first()
                 
-                if diagnosis:
-                    # 🔒 检查是否已发送通知（防止重复发送）
-                    if diagnosis.notified:
-                        logger.info(f"⏭️ 跳过已通知的诊断: 诊断ID={diagnosis.id}, 告警ID={diagnosis.alert_id}")
-                        continue
-                    
-                    diagnosis.api_status = parsed_result.get('task_result', 'unknown')
-                    # 保存完整的诊断报告（包含 raw_report 和解析后的数据）
-                    diagnosis.api_diagnosis = parsed_result
-                    # 保存统计字段
-                    diagnosis.api_items_count = len(parsed_result.get('all_items', []))
-                    diagnosis.api_error_count = len(parsed_result.get('error_items', []))
-                    diagnosis.api_warning_count = len(parsed_result.get('warning_items', []))
-                    diagnosis.api_abnormal_count = len(parsed_result.get('abnormal_items', []))
-                    
-                    logger.info(f"更新诊断记录: 诊断ID={diagnosis.id}, 告警ID={diagnosis.alert_id}, "
-                               f"总项={diagnosis.api_items_count}, "
-                               f"错误={diagnosis.api_error_count}, "
-                               f"警告={diagnosis.api_warning_count}")
-                    
-                    # 获取告警记录
-                    alert = db_session.query(AlertRecord).filter(
-                        AlertRecord.id == diagnosis.alert_id
-                    ).first()
-                    
-                    if alert:
+                if not diagnosis:
+                    logger.warning(f"⚠️ [等待诊断] 诊断记录不存在: diagnosis_id={diagnosis_id}")
+                    continue
+                
+                # 🔒 检查是否已发送通知（防止重复发送）
+                if diagnosis.notified:
+                    logger.warning(f"⏭️ [等待诊断] 跳过已通知: diagnosis_id={diagnosis.id}, alert_id={diagnosis.alert_id}")
+                    continue
+                
+                # 更新诊断结果
+                diagnosis.api_status = parsed_result.get('task_result', 'unknown')
+                diagnosis.api_diagnosis = parsed_result  # 保存完整的诊断报告
+                diagnosis.api_items_count = len(parsed_result.get('all_items', []))
+                diagnosis.api_error_count = len(parsed_result.get('error_items', []))
+                diagnosis.api_warning_count = len(parsed_result.get('warning_items', []))
+                diagnosis.api_abnormal_count = len(parsed_result.get('abnormal_items', []))
+                
+                logger.warning(f"💾 [等待诊断] 准备更新: diagnosis_id={diagnosis.id}, alert_id={diagnosis.alert_id}, "
+                           f"总项={diagnosis.api_items_count}, 错误={diagnosis.api_error_count}, 警告={diagnosis.api_warning_count}")
+                
+                # 先提交诊断结果更新
+                try:
+                    db_session.flush()  # 刷新到数据库但不提交事务
+                    logger.warning(f"✅ [等待诊断] 诊断结果已flush: diagnosis_id={diagnosis.id}")
+                except Exception as flush_error:
+                    logger.error(f"❌ [等待诊断] flush失败: {str(flush_error)}", exc_info=True)
+                    db_session.rollback()
+                    continue
+                
+                # 获取告警记录
+                alert = db_session.query(AlertRecord).filter(
+                    AlertRecord.id == diagnosis.alert_id
+                ).first()
+                
+                if alert:
+                    logger.warning(f"🤖 [等待诊断] 开始AI解读: alert_id={alert.id}")
+                    try:
                         # 使用诊断结果重新进行AI解读
                         await self._ai_interpret(alert, diagnosis, api_result=parsed_result, db=db_session)
-                        
+                        logger.warning(f"✅ [等待诊断] AI解读完成: alert_id={alert.id}")
+                    except Exception as ai_error:
+                        logger.warning(f"⚠️ [等待诊断] AI解读失败但继续: {str(ai_error)}")
+                    
+                    logger.warning(f"📢 [等待诊断] 发送通知: alert_id={alert.id}")
+                    try:
                         # 发送更新通知（包含诊断结果和AI解读）
                         await self.webhook_notifier.send_alert_notification(alert, diagnosis)
-                        
-                        # 🔄 刷新 session 以获取最新的 notified 状态
-                        db_session.refresh(diagnosis)
-                    
+                        logger.warning(f"✅ [等待诊断] 通知发送完成: alert_id={alert.id}")
+                    except Exception as webhook_error:
+                        logger.warning(f"⚠️ [等待诊断] 通知发送失败但继续: {str(webhook_error)}")
+                
+                # 最后统一提交所有更改
+                try:
                     db_session.commit()
+                    logger.warning(f"✅ [等待诊断] 数据库提交成功: diagnosis_id={diagnosis.id}, api_status={diagnosis.api_status}, items={diagnosis.api_items_count}")
+                except Exception as commit_error:
+                    logger.error(f"❌ [等待诊断] commit失败: {str(commit_error)}", exc_info=True)
+                    db_session.rollback()
             
-            logger.info(f"诊断任务完成: {task_id}, 已更新 {len(diagnosis_ids)} 条诊断记录")
+            logger.warning(f"🎉 [等待诊断] 全部完成: task_id={task_id}, 已更新 {len(diagnosis_ids)} 条记录")
             
         except Exception as e:
-            logger.error(f"等待诊断完成异常: {str(e)}", exc_info=True)
+            logger.error(f"❌ [等待诊断] 异常: task_id={task_id}, error={str(e)}", exc_info=True)
             # 回滚事务
             db_session.rollback()
     
@@ -651,20 +863,30 @@ class AlertProcessor:
             task_id: 任务ID
             diagnosis_ids: 诊断结果ID列表（同一个节点可能有多个告警）
         """
+        logger.warning(f"🔵 [后台线程] 进入方法: task_id={task_id}, diagnosis_ids={diagnosis_ids}")
+        
         try:
             # 在新线程中创建独立的数据库session和事件循环
+            logger.warning(f"📦 [后台线程] 准备创建Session和事件循环: task_id={task_id}")
             from app.core.deps import SessionLocal
             db = SessionLocal()
+            logger.warning(f"✅ [后台线程] Session创建成功: task_id={task_id}")
             
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
+            logger.warning(f"✅ [后台线程] 事件循环创建成功: task_id={task_id}")
+            
             try:
                 # 运行异步等待任务（传入独立的db session）
+                logger.warning(f"🔄 [后台线程] 开始执行异步等待: task_id={task_id}")
                 loop.run_until_complete(
                     self._wait_and_update_diagnosis(cluster_id, task_id, diagnosis_ids, db)
                 )
+                logger.warning(f"✅ [后台线程] 异步等待完成: task_id={task_id}")
             finally:
+                logger.warning(f"🔒 [后台线程] 清理资源: task_id={task_id}")
                 loop.close()
                 db.close()
+                logger.warning(f"✅ [后台线程] 资源清理完成: task_id={task_id}")
         except Exception as e:
-            logger.error(f"线程中等待诊断异常: {str(e)}", exc_info=True)
+            logger.error(f"❌ [后台线程] 异常: task_id={task_id}, error={str(e)}", exc_info=True)

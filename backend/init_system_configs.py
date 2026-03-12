@@ -45,11 +45,11 @@ def init_system_configs():
         
         # 1. 监控配置
         monitoring_config = {
-            'eip_instance_ids': configs.get('eip_monitoring', []),
+            'eip_instance_ids': ','.join(configs.get('eip_monitoring', [])),  # 转换为逗号分隔字符串
             'eip_description': 'EIP监控默认实例ID列表',
-            'bcc_instance_ids': configs.get('bcc_monitoring', []),
+            'bcc_instance_ids': ','.join(configs.get('bcc_monitoring', [])),  # 转换为逗号分隔字符串
             'bcc_description': 'BCC监控默认实例ID列表',
-            'bos_bucket_names': configs.get('bos_monitoring', []),
+            'bos_bucket_names': ','.join(configs.get('bos_monitoring', [])),  # 转换为逗号分隔字符串
             'bos_description': 'BOS监控默认Bucket列表'
         }
         
@@ -60,7 +60,35 @@ def init_system_configs():
         ).first()
         
         if existing_monitoring:
-            logger.info("监控配置已存在，跳过")
+            # 检查是否需要更新配置（如果配置为空或缺少默认值）
+            try:
+                current_config = json.loads(existing_monitoring.config_value) if existing_monitoring.config_value else {}
+                needs_update = False
+                
+                # 检查关键字段是否为空
+                for key in ['eip_instance_ids', 'bcc_instance_ids', 'bos_bucket_names']:
+                    if not current_config.get(key) or current_config.get(key) == '':
+                        needs_update = True
+                        break
+                
+                if needs_update:
+                    logger.info("监控配置存在但为空，更新默认值...")
+                    existing_monitoring.config_value = json.dumps(monitoring_config, ensure_ascii=False)
+                    existing_monitoring.updated_by = 1
+                    eip_count = len(configs.get('eip_monitoring', []))
+                    bcc_count = len(configs.get('bcc_monitoring', []))
+                    bos_count = len(configs.get('bos_monitoring', []))
+                    logger.info(f"✅ 更新监控配置: EIP={eip_count}, BCC={bcc_count}, BOS={bos_count}")
+                else:
+                    logger.info("监控配置已存在且有效，跳过")
+            except json.JSONDecodeError:
+                logger.warning("监控配置格式错误，重新创建...")
+                existing_monitoring.config_value = json.dumps(monitoring_config, ensure_ascii=False)
+                existing_monitoring.updated_by = 1
+                eip_count = len(configs.get('eip_monitoring', []))
+                bcc_count = len(configs.get('bcc_monitoring', []))
+                bos_count = len(configs.get('bos_monitoring', []))
+                logger.info(f"✅ 修复监控配置: EIP={eip_count}, BCC={bcc_count}, BOS={bos_count}")
         else:
             # 创建监控配置
             monitoring_record = SystemConfig(
@@ -77,7 +105,7 @@ def init_system_configs():
         
         # 2. 分析配置
         analysis_config = {
-            'cluster_ids': configs.get('resource_analysis', []),
+            'cluster_ids': ','.join(configs.get('resource_analysis', [])),  # 转换为逗号分隔字符串
             'description': '资源分析默认集群ID列表'
         }
         
@@ -88,7 +116,23 @@ def init_system_configs():
         ).first()
         
         if existing_analysis:
-            logger.info("分析配置已存在，跳过")
+            # 检查是否需要更新配置（如果配置为空或缺少默认值）
+            try:
+                current_config = json.loads(existing_analysis.config_value) if existing_analysis.config_value else {}
+                if not current_config.get('cluster_ids') or current_config.get('cluster_ids') == '':
+                    logger.info("分析配置存在但为空，更新默认值...")
+                    existing_analysis.config_value = json.dumps(analysis_config, ensure_ascii=False)
+                    existing_analysis.updated_by = 1
+                    cluster_count = len(configs.get('resource_analysis', []))
+                    logger.info(f"✅ 更新分析配置: 集群数={cluster_count}")
+                else:
+                    logger.info("分析配置已存在且有效，跳过")
+            except json.JSONDecodeError:
+                logger.warning("分析配置格式错误，重新创建...")
+                existing_analysis.config_value = json.dumps(analysis_config, ensure_ascii=False)
+                existing_analysis.updated_by = 1
+                cluster_count = len(configs.get('resource_analysis', []))
+                logger.info(f"✅ 修复分析配置: 集群数={cluster_count}")
         else:
             # 创建分析配置
             analysis_record = SystemConfig(
@@ -128,6 +172,34 @@ def init_system_configs():
             )
             db.add(cmdb_record)
             logger.info("✅ 创建CMDB配置（空配置，需要管理员手动设置Cookie）")
+        
+        # 4. iCafe配置（空配置，需要管理员手动配置）
+        icafe_config = {
+            'api_url': 'http://icafeapi.baidu-int.com/api/v2',
+            'space_id': 'HMLCC',
+            'username': '',
+            'password': '',
+            'description': 'iCafe API配置，需要管理员在系统配置页面设置用户名和密码'
+        }
+        
+        # 检查iCafe配置是否已存在
+        existing_icafe = db.query(SystemConfig).filter(
+            SystemConfig.module == 'icafe',
+            SystemConfig.config_key == 'api_config'
+        ).first()
+        
+        if existing_icafe:
+            logger.info("iCafe配置已存在，跳过")
+        else:
+            # 创建iCafe配置
+            icafe_record = SystemConfig(
+                module='icafe',
+                config_key='api_config',
+                config_value=json.dumps(icafe_config, ensure_ascii=False),
+                updated_by=1  # 系统管理员ID
+            )
+            db.add(icafe_record)
+            logger.info("✅ 创建iCafe配置（空配置，需要管理员手动设置用户名和密码）")
         
         db.commit()
         logger.info("✅ 系统配置初始化完成")

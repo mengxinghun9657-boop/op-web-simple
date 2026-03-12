@@ -110,14 +110,16 @@ watch(() => resourceConfig.value.text, (newText) => {
 const loadConfig = async () => {
   try {
     const res = await configApi.loadConfig('analysis')
-    if (res.config && Object.keys(res.config).length > 0) {
-      if (res.config.cluster_ids) {
-        resourceConfig.value.text = Array.isArray(res.config.cluster_ids)
-          ? res.config.cluster_ids.join('\n')
-          : res.config.cluster_ids
+    console.log('分析配置API响应:', res) // 调试日志
+    const config = res.data?.config || res.config // 兼容新旧格式
+    if (config && Object.keys(config).length > 0) {
+      if (config.cluster_ids) {
+        resourceConfig.value.text = Array.isArray(config.cluster_ids)
+          ? config.cluster_ids.join('\n')
+          : config.cluster_ids.replace(/,/g, '\n')  // 将逗号转换为换行
       }
-      if (res.config.description) {
-        resourceConfig.value.description = res.config.description
+      if (config.description) {
+        resourceConfig.value.description = config.description
       }
     }
   } catch (error) {
@@ -135,7 +137,7 @@ const saveResourceConfig = async () => {
   saving.value = true
   try {
     const config = {
-      cluster_ids: resourceConfig.value.ids,
+      cluster_ids: resourceConfig.value.ids.join(','),  // 转换为逗号分隔字符串
       description: resourceConfig.value.description || null
     }
     

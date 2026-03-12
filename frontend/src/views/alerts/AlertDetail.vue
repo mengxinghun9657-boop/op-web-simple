@@ -269,18 +269,68 @@ const fetchAlertDetail = async () => {
 const handleDiagnose = async () => {
   diagnosing.value = true
   try {
-    const response = await diagnoseAlert(route.params.id, { force: true })
-    if (response.success) {
-      ElMessage.success('诊断任务已创建,请稍后刷新查看结果')
-      setTimeout(() => {
-        fetchAlertDetail()
-      }, 5000)
+    const response = await diagnoseAlert(route.params.id, true)  // 传递布尔值而不是对象
+    console.log('诊断响应:', response) // 添加调试日志
+    
+    // 检查响应是否成功
+    if (response && response.success) {
+      ElMessage.success(response.message || '诊断任务已创建,正在处理中...')
+      // 开始轮询检查诊断状态
+      startDiagnosisPolling()
+    } else {
+      // 后端返回success:false，但可能基础流程已完成
+      const message = response?.message || '诊断处理完成'
+      ElMessage.success(message)
+      // 仍然开始轮询检查状态
+      startDiagnosisPolling()
     }
+    
   } catch (error) {
     console.error('触发诊断失败:', error)
+    console.log('错误详情:', error.response) // 添加调试日志
+    
+    // 检查是否是axios拦截器抛出的错误（基础流程可能已完成）
+    if (error.message && (
+      error.message.includes('重新诊断') || 
+      error.message.includes('诊断') ||
+      error.message.includes('已存在诊断结果')
+    )) {
+      // 这种情况下，基础流程可能已经完成，显示成功信息并轮询
+      ElMessage.success('诊断处理已完成，正在检查结果...')
+      startDiagnosisPolling()
+    } else {
+      // 真正的网络错误或其他异常
+      ElMessage.error('诊断请求失败，请重试')
+    }
   } finally {
     diagnosing.value = false
   }
+}
+
+// 轮询检查诊断状态
+const startDiagnosisPolling = () => {
+  let pollCount = 0
+  const maxPolls = 20 // 最多轮询20次 (约2分钟)
+  
+  const pollInterval = setInterval(async () => {
+    try {
+      await fetchAlertDetail()
+      pollCount++
+      
+      // 检查诊断是否完成 (可以根据诊断状态判断)
+      if (alertData.value?.diagnosis?.api_status === 'success' || 
+          alertData.value?.diagnosis?.api_status === 'failed' ||
+          pollCount >= maxPolls) {
+        clearInterval(pollInterval)
+        if (pollCount < maxPolls) {
+          ElMessage.success('诊断已完成')
+        }
+      }
+    } catch (error) {
+      console.error('轮询诊断状态失败:', error)
+      clearInterval(pollInterval)
+    }
+  }, 6000) // 每6秒轮询一次
 }
 
 // 返回

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
@@ -78,6 +78,11 @@ const downloadReport = () => {
     document.body.appendChild(link); link.click(); document.body.removeChild(link)
   }
 }
+
+// 组件挂载时自动加载配置
+onMounted(() => {
+  loadEIPConfig()
+})
 </script>
 
 <template>

@@ -62,43 +62,59 @@ def parse_manual_file(file_path: str) -> list:
 
 def import_manual_data(db: Session, records: list):
     """导入数据到数据库（先清空旧数据，内存去重）"""
-    # 先删除所有旧数据
-    logger.info("清空旧数据...")
-    deleted_count = db.query(FaultManual).delete()
-    logger.info(f"已删除 {deleted_count} 条旧记录")
-    db.commit()
-    
-    # 内存去重（使用 category + alert_type 作为唯一键）
-    seen = set()
-    unique_records = []
-    duplicate_count = 0
-    
-    for record in records:
-        key = (record['category'], record['alert_type'])
-        if key not in seen:
-            seen.add(key)
-            unique_records.append(record)
-        else:
-            duplicate_count += 1
-            logger.debug(f"跳过重复记录: {record['category']}-{record['alert_type']}")
-    
-    logger.info(f"去重完成: 保留 {len(unique_records)} 条, 跳过重复 {duplicate_count} 条")
-    
-    # 导入新数据
-    success_count = 0
-    
-    for record in unique_records:
-        try:
-            manual = FaultManual(**record)
-            db.add(manual)
-            success_count += 1
-        except Exception as e:
-            logger.error(f"导入记录失败: {record.get('alert_type')} - {e}")
-            continue
-    
-    db.commit()
-    logger.info(f"成功导入 {success_count} 条新记录")
-    return success_count
+    try:
+        # 先删除所有旧数据
+        logger.info("清空旧数据...")
+        deleted_count = db.query(FaultManual).delete()
+        logger.info(f"已删除 {deleted_count} 条旧记录")
+        
+        # 立即提交删除操作
+        db.commit()
+        logger.info("删除操作已提交")
+        
+        # 内存去重（使用 category + alert_type 作为唯一键）
+        seen = set()
+        unique_records = []
+        duplicate_count = 0
+        
+        for record in records:
+            key = (record['category'], record['alert_type'])
+            if key not in seen:
+                seen.add(key)
+                unique_records.append(record)
+            else:
+                duplicate_count += 1
+                logger.debug(f"跳过重复记录: {record['category']}-{record['alert_type']}")
+        
+        logger.info(f"去重完成: 保留 {len(unique_records)} 条, 跳过重复 {duplicate_count} 条")
+        
+        # 导入新数据
+        success_count = 0
+        failed_records = []
+        
+        for record in unique_records:
+            try:
+                manual = FaultManual(**record)
+                db.add(manual)
+                success_count += 1
+            except Exception as e:
+                logger.error(f"导入记录失败: {record.get('alert_type')} - {e}")
+                failed_records.append(f"{record['category']}-{record['alert_type']}")
+                continue
+        
+        # 提交所有新记录
+        db.commit()
+        logger.info(f"✅ 成功导入 {success_count} 条新记录")
+        
+        if failed_records:
+            logger.warning(f"❌ 失败记录: {failed_records}")
+        
+        return success_count
+        
+    except Exception as e:
+        logger.error(f"❌ 导入过程出错: {e}")
+        db.rollback()
+        raise
 
 
 def main():

@@ -389,6 +389,7 @@ import_fault_manual() {
     
     # 确保容器内目录存在
     docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /knowledge 2>/dev/null || true
+    docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /app/backend/scripts 2>/dev/null || true
     
     # 获取后端容器 ID
     BACKEND_CONTAINER=$(docker compose -f docker-compose.prod.yml ps -q backend)
@@ -397,7 +398,7 @@ import_fault_manual() {
         return 1
     fi
     
-    # 复制文件到容器内
+    # 复制故障手册文件到容器内
     if docker cp "$file_path" "${BACKEND_CONTAINER}:/knowledge/${file_name}"; then
         echo "✓ 故障手册文件已复制到容器"
     else
@@ -405,17 +406,81 @@ import_fault_manual() {
         return 1
     fi
     
-    # 执行导入
-    if docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
-import sys
-sys.path.append('/app')
-from scripts.import_fault_manual import main
-main()
-" 2>/dev/null; then
+    # 复制导入脚本到容器内
+    if [ -f "backend-scripts/import_fault_manual.py" ]; then
+        if docker cp "backend-scripts/import_fault_manual.py" "${BACKEND_CONTAINER}:/app/backend/scripts/import_fault_manual.py"; then
+            echo "✓ 导入脚本已复制到容器"
+        else
+            echo "❌ 导入脚本复制失败"
+            return 1
+        fi
+    else
+        echo "❌ 未找到导入脚本: backend-scripts/import_fault_manual.py"
+        return 1
+    fi
+    
+    # 执行导入（使用正确的路径）
+    if docker compose -f docker-compose.prod.yml exec -T backend bash -c "cd /app && python3 backend/scripts/import_fault_manual.py" 2>/dev/null; then
         echo "✓ 故障手册导入成功"
+        
+        # 重新匹配已有告警
+        echo "  重新匹配已有告警的手册..."
+        docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
+import sys
+sys.path.insert(0, '/app')
+from app.core.deps import SessionLocal
+from app.models.alert import AlertRecord, DiagnosisResult
+from app.services.alert.manual_matcher import ManualMatchService
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+db = SessionLocal()
+try:
+    # 查询所有未匹配手册的告警
+    unmatched = db.query(DiagnosisResult).filter(
+        DiagnosisResult.manual_matched == False
+    ).all()
+    
+    logger.info(f'发现 {len(unmatched)} 条未匹配手册的告警')
+    
+    if len(unmatched) > 0:
+        matcher = ManualMatchService(db)
+        success_count = 0
+        
+        for diagnosis in unmatched:
+            alert = db.query(AlertRecord).filter(AlertRecord.id == diagnosis.alert_id).first()
+            if not alert:
+                continue
+            
+            # 重新匹配手册
+            manual = matcher.match(alert.alert_type, alert.component)
+            if manual:
+                diagnosis.manual_matched = True
+                diagnosis.manual_name_zh = manual.get('name_zh')
+                diagnosis.manual_impact = manual.get('impact')
+                diagnosis.manual_recovery = manual.get('recovery')
+                diagnosis.manual_solution = manual.get('solution')
+                diagnosis.customer_aware = manual.get('customer_aware')
+                diagnosis.danger_level = manual.get('danger_level')
+                success_count += 1
+        
+        db.commit()
+        logger.info(f'✅ 重新匹配完成: {success_count}/{len(unmatched)} 条成功')
+    else:
+        logger.info('✅ 所有告警已匹配手册')
+        
+except Exception as e:
+    logger.error(f'重新匹配失败: {e}')
+    db.rollback()
+finally:
+    db.close()
+" && echo "✓ 已有告警重新匹配完成" || echo "⚠️  重新匹配失败"
+        
         return 0
     else
-        echo "⚠️  故障手册导入失败（可能已存在）"
+        echo "❌ 故障手册导入失败"
         return 1
     fi
 }

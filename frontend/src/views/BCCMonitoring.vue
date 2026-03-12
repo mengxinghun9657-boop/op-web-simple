@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
@@ -107,6 +107,11 @@ onUnmounted(() => {
     clearInterval(pollTimer)
     pollTimer = null
   }
+})
+
+// 组件挂载时自动加载配置
+onMounted(() => {
+  loadBCCConfig()
 })
 </script>
 

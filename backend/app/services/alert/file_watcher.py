@@ -14,7 +14,6 @@ from sqlalchemy.orm import Session
 from loguru import logger
 
 from app.services.alert.alert_processor import AlertProcessor
-from app.services.alert.file_sync_service import get_file_sync_service
 from app.core.config_alert import settings
 
 
@@ -33,7 +32,6 @@ class PathSpecificHandler(FileSystemEventHandler):
         self.redis_client = redis_client  # Redis客户端，用于跨进程去重
         self.redis_key_prefix = "alert:processed_file:"  # Redis key前缀
         self.redis_ttl = 3600  # 1小时过期（避免Redis无限增长）
-        self.file_sync_service = get_file_sync_service()  # 文件同步服务
     
     def try_acquire_file_lock(self, file_path: str) -> bool:
         """
@@ -79,25 +77,17 @@ class PathSpecificHandler(FileSystemEventHandler):
         return fnmatch.fnmatch(filename, self.path_config.file_pattern)
     
     def process_file(self, file_path: str):
-        """处理文件（文件同步 + 文件级别去重）"""
+        """处理文件（直接解析，无需文件同步）"""
         # 验证文件格式
         if not self.match_pattern(file_path):
             return
         
-        # 步骤1: 文件同步（从只读源目录复制到可写处理目录，支持文件名修正）
-        synced_file_path = self.file_sync_service.sync_file(file_path)
-        
-        # 如果同步失败，使用原文件路径
-        actual_file_path = synced_file_path if synced_file_path else file_path
-        
         # 使用Redis原子操作获取文件处理锁（防止多worker重复处理）
-        if not self.try_acquire_file_lock(actual_file_path):
-            logger.debug(f"文件已处理过（Redis原子锁），跳过: {actual_file_path}")
+        if not self.try_acquire_file_lock(file_path):
+            logger.debug(f"文件已处理过（Redis原子锁），跳过: {file_path}")
             return
         
-        logger.info(f"检测到新文件: {actual_file_path} (路径: {self.path_config.path}, 优先级: {self.path_config.priority})")
-        if synced_file_path and synced_file_path != file_path:
-            logger.info(f"文件已同步并修正: {file_path} -> {actual_file_path}")
+        logger.info(f"检测到新文件: {file_path} (路径: {self.path_config.path}, 优先级: {self.path_config.priority})")
         
         try:
             # 使用线程池执行异步任务
@@ -113,14 +103,14 @@ class PathSpecificHandler(FileSystemEventHandler):
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
                     try:
-                        loop.run_until_complete(processor.process_alert_file(actual_file_path))
-                        logger.info(f"文件处理完成: {actual_file_path}")
+                        loop.run_until_complete(processor.process_alert_file(file_path))
+                        logger.info(f"文件处理完成: {file_path}")
                     finally:
                         loop.close()
                 except Exception as e:
                     logger.error(f"异步任务执行失败: {str(e)}", exc_info=True)
                     # 处理失败时取消标记，允许重试
-                    self.unmark_file_processed(actual_file_path)
+                    self.unmark_file_processed(file_path)
             
             # 使用线程池执行
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
@@ -128,9 +118,9 @@ class PathSpecificHandler(FileSystemEventHandler):
                 # 不等待完成，避免阻塞文件监控
             
         except Exception as e:
-            logger.error(f"处理文件失败 {actual_file_path}: {str(e)}", exc_info=True)
+            logger.error(f"处理文件失败 {file_path}: {str(e)}", exc_info=True)
             # 处理失败时取消标记，允许重试
-            self.unmark_file_processed(actual_file_path)
+            self.unmark_file_processed(file_path)
     
     def on_created(self, event: FileCreatedEvent):
         """新文件创建时触发"""
@@ -205,7 +195,6 @@ class FileWatcherService:
             self.observer.start()
             
             logger.info(f"文件监控服务已启动，监控源目录: {self.ALERT_SOURCE_PATH} (模式: {self.FILE_PATTERN})")
-            logger.info(f"文件将同步到处理目录: {self.ALERT_PROCESS_PATH}")
         except Exception as e:
             logger.error(f"启动文件监控失败: {str(e)}", exc_info=True)
     
@@ -285,17 +274,11 @@ class FileWatcherService:
             print(f"[INFO] 找到 {len(matched_files)} 个匹配 '{self.FILE_PATTERN}' 模式的文件")
             logger.info(f"找到 {len(matched_files)} 个匹配 '{self.FILE_PATTERN}' 模式的文件")
             
-            # 获取文件同步服务
-            file_sync_service = get_file_sync_service()
-            
             # 处理每个文件
             for file_path in matched_files:
                 try:
-                    # 步骤1: 文件同步（从只读源目录复制到可写处理目录，支持文件名修正）
-                    synced_file_path = file_sync_service.sync_file(str(file_path))
-                    
-                    # 如果同步失败，使用原文件路径
-                    actual_file_path = Path(synced_file_path) if synced_file_path else file_path
+                    # 直接使用源文件路径
+                    actual_file_path = file_path
                     
                     # 检查Redis去重（如果可用）
                     redis_key = f"alert:processed_file:{str(actual_file_path)}"
@@ -313,9 +296,6 @@ class FileWatcherService:
                     
                     print(f"[INFO] 处理文件: {actual_file_path}")
                     logger.info(f"处理文件: {actual_file_path}")
-                    if synced_file_path and synced_file_path != str(file_path):
-                        print(f"[INFO] 文件已同步并修正: {file_path} -> {actual_file_path}")
-                        logger.info(f"文件已同步并修正: {file_path} -> {actual_file_path}")
                     
                     # 直接创建processor并处理（不依赖handler）
                     processor = self._get_processor()

@@ -52,10 +52,12 @@ export const resendNotification = (alertId) => {
 
 /**
  * 批量重新发送未通知的告警
+ * @param {Array<number>} alertIds - 可选，指定告警ID列表（为空则补发所有未通知的告警）
  * @returns {Promise}
  */
-export const batchResendNotifications = () => {
-  return axios.post('/api/v1/alerts/batch-resend-notification')
+export const batchResendNotifications = (alertIds = null) => {
+  const params = alertIds ? { alert_ids: alertIds } : {}
+  return axios.post('/api/v1/alerts/batch-resend-notification', null, { params })
 }
 
 /**
@@ -66,4 +68,58 @@ export const batchResendNotifications = () => {
  */
 export const updateAlertStatus = (alertId, data) => {
   return axios.put(`/api/v1/alerts/${alertId}/status`, data)
+}
+
+/**
+ * 为告警创建 iCafe 卡片
+ * @param {number} alertId - 告警ID
+ * @param {Object} cardData - 卡片数据
+ * @returns {Promise}
+ */
+export const createICafeCard = (alertId, cardData) => {
+  return axios.post(`/api/v1/alerts/${alertId}/create-icafe-card`, cardData)
+}
+/**
+ * 检测需要修正cluster_id的告警记录
+ * @returns {Promise}
+ */
+export const detectIncorrectAlerts = () => {
+  return axios.get('/api/v1/alerts/detect-incorrect')
+}
+
+/**
+ * 批量修正告警记录的cluster_id
+ * @param {Array<number>} alertIds - 可选，告警ID列表（为空则修正所有需要修正的记录）
+ * @returns {Promise}
+ */
+export const correctClusterIds = (alertIds = null) => {
+  const data = alertIds ? { alert_ids: alertIds } : {}
+  return axios.post('/api/v1/alerts/correct-cluster-ids', data)
+}
+
+/**
+ * 修正单个告警记录的cluster_id
+ * @param {number} alertId - 告警ID
+ * @returns {Promise}
+ */
+export const correctSingleAlertClusterId = (alertId) => {
+  return axios.post(`/api/v1/alerts/${alertId}/correct-cluster-id`)
+}
+
+/**
+ * 更新告警字段
+ * @param {number} alertId - 告警ID
+ * @param {Object} data - 更新的字段数据
+ * @returns {Promise}
+ */
+export const updateAlertFields = (alertId, data) => {
+  return axios.put(`/api/v1/alerts/${alertId}`, data)
+}
+
+/**
+ * 测试宿主机数据库连接
+ * @returns {Promise}
+ */
+export const testHostConnection = () => {
+  return axios.get('/api/v1/alerts/test-host-connection')
 }

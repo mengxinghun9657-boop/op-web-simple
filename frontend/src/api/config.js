@@ -19,3 +19,8 @@ export const loadConfig = (module) => {
     params: { module }
   })
 }
+
+// 测试iCafe连接
+export const testICafeConnection = () => {
+  return axios.post('/api/v1/config/icafe/test-connection')
+}

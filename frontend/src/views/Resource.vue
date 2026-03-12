@@ -255,6 +255,9 @@ onMounted(() => {
       clusterIdsText.value = savedClusterIds
     }
   }
+  
+  // 自动加载配置
+  loadResourceConfig()
 })
 
 const fetchClusterData = async () => {
@@ -451,6 +454,11 @@ const pollResult = async (id) => {
 const reportUrl = computed(() => { const htmlFile = analysisResult.value?.html_file || analysisResult.value?.result?.html_report; return htmlFile ? getFullBackendUrl(htmlFile) : null })
 const downloadReport = () => { if (!taskId.value) { ElMessage.warning('没有可下载的报告'); return }; const link = document.createElement('a'); link.href = getFullBackendUrl(`/api/v1/resource/download/${taskId.value}`); link.download = `resource_report_${taskId.value}.html`; document.body.appendChild(link); link.click(); document.body.removeChild(link); ElMessage.success('报告下载已开始') }
 const openReport = () => { if (reportUrl.value) window.open(reportUrl.value, '_blank'); else ElMessage.warning('报告不可用') }
+
+// 组件挂载时自动加载配置
+onMounted(() => {
+  loadResourceConfig()
+})
 
 // 组件卸载时清理定时器
 onUnmounted(() => {

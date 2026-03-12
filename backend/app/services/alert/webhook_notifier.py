@@ -26,7 +26,7 @@ class WebhookNotifier:
         # 如果未传入Redis客户端，尝试获取
         if not self.redis_client:
             try:
-                from app.core.deps import get_redis_client
+                from app.core.redis_client import get_redis_client
                 self.redis_client = get_redis_client()
             except Exception as e:
                 logger.warning(f"无法获取Redis客户端，节点级通知去重将被禁用: {str(e)}")

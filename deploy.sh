@@ -281,6 +281,18 @@ with open('/app/app/services/alert/alert_processor.py', 'r') as f:
 # 初始化系统配置
 echo ""
 echo "⚙️  初始化系统配置..."
+
+# 先复制配置文件到容器
+if [ -f "backend/config/default_instance_ids.json" ]; then
+    echo "📋 复制默认配置文件..."
+    BACKEND_CONTAINER=$(docker compose -f docker-compose.prod.yml ps -q backend)
+    docker cp backend/config/default_instance_ids.json "${BACKEND_CONTAINER}:/app/config/default_instance_ids.json" || {
+        echo -e "${YELLOW}⚠️  配置文件复制失败${NC}"
+    }
+else
+    echo -e "${YELLOW}⚠️  未找到 default_instance_ids.json，将跳过默认配置初始化${NC}"
+fi
+
 # 等待后端服务完全启动
 sleep 10
 docker compose -f docker-compose.prod.yml exec -T backend python3 init_system_configs.py || {

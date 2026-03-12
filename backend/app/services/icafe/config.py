@@ -38,23 +38,30 @@ class IcafeConfig:
         """从配置文件和环境变量加载配置"""
         config = cls()
         
-        # 1. 尝试从配置文件加载
-        if config_path is None:
-            config_path = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-                'config', 'icafe.json'
-            )
-        
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, 'r', encoding='utf-8') as f:
-                    file_config = json.load(f)
-                config._apply_dict(file_config)
-                logger.info(f"已加载 icafe 配置文件: {config_path}")
-            except Exception as e:
-                logger.warning(f"加载配置文件失败: {e}，使用默认配置")
+        # 1. 优先从系统配置数据库加载
+        try:
+            config._load_from_system_config()
+            logger.info("已从系统配置数据库加载 iCafe 配置")
+        except Exception as e:
+            logger.warning(f"从系统配置加载失败: {e}，尝试从配置文件加载")
+            
+            # 2. 降级到配置文件加载
+            if config_path is None:
+                config_path = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                    'config', 'icafe.json'
+                )
+            
+            if os.path.exists(config_path):
+                try:
+                    with open(config_path, 'r', encoding='utf-8') as f:
+                        file_config = json.load(f)
+                    config._apply_dict(file_config)
+                    logger.info(f"已加载 icafe 配置文件: {config_path}")
+                except Exception as e:
+                    logger.warning(f"加载配置文件失败: {e}，使用默认配置")
 
-        # 2. 环境变量覆盖
+        # 3. 环境变量覆盖
         env_mappings = {
             'ICAFE_BASE_URL': 'base_url',
             'ICAFE_TIMEOUT': ('timeout', int),
@@ -77,6 +84,58 @@ class IcafeConfig:
                     setattr(config, attr_info, env_value)
         
         return config
+    
+    def _load_from_system_config(self):
+        """从系统配置数据库加载配置"""
+        try:
+            # 导入数据库相关模块
+            from app.core.database import SessionLocal
+            from app.models.system_config import SystemConfig
+            
+            db = SessionLocal()
+            try:
+                # 查询 iCafe 配置
+                icafe_config_record = db.query(SystemConfig).filter(
+                    SystemConfig.module == 'icafe',
+                    SystemConfig.config_key == 'api_config'
+                ).first()
+                
+                if icafe_config_record and icafe_config_record.config_value:
+                    config_data = icafe_config_record.config_value
+                    
+                    # 映射系统配置到 iCafe 配置
+                    if config_data.get('api_url'):
+                        # 转换 API URL 格式
+                        api_url = config_data['api_url']
+                        if api_url.endswith('/api/v2'):
+                            # 从 http://icafeapi.baidu-int.com/api/v2 转换为 http://icafeapi.baidu-int.com/api/spaces
+                            self.base_url = api_url.replace('/api/v2', '/api/spaces')
+                        else:
+                            self.base_url = api_url
+                    
+                    if config_data.get('space_id'):
+                        self.default_spacecode = config_data['space_id']
+                    
+                    if config_data.get('username'):
+                        self.default_username = config_data['username']
+                    
+                    if config_data.get('password'):
+                        self.default_password = config_data['password']
+                    
+                    logger.info("✅ 成功从系统配置加载 iCafe 配置")
+                else:
+                    logger.warning("系统配置中未找到 iCafe 配置")
+                    
+            finally:
+                db.close()
+                
+        except ImportError:
+            # 如果无法导入数据库模块（如在测试环境），跳过
+            logger.debug("无法导入数据库模块，跳过系统配置加载")
+            raise Exception("数据库模块不可用")
+        except Exception as e:
+            logger.error(f"从系统配置加载 iCafe 配置失败: {e}")
+            raise
     
     def _apply_dict(self, d: dict):
         """应用字典配置"""
@@ -125,4 +184,13 @@ def get_icafe_config() -> IcafeConfig:
     global _config
     if _config is None:
         _config = IcafeConfig.load()
+    return _config
+
+
+def reload_icafe_config() -> IcafeConfig:
+    """重新加载 icafe 配置（用于配置更新后刷新）"""
+    global _config
+    _config = None  # 清除缓存
+    _config = IcafeConfig.load()
+    logger.info("✅ iCafe 配置已重新加载")
     return _config

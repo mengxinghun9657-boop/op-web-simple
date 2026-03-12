@@ -28,13 +28,13 @@ router = APIRouter(prefix="/config", tags=["系统配置管理"])
 
 class ConfigSaveRequest(BaseModel):
     """配置保存请求"""
-    module: str = Field(..., description="模块名称: cmdb, monitoring, analysis, pfs")
+    module: str = Field(..., description="模块名称: cmdb, monitoring, analysis, pfs, icafe")
     config: Dict[str, Any] = Field(..., description="配置内容（JSON对象）")
     
     @validator('module')
     def validate_module(cls, v):
         """验证模块名称"""
-        allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs']
+        allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'icafe']
         if v not in allowed_modules:
             raise ValueError(f'无效的模块名称：{v}，允许的值：{", ".join(allowed_modules)}')
         return v
@@ -121,6 +121,7 @@ async def save_config(
     - monitoring: 监控配置（EIP、BCC、BOS实例ID）
     - analysis: 分析配置（资源分析集群ID）
     - pfs: PFS监控配置（Grafana URL、Token等）
+    - icafe: iCafe配置（API URL、用户名、密码等）
     """
     # 检查管理员权限
     check_admin_permission(current_user)
@@ -189,9 +190,10 @@ async def load_config(
     - monitoring: 监控配置
     - analysis: 分析配置
     - pfs: PFS监控配置
+    - icafe: iCafe配置
     """
     # 验证模块名称
-    allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs']
+    allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'icafe']
     if module not in allowed_modules:
         raise HTTPException(
             status_code=400,
@@ -239,3 +241,70 @@ async def load_config(
     except Exception as e:
         logger.error(f"加载配置失败: {e}")
         raise HTTPException(status_code=500, detail=f"加载配置失败: {str(e)}")
+
+@router.post("/icafe/test-connection", summary="测试iCafe连接")
+async def test_icafe_connection(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    测试iCafe API连接
+    
+    需要管理员权限
+    """
+    try:
+        # 检查权限
+        if current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="仅管理员可以测试连接")
+        
+        # 获取iCafe配置
+        config_record = db.query(SystemConfig).filter(
+            SystemConfig.module == 'icafe',
+            SystemConfig.config_key == 'main'
+        ).first()
+        
+        if not config_record:
+            return {
+                "success": False,
+                "message": "iCafe配置不存在，请先保存配置"
+            }
+        
+        # 解析配置
+        try:
+            if isinstance(config_record.config_value, str):
+                config_data = json.loads(config_record.config_value)
+            else:
+                config_data = config_record.config_value
+        except json.JSONDecodeError:
+            return {
+                "success": False,
+                "message": "配置格式错误"
+            }
+        
+        # 验证必要字段
+        required_fields = ['api_url', 'space_id', 'username', 'password']
+        missing_fields = [field for field in required_fields if not config_data.get(field)]
+        
+        if missing_fields:
+            return {
+                "success": False,
+                "message": f"配置缺少必要字段：{', '.join(missing_fields)}"
+            }
+        
+        # 创建iCafe服务并测试连接
+        from app.services.icafe.icafe_service import ICafeService
+        
+        icafe_service = ICafeService(config_data)
+        success, message = icafe_service.test_connection()
+        
+        return {
+            "success": success,
+            "message": message
+        }
+        
+    except Exception as e:
+        logger.error(f"测试iCafe连接失败: {e}")
+        return {
+            "success": False,
+            "message": f"测试失败：{str(e)}"
+        }

@@ -18,6 +18,10 @@ from loguru import logger
 from .config import IcafeConfig, get_icafe_config
 
 
+# iCafe API v2 URL 常量
+ICAFE_API_V2_URL = "http://icafeapi.baidu-int.com/api/v2"
+
+
 class IcafeAPIClient:
     """icafe API 客户端"""
     
@@ -247,3 +251,104 @@ class IcafeAPIClient:
             'page': self.config.default_page,
             'pgcount': self.config.default_pgcount
         }
+
+    def create_card(
+        self,
+        spacecode: str,
+        username: str,
+        password: str,
+        title: str,
+        detail: str,
+        card_type: str = "Bug",
+        fields: Optional[Dict[str, Any]] = None,
+        creator: Optional[str] = None,
+        comment: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        创建 iCafe 卡片
+        
+        Args:
+            spacecode: 空间代码
+            username: 用户名
+            password: 密码
+            title: 卡片标题
+            detail: 卡片详情（HTML 格式）
+            card_type: 卡片类型（Bug/Task/Requirement 等）
+            fields: 自定义字段字典
+            creator: 创建人（默认使用 username）
+            comment: 评论内容
+            
+        Returns:
+            创建结果字典，失败返回 None
+        """
+        try:
+            logger.info(f"开始创建卡片: spacecode={spacecode}, title={title}")
+            logger.info(f"用户名: {username}, 密码: {self._mask_password(password)}")
+            
+            url = f"{ICAFE_API_V2_URL}/space/{spacecode}/issue/new"
+            logger.info(f"API 请求 URL: {url}")
+            
+            # 构建请求 payload
+            payload = {
+                "username": username,
+                "password": password,
+                "issues": [{
+                    "title": title,
+                    "detail": detail,
+                    "type": card_type,
+                    "fields": fields or {},
+                    "creator": creator or username,
+                    "comment": comment or ""
+                }]
+            }
+            
+            logger.debug(f"请求 payload: {json.dumps(payload, ensure_ascii=False, indent=2)}")
+            
+            headers = {
+                "Content-Type": "application/json"
+            }
+            
+            response = requests.post(url, json=payload, headers=headers, timeout=self.config.timeout)
+            response.raise_for_status()
+            
+            result = response.json()
+            logger.info(f"API 响应状态: {result.get('status')}")
+            
+            if result.get('status') == 200:
+                logger.success(f"✅ 卡片创建成功！编号: {result.get('issueSequences', [None])[0]}")
+                return {
+                    'success': True,
+                    'message': '卡片创建成功',
+                    'data': result
+                }
+            else:
+                error_msg = f"卡片创建失败: {result.get('message', '未知错误')}"
+                logger.error(error_msg)
+                return {
+                    'success': False,
+                    'message': result.get('message', '未知错误'),
+                    'data': result
+                }
+                
+        except requests.exceptions.Timeout:
+            error_msg = f"API 请求超时 (timeout={self.config.timeout}s)"
+            logger.error(error_msg)
+            return None
+        except requests.exceptions.ConnectionError as e:
+            error_msg = f"无法连接到 icafe API: {str(e)}"
+            logger.error(error_msg)
+            return None
+        except requests.exceptions.HTTPError as e:
+            error_msg = f"HTTP 错误: {str(e)}"
+            logger.error(error_msg)
+            return None
+        except json.JSONDecodeError as e:
+            error_msg = f"JSON 解析失败: {str(e)}"
+            logger.error(error_msg)
+            return None
+        except Exception as e:
+            error_msg = f"创建卡片失败: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return None
+# iCafe API v2 URL 常量
+ICAFE_API_V2_URL = "http://icafeapi.baidu-int.com/api/v2"

@@ -179,35 +179,37 @@ watch(() => bosConfig.value.text, (newText) => {
 const loadConfig = async () => {
   try {
     const res = await configApi.loadConfig('monitoring')
-    if (res.config && Object.keys(res.config).length > 0) {
+    console.log('监控配置API响应:', res) // 调试日志
+    const config = res.data?.config || res.config // 兼容新旧格式
+    if (config && Object.keys(config).length > 0) {
       // EIP配置
-      if (res.config.eip_instance_ids) {
-        eipConfig.value.text = Array.isArray(res.config.eip_instance_ids) 
-          ? res.config.eip_instance_ids.join('\n')
-          : res.config.eip_instance_ids
+      if (config.eip_instance_ids) {
+        eipConfig.value.text = Array.isArray(config.eip_instance_ids) 
+          ? config.eip_instance_ids.join('\n')
+          : config.eip_instance_ids.replace(/,/g, '\n')  // 将逗号转换为换行
       }
-      if (res.config.eip_description) {
-        eipConfig.value.description = res.config.eip_description
+      if (config.eip_description) {
+        eipConfig.value.description = config.eip_description
       }
       
       // BCC配置
-      if (res.config.bcc_instance_ids) {
-        bccConfig.value.text = Array.isArray(res.config.bcc_instance_ids)
-          ? res.config.bcc_instance_ids.join('\n')
-          : res.config.bcc_instance_ids
+      if (config.bcc_instance_ids) {
+        bccConfig.value.text = Array.isArray(config.bcc_instance_ids)
+          ? config.bcc_instance_ids.join('\n')
+          : config.bcc_instance_ids.replace(/,/g, '\n')  // 将逗号转换为换行
       }
-      if (res.config.bcc_description) {
-        bccConfig.value.description = res.config.bcc_description
+      if (config.bcc_description) {
+        bccConfig.value.description = config.bcc_description
       }
       
       // BOS配置
-      if (res.config.bos_bucket_names) {
-        bosConfig.value.text = Array.isArray(res.config.bos_bucket_names)
-          ? res.config.bos_bucket_names.join('\n')
-          : res.config.bos_bucket_names
+      if (config.bos_bucket_names) {
+        bosConfig.value.text = Array.isArray(config.bos_bucket_names)
+          ? config.bos_bucket_names.join('\n')
+          : config.bos_bucket_names.replace(/,/g, '\n')  // 将逗号转换为换行
       }
-      if (res.config.bos_description) {
-        bosConfig.value.description = res.config.bos_description
+      if (config.bos_description) {
+        bosConfig.value.description = config.bos_description
       }
     }
   } catch (error) {
@@ -224,13 +226,15 @@ const saveEipConfig = async () => {
 
   saving.value.eip = true
   try {
+    // 先加载现有配置
+    const res = await configApi.loadConfig('monitoring')
+    const existingConfig = res.config || {}
+    
+    // 只更新EIP相关字段
     const config = {
-      eip_instance_ids: eipConfig.value.ids,
-      eip_description: eipConfig.value.description || null,
-      bcc_instance_ids: bccConfig.value.ids,
-      bcc_description: bccConfig.value.description || null,
-      bos_bucket_names: bosConfig.value.ids,
-      bos_description: bosConfig.value.description || null
+      ...existingConfig,
+      eip_instance_ids: eipConfig.value.ids.join(','),  // 转换为逗号分隔字符串
+      eip_description: eipConfig.value.description || null
     }
     
     await configApi.saveConfig('monitoring', config)
@@ -251,13 +255,15 @@ const saveBccConfig = async () => {
 
   saving.value.bcc = true
   try {
+    // 先加载现有配置
+    const res = await configApi.loadConfig('monitoring')
+    const existingConfig = res.config || {}
+    
+    // 只更新BCC相关字段
     const config = {
-      eip_instance_ids: eipConfig.value.ids,
-      eip_description: eipConfig.value.description || null,
-      bcc_instance_ids: bccConfig.value.ids,
-      bcc_description: bccConfig.value.description || null,
-      bos_bucket_names: bosConfig.value.ids,
-      bos_description: bosConfig.value.description || null
+      ...existingConfig,
+      bcc_instance_ids: bccConfig.value.ids.join(','),  // 转换为逗号分隔字符串
+      bcc_description: bccConfig.value.description || null
     }
     
     await configApi.saveConfig('monitoring', config)
@@ -278,12 +284,14 @@ const saveBosConfig = async () => {
 
   saving.value.bos = true
   try {
+    // 先加载现有配置
+    const res = await configApi.loadConfig('monitoring')
+    const existingConfig = res.config || {}
+    
+    // 只更新BOS相关字段
     const config = {
-      eip_instance_ids: eipConfig.value.ids,
-      eip_description: eipConfig.value.description || null,
-      bcc_instance_ids: bccConfig.value.ids,
-      bcc_description: bccConfig.value.description || null,
-      bos_bucket_names: bosConfig.value.ids,
+      ...existingConfig,
+      bos_bucket_names: bosConfig.value.ids.join(','),  // 转换为逗号分隔字符串
       bos_description: bosConfig.value.description || null
     }
     

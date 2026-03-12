@@ -105,10 +105,27 @@
           @click="handleBatchResendNotifications"
           :loading="batchResending"
         >
-          批量补发通知
+          批量补发通知（全部）
+        </el-button>
+        <el-button
+          type="primary"
+          :icon="Notification"
+          @click="handleSelectedResendNotifications"
+          :disabled="selectedAlerts.length === 0"
+          :loading="batchResending"
+        >
+          补发选中通知（{{ selectedAlerts.length }}）
+        </el-button>
+        <el-button
+          type="success"
+          :icon="Edit"
+          @click="handleDetectAndCorrectClusterIds"
+          :loading="batchCorrecting"
+        >
+          检测并修正cluster_id
         </el-button>
         <el-tooltip
-          content="为所有未发送通知的告警补发webhook通知（适用于首次部署时webhook未配置的情况）"
+          content="从宿主机数据库查询正确的cluster_id，修正容器内数据库的告警记录"
           placement="top"
         >
           <el-icon style="margin-left: 8px; cursor: help;">
@@ -133,14 +150,18 @@
         stripe
         style="width: 100%"
         @row-click="handleRowClick"
+        @selection-change="handleSelectionChange"
+        @sort-change="handleSortChange"
         class="alert-table"
         aria-label="硬件告警列表"
       >
-        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column type="selection" width="55" />
         
-        <el-table-column prop="alert_type" label="告警类型" min-width="180" />
+        <el-table-column prop="id" label="ID" width="80" sortable="custom" />
         
-        <el-table-column prop="component" label="组件" width="120">
+        <el-table-column prop="alert_type" label="告警类型" min-width="180" sortable="custom" />
+        
+        <el-table-column prop="component" label="组件" width="120" sortable="custom">
           <template #default="{ row }">
             <el-tag :type="getComponentTagType(row.component)" size="small">
               {{ row.component }}
@@ -148,7 +169,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="severity" label="严重程度" width="120">
+        <el-table-column prop="severity" label="严重程度" width="120" sortable="custom">
           <template #default="{ row }">
             <el-tag 
               :type="getSeverityTagType(row.severity)" 
@@ -160,17 +181,17 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="ip" label="节点IP" width="140" />
+        <el-table-column prop="ip" label="节点IP" width="140" sortable="custom" />
         
-        <el-table-column prop="cluster_id" label="集群ID" width="150" show-overflow-tooltip />
+        <el-table-column prop="cluster_id" label="集群ID" width="150" show-overflow-tooltip sortable="custom" />
         
-        <el-table-column prop="timestamp" label="发生时间" width="180">
+        <el-table-column prop="timestamp" label="发生时间" width="180" sortable="custom">
           <template #default="{ row }">
             {{ formatDateTime(row.timestamp) }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="120">
+        <el-table-column prop="status" label="状态" width="120" sortable="custom">
           <template #default="{ row }">
             <el-tag 
               :type="getStatusTagType(row.status)" 
@@ -203,45 +224,68 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="320" fixed="right">
+        <el-table-column label="操作" width="380" fixed="right">
           <template #default="{ row }">
-            <el-button
-              type="primary"
-              size="small"
-              @click.stop="handleViewDetail(row.id)"
-              aria-label="查看告警详情"
-              class="action-button"
-            >
-              查看详情
-            </el-button>
-            <el-button
-              type="success"
-              size="small"
-              :icon="Edit"
-              @click.stop="handleChangeStatus(row)"
-              aria-label="修改状态"
-            >
-              修改状态
-            </el-button>
-            <el-button
-              type="info"
-              size="small"
-              :icon="EditPen"
-              @click.stop="handleAddNote(row)"
-              aria-label="添加备注"
-            >
-              添加备注
-            </el-button>
-            <el-button
-              link
-              type="warning"
-              size="small"
-              @click.stop="handleDiagnose(row.id)"
-              :loading="diagnosingIds.includes(row.id)"
-              aria-label="重新诊断告警"
-            >
-              重新诊断
-            </el-button>
+            <div class="action-buttons">
+              <el-button
+                type="primary"
+                size="small"
+                @click.stop="handleViewDetail(row.id)"
+                aria-label="查看告警详情"
+                class="action-btn"
+              >
+                查看详情
+              </el-button>
+              <el-button
+                type="primary"
+                size="small"
+                :icon="Edit"
+                @click.stop="handleChangeStatus(row)"
+                aria-label="修改状态"
+                class="action-btn"
+              >
+                修改状态
+              </el-button>
+              <el-button
+                type="primary"
+                size="small"
+                :icon="EditPen"
+                @click.stop="handleEditAlert(row)"
+                aria-label="编辑告警字段"
+                class="action-btn"
+              >
+                编辑字段
+              </el-button>
+              <el-button
+                type="primary"
+                size="small"
+                :icon="EditPen"
+                @click.stop="handleAddNote(row)"
+                aria-label="添加备注"
+                class="action-btn"
+              >
+                添加备注
+              </el-button>
+              <el-button
+                type="primary"
+                size="small"
+                @click.stop="handleDiagnose(row.id)"
+                :loading="diagnosingIds.includes(row.id)"
+                aria-label="重新诊断告警"
+                class="action-btn"
+              >
+                重新诊断
+              </el-button>
+              <el-button
+                type="primary"
+                size="small"
+                @click.stop="handleCreateICafeCard(row)"
+                aria-label="创建iCafe卡片"
+                class="action-btn"
+              >
+                创建卡片
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -290,6 +334,98 @@
         />
       </div>
     </el-card>
+
+    <!-- 编辑告警字段对话框 -->
+    <el-dialog
+      v-model="editDialogVisible"
+      title="编辑告警字段"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-form
+        ref="editFormRef"
+        :model="editForm"
+        :rules="editFormRules"
+        label-width="100px"
+        @submit.prevent="handleEditSubmit"
+      >
+        <el-form-item label="告警ID">
+          <el-input v-model="editForm.alertId" readonly />
+        </el-form-item>
+        
+        <el-form-item label="告警类型" prop="alertType">
+          <el-input
+            v-model="editForm.alertType"
+            placeholder="请输入告警类型"
+            maxlength="200"
+            show-word-limit
+          />
+        </el-form-item>
+        
+        <el-form-item label="组件类型" prop="component">
+          <el-select v-model="editForm.component" placeholder="请选择组件类型" style="width: 100%">
+            <el-option label="GPU" value="GPU" />
+            <el-option label="Memory" value="Memory" />
+            <el-option label="CPU" value="CPU" />
+            <el-option label="Motherboard" value="Motherboard" />
+            <el-option label="硬盘" value="硬盘" />
+            <el-option label="网卡" value="网卡" />
+            <el-option label="电源" value="电源" />
+            <el-option label="风扇" value="风扇" />
+          </el-select>
+        </el-form-item>
+        
+        <el-form-item label="严重程度" prop="severity">
+          <el-select v-model="editForm.severity" placeholder="请选择严重程度" style="width: 100%">
+            <el-option label="严重" value="ERROR" />
+            <el-option label="警告" value="WARN" />
+            <el-option label="失败" value="FAIL" />
+            <el-option label="正常" value="GOOD" />
+          </el-select>
+        </el-form-item>
+        
+        <el-form-item label="节点IP" prop="ip">
+          <el-input
+            v-model="editForm.ip"
+            placeholder="请输入节点IP地址"
+            maxlength="15"
+          />
+        </el-form-item>
+        
+        <el-form-item label="集群ID" prop="clusterId">
+          <el-input
+            v-model="editForm.clusterId"
+            placeholder="请输入集群ID（如：cce-xxxxxxxx）"
+            maxlength="50"
+          />
+        </el-form-item>
+        
+        <el-form-item label="主机名" prop="hostname">
+          <el-input
+            v-model="editForm.hostname"
+            placeholder="请输入主机名"
+            maxlength="100"
+          />
+        </el-form-item>
+        
+        <el-form-item label="实例ID" prop="instanceId">
+          <el-input
+            v-model="editForm.instanceId"
+            placeholder="请输入实例ID"
+            maxlength="100"
+          />
+        </el-form-item>
+      </el-form>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="handleEditCancel">取消</el-button>
+          <el-button type="primary" @click="handleEditSubmit">
+            保存
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
 
     <!-- 状态编辑对话框 -->
     <el-dialog
@@ -374,6 +510,101 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- iCafe 卡片创建对话框 -->
+    <el-dialog
+      v-model="icafeDialogVisible"
+      title="创建 iCafe 卡片"
+      width="700px"
+      :close-on-click-modal="false"
+    >
+      <el-form
+        ref="icafeFormRef"
+        :model="icafeForm"
+        label-width="120px"
+        :rules="icafeFormRules"
+        @submit.prevent="handleICafeSubmit"
+      >
+        <!-- 告警信息展示 -->
+        <el-form-item label="告警信息">
+          <el-descriptions :column="2" size="small" border>
+            <el-descriptions-item label="告警类型">{{ icafeForm.alertType }}</el-descriptions-item>
+            <el-descriptions-item label="节点IP">{{ icafeForm.nodeIP }}</el-descriptions-item>
+            <el-descriptions-item label="组件">{{ icafeForm.component }}</el-descriptions-item>
+            <el-descriptions-item label="严重程度">{{ icafeForm.severity }}</el-descriptions-item>
+            <el-descriptions-item label="集群ID" v-if="icafeForm.clusterID">{{ icafeForm.clusterID }}</el-descriptions-item>
+          </el-descriptions>
+        </el-form-item>
+
+        <!-- 自动生成的卡片标题 -->
+        <el-form-item label="卡片标题">
+          <el-input v-model="icafeForm.generatedTitle" readonly />
+        </el-form-item>
+
+        <!-- 手动填写字段 -->
+        <el-form-item label="负责人" prop="responsiblePerson" required>
+          <el-input
+            v-model="icafeForm.responsiblePerson"
+            placeholder="请输入负责人姓名"
+            maxlength="50"
+          />
+        </el-form-item>
+
+        <el-form-item label="细分分类" prop="subcategory" required>
+          <el-input
+            v-model="icafeForm.subcategory"
+            placeholder="例如：BCC,GPU"
+            maxlength="100"
+          />
+          <div class="form-tip">多个分类用逗号分隔，例如：BCC,GPU</div>
+        </el-form-item>
+
+        <el-form-item label="工时" prop="workHours" required>
+          <el-input-number
+            v-model="icafeForm.workHours"
+            :min="0.1"
+            :max="999"
+            :step="0.1"
+            :precision="1"
+            placeholder="请输入预估工时"
+            style="width: 200px"
+          />
+          <span style="margin-left: 8px; color: #909399;">小时</span>
+        </el-form-item>
+
+        <!-- 下拉选择字段 -->
+        <el-form-item label="所属计划" prop="plan" required>
+          <el-select v-model="icafeForm.plan" placeholder="请选择所属计划" style="width: 100%">
+            <el-option label="2026/2026Q1" value="2026/2026Q1" />
+            <el-option label="2026/2026Q2" value="2026/2026Q2" />
+            <el-option label="2026/2026Q3" value="2026/2026Q3" />
+            <el-option label="2026/2026Q4" value="2026/2026Q4" />
+          </el-select>
+        </el-form-item>
+
+        <!-- 固定字段展示 -->
+        <el-form-item label="固定字段">
+          <el-descriptions :column="1" size="small">
+            <el-descriptions-item label="有感事件">否</el-descriptions-item>
+            <el-descriptions-item label="TAM负责人">陈少禄</el-descriptions-item>
+            <el-descriptions-item label="汇总分类">运维事件</el-descriptions-item>
+          </el-descriptions>
+        </el-form-item>
+      </el-form>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="handleICafeCancel">取消</el-button>
+          <el-button 
+            type="primary" 
+            @click="handleICafeSubmit"
+            :loading="icafeCreating"
+          >
+            创建卡片
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -382,7 +613,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, CircleCheck, CircleClose, Notification, QuestionFilled, Edit, EditPen } from '@element-plus/icons-vue'
-import { getAlerts, getFilterOptions, diagnoseAlert, batchResendNotifications, updateAlertStatus } from '@/api/alerts'
+import { getAlerts, getFilterOptions, diagnoseAlert, batchResendNotifications, updateAlertStatus, createICafeCard, detectIncorrectAlerts, correctClusterIds, testHostConnection, updateAlertFields } from '@/api/alerts'
 
 const router = useRouter()
 
@@ -414,7 +645,9 @@ const filters = reactive({
   component: '',
   status: '',
   start_time: '',
-  end_time: ''
+  end_time: '',
+  sort_by: 'timestamp',  // 默认按时间排序
+  sort_order: 'desc'      // 默认降序
 })
 
 const dateRange = ref([])
@@ -431,6 +664,56 @@ const diagnosingIds = ref([])
 
 // 批量补发通知状态
 const batchResending = ref(false)
+
+// 批量修正cluster_id状态
+const batchCorrecting = ref(false)
+
+// 表格选择
+const selectedAlerts = ref([])  // 选中的告警列表
+
+// 编辑告警字段对话框
+const editDialogVisible = ref(false)
+const editForm = reactive({
+  alertId: null,
+  alertType: '',
+  component: '',
+  severity: '',
+  ip: '',
+  clusterId: '',
+  hostname: '',
+  instanceId: ''
+})
+
+// 编辑表单验证规则
+const editFormRules = {
+  alertType: [
+    { required: true, message: '请输入告警类型', trigger: 'blur' },
+    { max: 200, message: '告警类型不能超过200个字符', trigger: 'blur' }
+  ],
+  component: [
+    { required: true, message: '请选择组件类型', trigger: 'change' }
+  ],
+  severity: [
+    { required: true, message: '请选择严重程度', trigger: 'change' }
+  ],
+  ip: [
+    { required: true, message: '请输入节点IP', trigger: 'blur' },
+    { 
+      pattern: /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
+      message: '请输入有效的IP地址格式',
+      trigger: 'blur'
+    }
+  ],
+  clusterId: [
+    { max: 50, message: '集群ID不能超过50个字符', trigger: 'blur' }
+  ],
+  hostname: [
+    { max: 100, message: '主机名不能超过100个字符', trigger: 'blur' }
+  ],
+  instanceId: [
+    { max: 100, message: '实例ID不能超过100个字符', trigger: 'blur' }
+  ]
+}
 
 // 状态编辑对话框
 const statusDialogVisible = ref(false)
@@ -449,8 +732,44 @@ const noteForm = reactive({
   notes: ''
 })
 
+// iCafe 卡片创建对话框
+const icafeDialogVisible = ref(false)
+const icafeCreating = ref(false)
+const icafeForm = reactive({
+  alertId: null,
+  alertType: '',
+  nodeIP: '',
+  component: '',
+  severity: '',
+  clusterID: '',
+  generatedTitle: '',
+  responsiblePerson: '',
+  subcategory: '',
+  workHours: 1,
+  plan: ''
+})
+
+// iCafe 表单验证规则
+const icafeFormRules = {
+  responsiblePerson: [
+    { required: true, message: '请输入负责人', trigger: 'blur' }
+  ],
+  subcategory: [
+    { required: true, message: '请输入细分分类', trigger: 'blur' }
+  ],
+  workHours: [
+    { required: true, message: '请输入工时', trigger: 'blur' },
+    { type: 'number', min: 0.1, message: '工时必须大于0', trigger: 'blur' }
+  ],
+  plan: [
+    { required: true, message: '请选择所属计划', trigger: 'change' }
+  ]
+}
+
 const statusFormRef = ref(null)
 const noteFormRef = ref(null)
+const editFormRef = ref(null)
+const icafeFormRef = ref(null)
 
 // 检查是否有筛选条件
 const hasFilters = computed(() => {
@@ -564,22 +883,49 @@ const handleRowClick = (row) => {
 const handleDiagnose = async (id) => {
   diagnosingIds.value.push(id)
   try {
-    const response = await diagnoseAlert(id, { force: true })
-    if (response.success) {
-      ElMessage.success('诊断任务已创建')
+    const response = await diagnoseAlert(id, true)  // 传递布尔值而不是对象
+    
+    // 检查响应是否成功
+    if (response && response.success) {
+      ElMessage.success(response.message || '诊断任务已创建')
       // 3秒后刷新列表
       setTimeout(() => {
         fetchAlerts()
       }, 3000)
+    } else {
+      // 后端返回success:false，但可能基础流程已完成
+      const message = response?.message || '诊断处理完成'
+      ElMessage.success(message)
+      // 仍然刷新列表
+      setTimeout(() => {
+        fetchAlerts()
+      }, 3000)
     }
+    
   } catch (error) {
     console.error('触发诊断失败:', error)
+    
+    // 检查是否是axios拦截器抛出的错误（基础流程可能已完成）
+    if (error.message && (
+      error.message.includes('重新诊断') || 
+      error.message.includes('诊断') ||
+      error.message.includes('已存在诊断结果')
+    )) {
+      // 这种情况下，基础流程可能已经完成，显示成功信息并刷新
+      ElMessage.success('诊断处理已完成，请查看结果')
+      setTimeout(() => {
+        fetchAlerts()
+      }, 3000)
+    } else {
+      // 真正的网络错误或其他异常
+      ElMessage.error('诊断请求失败，请重试')
+    }
   } finally {
     diagnosingIds.value = diagnosingIds.value.filter(item => item !== id)
   }
 }
 
-// 批量补发通知
+// 批量补发通知（全部未通知的告警）
 const handleBatchResendNotifications = async () => {
   try {
     // 确认对话框
@@ -618,6 +964,162 @@ const handleBatchResendNotifications = async () => {
   }
 }
 
+// 补发选中告警的通知
+const handleSelectedResendNotifications = async () => {
+  if (selectedAlerts.value.length === 0) {
+    ElMessage.warning('请先选择要补发通知的告警')
+    return
+  }
+  
+  try {
+    // 确认对话框
+    await ElMessageBox.confirm(
+      `此操作将为选中的 ${selectedAlerts.value.length} 个告警补发webhook通知。是否继续？`,
+      '补发选中通知',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    batchResending.value = true
+    const alertIds = selectedAlerts.value.map(alert => alert.id)
+    const response = await batchResendNotifications(alertIds)
+    
+    if (response.success) {
+      const { total, success, failed } = response.data
+      if (success > 0) {
+        ElMessage.success(`补发完成：成功 ${success} 个，失败 ${failed} 个，共 ${total} 个`)
+      } else if (total === 0) {
+        ElMessage.info('选中的告警中没有需要补发的通知')
+      } else {
+        ElMessage.warning(`补发失败：失败 ${failed} 个，共 ${total} 个`)
+      }
+      // 清空选择
+      selectedAlerts.value = []
+      // 刷新列表
+      fetchAlerts()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('补发选中通知失败:', error)
+      ElMessage.error('补发选中通知失败')
+    }
+  } finally {
+    batchResending.value = false
+  }
+}
+
+// 检测并修正cluster_id
+const handleDetectAndCorrectClusterIds = async () => {
+  try {
+    batchCorrecting.value = true
+    
+    // 先测试宿主机数据库连接
+    ElMessage.info('正在测试宿主机数据库连接...')
+    const testResponse = await testHostConnection()
+    
+    if (!testResponse.success) {
+      // 显示友好的错误提示
+      const suggestions = testResponse.data?.suggestions || []
+      const suggestionText = suggestions.length > 0 ? 
+        `\n\n建议检查：\n${suggestions.map(s => `• ${s}`).join('\n')}` : ''
+      
+      await ElMessageBox.alert(
+        `宿主机数据库连接失败：${testResponse.error}${suggestionText}`,
+        '连接测试失败',
+        {
+          confirmButtonText: '确定',
+          type: 'error'
+        }
+      )
+      return
+    }
+    
+    ElMessage.success('宿主机数据库连接正常')
+    
+    // 检测需要修正的记录
+    ElMessage.info('正在检测需要修正的记录...')
+    const detectResponse = await detectIncorrectAlerts()
+    
+    if (!detectResponse.success) {
+      ElMessage.error(`检测失败：${detectResponse.error}`)
+      return
+    }
+    
+    const { total, records } = detectResponse.data
+    
+    if (total === 0) {
+      ElMessage.success('所有告警记录的cluster_id都是正确的，无需修正')
+      return
+    }
+    
+    // 显示检测结果并确认修正
+    const recordsText = records.slice(0, 5).map(r => 
+      `ID:${r.id} IP:${r.ip} ${r.current_cluster_id} → ${r.correct_cluster_id}`
+    ).join('\n')
+    
+    const moreText = total > 5 ? `\n... 还有 ${total - 5} 条记录` : ''
+    
+    await ElMessageBox.confirm(
+      `检测到 ${total} 条记录需要修正cluster_id：\n\n${recordsText}${moreText}\n\n是否继续修正？`,
+      '检测结果',
+      {
+        confirmButtonText: '修正',
+        cancelButtonText: '取消',
+        type: 'warning',
+        customClass: 'detect-result-dialog'
+      }
+    )
+    
+    // 执行修正
+    ElMessage.info('正在修正cluster_id...')
+    const correctResponse = await correctClusterIds()
+    
+    if (correctResponse.success) {
+      const { corrected, skipped, failed } = correctResponse.data
+      if (corrected > 0) {
+        ElMessage.success(`修正完成：成功 ${corrected} 个，跳过 ${skipped} 个，失败 ${failed} 个`)
+        // 刷新列表
+        fetchAlerts()
+      } else {
+        ElMessage.info('没有记录需要修正')
+      }
+    } else {
+      ElMessage.error(`修正失败：${correctResponse.error}`)
+    }
+    
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('检测并修正cluster_id失败:', error)
+      ElMessage.error('操作失败，请检查宿主机数据库连接')
+    }
+  } finally {
+    batchCorrecting.value = false
+  }
+}
+
+// 处理表格选择变化
+const handleSelectionChange = (selection) => {
+  selectedAlerts.value = selection
+}
+
+// 处理表格排序变化
+const handleSortChange = ({ prop, order }) => {
+  if (!prop || !order) {
+    // 清除排序，恢复默认
+    filters.sort_by = 'timestamp'
+    filters.sort_order = 'desc'
+  } else {
+    filters.sort_by = prop
+    filters.sort_order = order === 'ascending' ? 'asc' : 'desc'
+  }
+  // 重新查询
+  pagination.page = 1
+  fetchAlerts()
+}
+
 // 获取组件标签类型
 const getComponentTagType = (component) => {
   const typeMap = {
@@ -650,6 +1152,70 @@ const getStatusTagType = (status) => {
     resolved: 'success'
   }
   return typeMap[status] || ''
+}
+
+// 编辑告警字段
+const handleEditAlert = (alert) => {
+  editForm.alertId = alert.id
+  editForm.alertType = alert.alert_type
+  editForm.component = alert.component
+  editForm.severity = alert.severity
+  editForm.ip = alert.ip
+  editForm.clusterId = alert.cluster_id || ''
+  editForm.hostname = alert.hostname || ''
+  editForm.instanceId = alert.instance_id || ''
+  editDialogVisible.value = true
+}
+
+// 提交编辑
+const handleEditSubmit = async () => {
+  try {
+    // 表单验证
+    await editFormRef.value.validate()
+    
+    const updateData = {
+      alert_type: editForm.alertType.trim(),
+      component: editForm.component,
+      severity: editForm.severity,
+      ip: editForm.ip.trim(),
+      cluster_id: editForm.clusterId ? editForm.clusterId.trim() : null,
+      hostname: editForm.hostname ? editForm.hostname.trim() : null,
+      instance_id: editForm.instanceId ? editForm.instanceId.trim() : null
+    }
+    
+    const response = await updateAlertFields(editForm.alertId, updateData)
+    
+    if (response.success) {
+      const updatedFields = response.data.updated_fields
+      if (updatedFields && updatedFields.length > 0) {
+        ElMessage.success(`字段更新成功：${updatedFields.join(', ')}`)
+      } else {
+        ElMessage.info('没有字段需要更新')
+      }
+      editDialogVisible.value = false
+      // 刷新列表
+      fetchAlerts()
+    }
+  } catch (error) {
+    if (error !== 'validation failed') {
+      console.error('更新告警字段失败:', error)
+      const errorMsg = error.response?.data?.error || error.message || '更新失败'
+      ElMessage.error(`更新告警字段失败：${errorMsg}`)
+    }
+  }
+}
+
+// 取消编辑
+const handleEditCancel = () => {
+  editDialogVisible.value = false
+  editForm.alertId = null
+  editForm.alertType = ''
+  editForm.component = ''
+  editForm.severity = ''
+  editForm.ip = ''
+  editForm.clusterId = ''
+  editForm.hostname = ''
+  editForm.instanceId = ''
 }
 
 // 修改状态
@@ -722,6 +1288,83 @@ const handleNoteCancel = () => {
   noteForm.alertId = null
   noteForm.alertType = ''
   noteForm.notes = ''
+}
+
+// 生成卡片标题
+const generateCardTitle = (alert) => {
+  const prefix = '【长安LCC】【C3】【硬件维修】'
+  if (alert.cluster_id && alert.cluster_id.trim()) {
+    return `${prefix} ${alert.cluster_id}集群${alert.ip}节点${alert.alert_type}`
+  } else {
+    return `${prefix} ${alert.ip}节点${alert.alert_type}`
+  }
+}
+
+// 创建 iCafe 卡片
+const handleCreateICafeCard = (alert) => {
+  icafeForm.alertId = alert.id
+  icafeForm.alertType = alert.alert_type
+  icafeForm.nodeIP = alert.ip
+  icafeForm.component = alert.component
+  icafeForm.severity = getSeverityLabel(alert.severity)
+  icafeForm.clusterID = alert.cluster_id || ''
+  icafeForm.generatedTitle = generateCardTitle(alert)
+  
+  // 重置表单字段
+  icafeForm.responsiblePerson = ''
+  icafeForm.subcategory = ''
+  icafeForm.workHours = 1
+  icafeForm.plan = ''
+  
+  icafeDialogVisible.value = true
+}
+
+// 提交 iCafe 卡片创建
+const handleICafeSubmit = async () => {
+  try {
+    // 表单验证
+    await icafeFormRef.value.validate()
+    
+    icafeCreating.value = true
+    
+    const cardData = {
+      responsible_person: icafeForm.responsiblePerson,
+      subcategory: icafeForm.subcategory,
+      work_hours: icafeForm.workHours,
+      plan: icafeForm.plan
+    }
+    
+    const response = await createICafeCard(icafeForm.alertId, cardData)
+    
+    if (response.success) {
+      ElMessage.success('iCafe 卡片创建成功')
+      icafeDialogVisible.value = false
+      // 可以选择刷新列表或显示卡片链接
+    }
+  } catch (error) {
+    if (error !== 'validation failed') {
+      console.error('创建 iCafe 卡片失败:', error)
+      ElMessage.error('创建 iCafe 卡片失败')
+    }
+  } finally {
+    icafeCreating.value = false
+  }
+}
+
+// 取消 iCafe 卡片创建
+const handleICafeCancel = () => {
+  icafeDialogVisible.value = false
+  icafeForm.alertId = null
+  icafeForm.alertType = ''
+  icafeForm.nodeIP = ''
+  icafeForm.component = ''
+  icafeForm.severity = ''
+  icafeForm.clusterID = ''
+  icafeForm.generatedTitle = ''
+  icafeForm.responsiblePerson = ''
+  icafeForm.subcategory = ''
+  icafeForm.workHours = 1
+  icafeForm.plan = ''
 }
 
 // 格式化日期时间
@@ -797,30 +1440,86 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
-/* 操作按钮样式优化 */
-.action-button {
-  margin-right: 8px;
-  font-weight: 500;
+/* 操作按钮样式优化 - 统一蓝色背景白色字体 */
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
 }
 
-/* 确保按钮文字清晰可见 */
-.alert-table :deep(.el-button--primary) {
-  background-color: #409eff;
-  border-color: #409eff;
-  color: #ffffff;
+.action-btn {
+  margin: 0 !important;
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  height: 28px !important;
+  line-height: 1.2 !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+  min-width: 60px !important;
+  text-align: center !important;
+  /* 统一蓝色背景白色字体 */
+  background-color: #409eff !important;
+  border-color: #409eff !important;
+  color: #ffffff !important;
 }
 
-.alert-table :deep(.el-button--primary:hover) {
-  background-color: #66b1ff;
-  border-color: #66b1ff;
-  color: #ffffff;
+.action-btn:hover {
+  background-color: #66b1ff !important;
+  border-color: #66b1ff !important;
+  color: #ffffff !important;
 }
 
-.alert-table :deep(.el-button--primary:active) {
-  background-color: #3a8ee6;
-  border-color: #3a8ee6;
-  color: #ffffff;
+.action-btn:active {
+  background-color: #3a8ee6 !important;
+  border-color: #3a8ee6 !important;
+  color: #ffffff !important;
 }
+
+.action-btn:focus {
+  background-color: #409eff !important;
+  border-color: #409eff !important;
+  color: #ffffff !important;
+}
+
+/* 确保loading状态下的样式 */
+.action-btn.is-loading {
+  background-color: #409eff !important;
+  border-color: #409eff !important;
+  color: #ffffff !important;
+}
+
+/* 移除旧的特殊样式类 */
+.icafe-btn {
+  /* 已统一到 action-btn */
+}
+
+/* 确保Element Plus按钮样式被覆盖 */
+.alert-table :deep(.action-btn.el-button--primary) {
+  background-color: #409eff !important;
+  border-color: #409eff !important;
+  color: #ffffff !important;
+}
+
+.alert-table :deep(.action-btn.el-button--primary:hover) {
+  background-color: #66b1ff !important;
+  border-color: #66b1ff !important;
+  color: #ffffff !important;
+}
+
+.alert-table :deep(.action-btn.el-button--primary:active) {
+  background-color: #3a8ee6 !important;
+  border-color: #3a8ee6 !important;
+  color: #ffffff !important;
+}
+
+.alert-table :deep(.action-btn.el-button--primary:focus) {
+  background-color: #409eff !important;
+  border-color: #409eff !important;
+  color: #ffffff !important;
+}
+
+/* 移除旧的按钮样式 - 已统一到action-btn */
 
 /* 已处理状态特殊样式 */
 .resolved-tag {
@@ -832,5 +1531,12 @@ onMounted(() => {
 /* 对话框样式 */
 .dialog-footer {
   text-align: right;
+}
+
+/* 表单提示样式 */
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
 }
 </style>

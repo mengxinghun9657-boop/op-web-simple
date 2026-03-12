@@ -66,12 +66,12 @@
         <el-table-column prop="zh_name" label="中文名称" width="200" />
         <el-table-column label="今天" width="150">
           <template #default="{ row }">
-            {{ formatValue(row.today_avg, row.unit_zh) }}
+            {{ formatValue(row.today_avg, row.unit) }}
           </template>
         </el-table-column>
         <el-table-column label="昨天同期" width="150">
           <template #default="{ row }">
-            {{ formatValue(row.yesterday_avg, row.unit_zh) }}
+            {{ formatValue(row.yesterday_avg, row.unit) }}
           </template>
         </el-table-column>
         <el-table-column label="变化" width="120" sortable :sort-method="(a, b) => Math.abs(b.change_percent) - Math.abs(a.change_percent)">
@@ -221,7 +221,8 @@ const tableData = computed(() => {
       return props.metricsData.map(metric => ({
         metric_name: metric.metric_name,
         zh_name: metric.zh_name,
-        unit_zh: metric.unit_zh,
+        unit: metric.unit,           // 英文单位，用于格式化
+        unit_zh: metric.unit_zh,     // 中文单位，用于显示
         today_avg: metric.today.avg,
         yesterday_avg: metric.yesterday.avg,
         change_percent: metric.change.percent,
@@ -566,11 +567,11 @@ const updateCompareChart = () => {
           result += `<div style="margin-top: 8px; font-weight: bold;">${metricName}</div>`
           
           if (data.today) {
-            const value = formatValue(data.today.value[1], metric?.unit_zh)
+            const value = formatValue(data.today.value[1], metric?.unit)
             result += `<div>${data.today.marker} 今天: ${value}</div>`
           }
           if (data.yesterday) {
-            const value = formatValue(data.yesterday.value[1], metric?.unit_zh)
+            const value = formatValue(data.yesterday.value[1], metric?.unit)
             result += `<div>${data.yesterday.marker} 昨天: ${value}</div>`
           }
         })

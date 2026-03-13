@@ -226,6 +226,63 @@ async def get_filter_options(
         )
 
 
+@router.get("/alerts/detect-incorrect", response_model=APIResponse)
+async def detect_incorrect_alerts(db: Session = Depends(get_db)):
+    """
+    检测需要修正cluster_id的告警记录
+
+    从宿主机数据库查询正确的cluster_id，对比容器内数据库的记录
+    """
+    try:
+        corrector = get_database_corrector()
+        incorrect_records = corrector.detect_incorrect_records(db)
+
+        return APIResponse(
+            success=True,
+            data={
+                'total': len(incorrect_records),
+                'records': incorrect_records
+            },
+            message=f"检测完成，找到 {len(incorrect_records)} 条需要修正的记录"
+        )
+
+    except Exception as e:
+        logger.error(f"检测不正确告警记录失败: {e}", exc_info=True)
+        return APIResponse(
+            success=False,
+            error=str(e),
+            message="检测失败"
+        )
+
+
+@router.get("/alerts/test-host-connection", response_model=APIResponse)
+async def test_host_database_connection(
+    db: Session = Depends(get_db)
+):
+    """
+    测试宿主机数据库连接
+
+    用于检查数据库修正功能的前置条件
+    """
+    try:
+        corrector = get_database_corrector()
+        result = corrector.test_host_connection()
+
+        return APIResponse(
+            success=result['success'],
+            data=result,
+            message=result['message'],
+            error=result.get('error')
+        )
+
+    except Exception as e:
+        logger.error(f"测试宿主机数据库连接失败: {e}", exc_info=True)
+        return APIResponse(
+            success=False,
+            error=str(e),
+            message="测试连接失败"
+        )
+
 
 @router.get("/alerts/{alert_id}", response_model=APIResponse)
 async def get_alert_detail(
@@ -858,35 +915,6 @@ async def create_icafe_card(
         )
 
 
-@router.get("/alerts/detect-incorrect", response_model=APIResponse)
-async def detect_incorrect_alerts(db: Session = Depends(get_db)):
-    """
-    检测需要修正cluster_id的告警记录
-    
-    从宿主机数据库查询正确的cluster_id，对比容器内数据库的记录
-    """
-    try:
-        corrector = get_database_corrector()
-        incorrect_records = corrector.detect_incorrect_records(db)
-        
-        return APIResponse(
-            success=True,
-            data={
-                'total': len(incorrect_records),
-                'records': incorrect_records
-            },
-            message=f"检测完成，找到 {len(incorrect_records)} 条需要修正的记录"
-        )
-        
-    except Exception as e:
-        logger.error(f"检测不正确告警记录失败: {e}", exc_info=True)
-        return APIResponse(
-            success=False,
-            error=str(e),
-            message="检测失败"
-        )
-
-
 @router.post("/alerts/correct-cluster-ids", response_model=APIResponse)
 async def correct_cluster_ids(
     alert_ids: Optional[list] = None,
@@ -1056,33 +1084,4 @@ async def update_alert_fields(
             success=False,
             error=str(e),
             message="更新告警字段失败"
-        )
-
-
-@router.get("/alerts/test-host-connection", response_model=APIResponse)
-async def test_host_database_connection(
-    db: Session = Depends(get_db)
-):
-    """
-    测试宿主机数据库连接
-    
-    用于检查数据库修正功能的前置条件
-    """
-    try:
-        corrector = get_database_corrector()
-        result = corrector.test_host_connection()
-        
-        return APIResponse(
-            success=result['success'],
-            data=result,
-            message=result['message'],
-            error=result.get('error')
-        )
-        
-    except Exception as e:
-        logger.error(f"测试宿主机数据库连接失败: {e}", exc_info=True)
-        return APIResponse(
-            success=False,
-            error=str(e),
-            message="测试连接失败"
         )

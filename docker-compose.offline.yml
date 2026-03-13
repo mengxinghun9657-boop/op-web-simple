@@ -38,6 +38,9 @@ services:
       --collation-server=utf8mb4_unicode_ci
       --max_connections=1000
       --max_allowed_packet=256M
+      --ngram_token_size=1
+      --ft_min_word_len=1
+      --innodb_ft_enable_stopword=0
     deploy:
       resources:
         limits:
@@ -200,7 +203,8 @@ services:
     ports:
       - "8089:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - cluster-network
     healthcheck:

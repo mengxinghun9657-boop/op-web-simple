@@ -423,37 +423,53 @@ import_fault_manual() {
     if docker compose -f docker-compose.prod.yml exec -T backend bash -c "cd /app && python3 backend/scripts/import_fault_manual.py" 2>/dev/null; then
         echo "✓ 故障手册导入成功"
         
-        # 重新匹配已有告警
+        # 重新匹配已有告警（带连接重试，避免导入后MySQL短暂不可用）
         echo "  重新匹配已有告警的手册..."
+        sleep 3  # 等待MySQL处理完导入写入
         docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
-import sys
+import sys, time
 sys.path.insert(0, '/app')
-from app.core.deps import SessionLocal
-from app.models.alert import AlertRecord, DiagnosisResult
-from app.services.alert.manual_matcher import ManualMatchService
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-db = SessionLocal()
+# 带重试的数据库连接
+db = None
+for attempt in range(5):
+    try:
+        from app.core.deps import SessionLocal
+        db = SessionLocal()
+        db.execute('SELECT 1')
+        break
+    except Exception as e:
+        if attempt < 4:
+            logger.warning(f'数据库连接失败（尝试 {attempt+1}/5）: {e}，3秒后重试...')
+            time.sleep(3)
+        else:
+            logger.error(f'数据库连接失败（已重试5次）: {e}')
+            sys.exit(1)
+
+from app.models.alert import AlertRecord, DiagnosisResult
+from app.services.alert.manual_matcher import ManualMatchService
+
 try:
     # 查询所有未匹配手册的告警
     unmatched = db.query(DiagnosisResult).filter(
         DiagnosisResult.manual_matched == False
     ).all()
-    
+
     logger.info(f'发现 {len(unmatched)} 条未匹配手册的告警')
-    
+
     if len(unmatched) > 0:
         matcher = ManualMatchService(db)
         success_count = 0
-        
+
         for diagnosis in unmatched:
             alert = db.query(AlertRecord).filter(AlertRecord.id == diagnosis.alert_id).first()
             if not alert:
                 continue
-            
+
             # 重新匹配手册
             manual = matcher.match(alert.alert_type, alert.component)
             if manual:
@@ -465,17 +481,18 @@ try:
                 diagnosis.customer_aware = manual.get('customer_aware')
                 diagnosis.danger_level = manual.get('danger_level')
                 success_count += 1
-        
+
         db.commit()
         logger.info(f'✅ 重新匹配完成: {success_count}/{len(unmatched)} 条成功')
     else:
         logger.info('✅ 所有告警已匹配手册')
-        
+
 except Exception as e:
     logger.error(f'重新匹配失败: {e}')
     db.rollback()
 finally:
-    db.close()
+    if db:
+        db.close()
 " && echo "✓ 已有告警重新匹配完成" || echo "⚠️  重新匹配失败"
         
         return 0

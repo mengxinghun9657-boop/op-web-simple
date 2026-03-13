@@ -45,11 +45,4 @@ EXPOSE 8000
 # - 内网环境（192GB RAM）：4 workers，充分利用资源
 # - 外网环境（8GB RAM）：2 workers，避免资源不足
 # 使用环境变量 WORKERS 控制，默认 4
-CMD gunicorn main:app \
-    -w ${WORKERS:-4} \
-    -k uvicorn.workers.UvicornWorker \
-    -b 0.0.0.0:8000 \
-    --timeout 300 \
-    --graceful-timeout 120 \
-    --access-logfile - \
-    --error-logfile -
+CMD ["sh", "-c", "gunicorn main:app -w ${WORKERS:-4} -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 --timeout 300 --graceful-timeout 120 --access-logfile - --error-logfile -"]

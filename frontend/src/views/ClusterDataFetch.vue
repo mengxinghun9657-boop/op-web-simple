@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
 import { Connection, Setting, Download, Search, Loading, List, InfoFilled } from '@element-plus/icons-vue'
-import { Card, StateDisplay } from '@/components/common'
+import { StateDisplay } from '@/components/common'
 
 const clusterIdsText = ref(`cce-3nusu9su
 cce-9m1ht29q
@@ -128,112 +128,121 @@ const testConnection = async () => {
 </script>
 
 <template>
-  <div class="cluster-fetch-page">
-    <!-- 页面标题 -->
+  <div class="page-container">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <div class="page-header-icon">
-        <el-icon :size="24"><Connection /></el-icon>
-      </div>
-      <div class="page-header-content">
-        <h2 class="page-title">多集群数据获取</h2>
-        <p class="page-subtitle">批量采集 Prometheus 集群监控指标</p>
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><Connection /></el-icon>
+          </div>
+          多集群数据获取
+        </div>
+        <div class="page-subtitle">批量采集 Prometheus 集群监控指标</div>
       </div>
     </div>
 
     <!-- 集群配置卡片 -->
-    <Card
-      title="集群ID配置"
-      icon="List"
-      class="animate-slide-in-up"
-    >
-      <div class="tip-box">
-        <el-icon><InfoFilled /></el-icon>
-        <span>每行输入一个集群ID，以 # 开头的行为注释</span>
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><List /></el-icon>
+          集群ID配置
+        </div>
       </div>
-      
-      <el-input
-        v-model="clusterIdsText"
-        type="textarea"
-        :rows="8"
-        placeholder="请输入集群ID列表，每行一个"
-        class="cluster-input"
-      />
-      
-      <div class="action-bar">
-        <el-button 
-          type="primary" 
-          :icon="Loading" 
-          @click="fetchClusterData" 
-          :loading="fetching" 
-          :disabled="clusterIds.length === 0 || fetching"
-        >
-          <span>获取数据 ({{ clusterIds.length }})</span>
-        </el-button>
-        <el-button 
-          type="success" 
-          :icon="Download" 
-          @click="exportData" 
-          :disabled="!taskIdRef || fetching"
-        >
-          <span>导出 JSON</span>
-        </el-button>
-        <el-button 
-          type="warning" 
-          :icon="Setting" 
-          @click="openCookieDialog"
-        >
-          <span>Cookie 配置</span>
-        </el-button>
-        <el-button 
-          type="info" 
-          :icon="Search" 
-          @click="testConnection"
-        >
-          <span>测试连接</span>
-        </el-button>
+      <div class="content-card-body">
+        <div class="tip-box">
+          <el-icon><InfoFilled /></el-icon>
+          <span>每行输入一个集群ID,以 # 开头的行为注释</span>
+        </div>
+
+        <el-input
+          v-model="clusterIdsText"
+          type="textarea"
+          :rows="8"
+          placeholder="请输入集群ID列表,每行一个"
+          class="cluster-input"
+        />
+
+        <div class="action-bar">
+          <el-button
+            type="primary"
+            :icon="Loading"
+            @click="fetchClusterData"
+            :loading="fetching"
+            :disabled="clusterIds.length === 0 || fetching"
+          >
+            <span>获取数据 ({{ clusterIds.length }})</span>
+          </el-button>
+          <el-button
+            type="success"
+            :icon="Download"
+            @click="exportData"
+            :disabled="!taskIdRef || fetching"
+          >
+            <span>导出 JSON</span>
+          </el-button>
+          <el-button
+            type="warning"
+            :icon="Setting"
+            @click="openCookieDialog"
+          >
+            <span>Cookie 配置</span>
+          </el-button>
+          <el-button
+            type="info"
+            :icon="Search"
+            @click="testConnection"
+          >
+            <span>测试连接</span>
+          </el-button>
+        </div>
       </div>
-    </Card>
+    </div>
 
     <!-- 执行结果 -->
-    <Card
-      v-if="fetching || logs.length > 0"
-      title="执行日志"
-      icon="Document"
-      class="animate-slide-in-up"
-    >
-      <StateDisplay
-        v-if="fetching"
-        state="loading"
-        :loading-text="statusMessage"
-      >
-        <div class="progress-section">
-          <el-progress :percentage="progress" :stroke-width="8" />
+    <div v-if="fetching || logs.length > 0" class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><List /></el-icon>
+          执行日志
         </div>
-      </StateDisplay>
-
-      <div v-if="logs.length > 0" class="log-container">
-        <p 
-          v-for="(log, index) in logs" 
-          :key="index" 
-          :class="['log-line', log.isError ? 'error' : 'success']"
-        >
-          <span class="log-time">[{{ log.time }}]</span> {{ log.msg }}
-        </p>
       </div>
-    </Card>
-    
+      <div class="content-card-body">
+        <StateDisplay
+          v-if="fetching"
+          state="loading"
+          :loading-text="statusMessage"
+        >
+          <div class="progress-section">
+            <el-progress :percentage="progress" :stroke-width="8" />
+          </div>
+        </StateDisplay>
+
+        <div v-if="logs.length > 0" class="log-container">
+          <p
+            v-for="(log, index) in logs"
+            :key="index"
+            :class="['log-line', log.isError ? 'error' : 'success']"
+          >
+            <span class="log-time">[{{ log.time }}]</span> {{ log.msg }}
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Cookie 配置弹窗 -->
-    <el-dialog 
-      v-model="showCookieDialog" 
-      title="Cookie 配置" 
-      width="560px" 
-      class="unified-dialog"
+    <el-dialog
+      v-model="showCookieDialog"
+      title="Cookie 配置"
+      width="560px"
+      class="google-dialog"
     >
-      <el-form label-position="top">
+      <el-form label-position="top" class="google-form">
         <el-form-item label="Cookie 值">
-          <el-input 
-            v-model="cookieValue" 
-            type="textarea" 
+          <el-input
+            v-model="cookieValue"
+            type="textarea"
             :rows="6"
             placeholder="粘贴从浏览器复制的 Cookie 值"
           />
@@ -248,123 +257,54 @@ const testConnection = async () => {
 </template>
 
 <style scoped>
-.cluster-fetch-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-  animation: slideInUp var(--duration-slow) var(--ease-out);
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-4);
-}
-
-.page-header-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: var(--radius-lg);
-  color: white;
-}
-
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.page-subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--text-tertiary);
-  margin: var(--spacing-1) 0 0;
-}
-
 .tip-box {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-3) var(--spacing-4);
-  background: rgba(64, 158, 255, 0.1);
-  border: 1px solid rgba(64, 158, 255, 0.2);
-  border-radius: var(--radius-lg);
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(26, 115, 232, 0.1);
+  border: 1px solid rgba(26, 115, 232, 0.2);
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  margin-bottom: var(--spacing-4);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-4);
 }
 
 .cluster-input {
-  margin-bottom: var(--spacing-4);
+  margin-bottom: var(--space-4);
 }
 
 .cluster-input :deep(.el-textarea__inner) {
   font-family: 'Monaco', 'Menlo', monospace;
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
 }
 
 .action-bar {
   display: flex;
-  gap: var(--spacing-3);
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .progress-section {
-  margin-bottom: var(--spacing-4);
+  margin-bottom: var(--space-4);
 }
 
 .log-container {
-  background: var(--bg-elevated);
+  background: var(--bg-secondary);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-4);
+  padding: var(--space-4);
   max-height: 240px;
   overflow-y: auto;
 }
 
 .log-line {
   font-family: 'Monaco', 'Menlo', monospace;
-  font-size: var(--font-size-xs);
-  margin: var(--spacing-1) 0;
+  font-size: var(--text-xs);
+  margin: var(--space-1) 0;
   white-space: pre-wrap;
 }
 
 .log-line.success { color: var(--color-success); }
 .log-line.error { color: var(--color-error); }
 .log-time { color: var(--text-tertiary); }
-
-/* 统一弹窗样式 */
-.unified-dialog :deep(.el-dialog) {
-  background: var(--bg-container);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-}
-
-.unified-dialog :deep(.el-dialog__title) {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.unified-dialog :deep(.el-form-item__label) {
-  color: var(--text-secondary);
-}
-
-.unified-dialog :deep(.el-textarea__inner) {
-  font-family: 'Monaco', 'Menlo', monospace;
-  font-size: var(--font-size-sm);
-}
 </style>

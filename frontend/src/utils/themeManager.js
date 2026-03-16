@@ -1,10 +1,9 @@
 /**
  * 主题管理器
- * 
- * 管理深色/浅色主题切换
- * 支持系统偏好检测和本地存储持久化
- * 
- * @version 3.0.0
+ *
+ * 固定使用浅色主题 (Google 标准浅色风格)
+ *
+ * @version 4.0.0
  */
 
 const THEME_KEY = 'theme-preference'
@@ -16,7 +15,7 @@ const THEME_LIGHT = 'light'
  */
 class ThemeManager {
   constructor() {
-    this.currentTheme = THEME_DARK
+    this.currentTheme = THEME_LIGHT // 固定为浅色主题
     this.listeners = new Set()
     this.mediaQuery = null
     this.init()
@@ -26,184 +25,142 @@ class ThemeManager {
    * 初始化主题管理器
    */
   init() {
-    // 获取保存的主题偏好
-    const savedTheme = this.getSavedTheme()
-    
-    if (savedTheme) {
-      this.currentTheme = savedTheme
-    } else {
-      // 检测系统偏好
-      this.currentTheme = this.getSystemPreference()
-    }
-    
+    // 强制使用浅色主题
+    this.currentTheme = THEME_LIGHT
+
     // 应用主题
     this.applyTheme(this.currentTheme)
-    
-    // 监听系统主题变化
-    this.watchSystemPreference()
+
+    // 移除系统偏好监听（不再需要）
+    // this.watchSystemPreference()
   }
 
   /**
-   * 获取保存的主题偏好
+   * 获取保存的主题偏好（已废弃）
    * @returns {string|null}
    */
   getSavedTheme() {
-    try {
-      return localStorage.getItem(THEME_KEY)
-    } catch (error) {
-      console.warn('Failed to read theme preference:', error)
-      return null
-    }
+    // 总是返回浅色主题
+    return THEME_LIGHT
   }
 
   /**
-   * 保存主题偏好
+   * 保存主题偏好（已废弃）
    * @param {string} theme
    */
   saveTheme(theme) {
-    try {
-      localStorage.setItem(THEME_KEY, theme)
-    } catch (error) {
-      console.warn('Failed to save theme preference:', error)
-    }
+    // 不再保存主题偏好
   }
 
   /**
-   * 获取系统主题偏好
+   * 获取系统主题偏好（已废弃）
    * @returns {string}
    */
   getSystemPreference() {
-    try {
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-        return THEME_LIGHT
-      }
-    } catch (error) {
-      console.warn('Failed to detect system preference:', error)
-    }
-    return THEME_DARK
+    // 总是返回浅色主题
+    return THEME_LIGHT
   }
 
   /**
-   * 监听系统主题变化
+   * 监听系统主题变化（已废弃）
    */
   watchSystemPreference() {
-    try {
-      this.mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      
-      const handler = (e) => {
-        // 只有在没有手动设置主题时才跟随系统
-        if (!this.getSavedTheme()) {
-          const newTheme = e.matches ? THEME_DARK : THEME_LIGHT
-          this.applyTheme(newTheme)
-        }
-      }
-      
-      // 使用 addEventListener 替代 addListener (已废弃)
-      if (this.mediaQuery.addEventListener) {
-        this.mediaQuery.addEventListener('change', handler)
-      } else if (this.mediaQuery.addListener) {
-        this.mediaQuery.addListener(handler)
-      }
-    } catch (error) {
-      console.warn('Failed to watch system preference:', error)
-    }
+    // 不再监听系统主题变化
   }
 
   /**
-   * 应用主题
+   * 应用主题（固定为浅色）
    * @param {string} theme
    */
   applyTheme(theme) {
-    if (!this.isValidTheme(theme)) {
-      console.warn(`Invalid theme: ${theme}, falling back to dark`)
-      theme = THEME_DARK
-    }
-    
-    this.currentTheme = theme
-    
+    // 强制使用浅色主题
+    theme = THEME_LIGHT
+    this.currentTheme = THEME_LIGHT
+
     // 设置 data-theme 属性
-    document.documentElement.setAttribute('data-theme', theme)
-    
+    document.documentElement.setAttribute('data-theme', THEME_LIGHT)
+
     // 设置 color-scheme 以支持原生元素
-    document.documentElement.style.colorScheme = theme
-    
+    document.documentElement.style.colorScheme = 'light'
+
     // 更新 meta theme-color
-    this.updateMetaThemeColor(theme)
-    
+    this.updateMetaThemeColor(THEME_LIGHT)
+
     // 通知监听器
-    this.notifyListeners(theme)
+    this.notifyListeners(THEME_LIGHT)
   }
 
   /**
-   * 更新 meta theme-color
+   * 更新 meta theme-color（固定浅色）
    * @param {string} theme
    */
   updateMetaThemeColor(theme) {
     try {
       let metaThemeColor = document.querySelector('meta[name="theme-color"]')
-      
+
       if (!metaThemeColor) {
         metaThemeColor = document.createElement('meta')
         metaThemeColor.name = 'theme-color'
         document.head.appendChild(metaThemeColor)
       }
-      
-      metaThemeColor.content = theme === THEME_DARK ? '#0f172a' : '#f8fafc'
+
+      // 固定使用浅色主题的颜色
+      metaThemeColor.content = '#ffffff'
     } catch (error) {
       console.warn('Failed to update meta theme-color:', error)
     }
   }
 
   /**
-   * 验证主题有效性
+   * 验证主题有效性（已废弃）
    * @param {string} theme
    * @returns {boolean}
    */
   isValidTheme(theme) {
-    return [THEME_DARK, THEME_LIGHT].includes(theme)
+    // 只接受浅色主题
+    return theme === THEME_LIGHT
   }
 
   /**
-   * 切换主题
-   * @returns {string} 新主题
+   * 切换主题（已禁用）
+   * @returns {string} 固定返回浅色主题
    */
   toggle() {
-    const newTheme = this.currentTheme === THEME_DARK ? THEME_LIGHT : THEME_DARK
-    this.setTheme(newTheme)
-    return newTheme
+    // 不再支持主题切换，固定浅色
+    return THEME_LIGHT
   }
 
   /**
-   * 设置主题
+   * 设置主题（已禁用）
    * @param {string} theme
    */
   setTheme(theme) {
-    this.applyTheme(theme)
-    this.saveTheme(theme)
+    // 固定为浅色主题，忽略参数
+    this.applyTheme(THEME_LIGHT)
   }
 
   /**
    * 获取当前主题
-   * @returns {string}
+   * @returns {string} 固定返回浅色主题
    */
   getTheme() {
-    return this.currentTheme
+    return THEME_LIGHT
   }
 
   /**
    * 是否为深色主题
-   * @returns {boolean}
+   * @returns {boolean} 固定返回 false
    */
   isDark() {
-    return this.currentTheme === THEME_DARK
+    return false
   }
 
   /**
    * 是否为浅色主题
-   * @returns {boolean}
+   * @returns {boolean} 固定返回 true
    */
   isLight() {
-    return this.currentTheme === THEME_LIGHT
+    return true
   }
 
   /**
@@ -231,17 +188,11 @@ class ThemeManager {
   }
 
   /**
-   * 重置为系统偏好
+   * 重置为系统偏好（已废弃）
    */
   resetToSystem() {
-    try {
-      localStorage.removeItem(THEME_KEY)
-    } catch (error) {
-      console.warn('Failed to remove theme preference:', error)
-    }
-    
-    const systemTheme = this.getSystemPreference()
-    this.applyTheme(systemTheme)
+    // 固定为浅色主题
+    this.applyTheme(THEME_LIGHT)
   }
 }
 

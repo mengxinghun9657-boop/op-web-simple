@@ -25,7 +25,7 @@ minio==7.2.0
 
 # 数据处理（保留原项目依赖）
 pandas>=1.3.0
-numpy<2.0.0,>=1.21.0  # 锁定到 1.x 版本,兼容 faiss-cpu
+numpy>=1.21.0  # pandas依赖，同时被trend_analysis_engine和conflict_detector使用
 scipy>=1.9.0  # 科学计算库，用于趋势分析和统计
 openpyxl>=3.0.0
 matplotlib>=3.5.0
@@ -38,6 +38,7 @@ pycryptodome>=3.15.0
 # 工具库
 requests>=2.28.0
 httpx>=0.24.0
+tenacity>=8.2.0
 python-dateutil>=2.8.2
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
@@ -54,13 +55,6 @@ apscheduler==3.10.4
 
 # 文件监控
 watchdog==3.0.0
-
-# AI 智能查询相关
-faiss-cpu==1.7.4  # 向量数据库
-# sentence-transformers>=2.3.0  # Embedding 模型（仅本地模式需要，默认使用 API）
-# transformers>=4.35.0  # Transformers 库（仅本地模式需要）
-# torch>=2.0.0  # PyTorch（仅本地模式需要）
-tenacity==8.2.3  # 重试机制
 
 # 测试相关
 pytest>=7.4.0

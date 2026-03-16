@@ -1,20 +1,18 @@
 <template>
-  <div class="glass-card p-4 flex items-center justify-between">
+  <div class="metrics-card">
     <div>
-      <div class="text-gray-400 text-sm mb-1">{{ title }}</div>
-      <div class="text-2xl font-bold text-white flex items-end">
-        {{ value }} <span class="text-xs text-gray-500 ml-1 mb-1">{{ unit }}</span>
+      <div class="metrics-card-title">{{ title }}</div>
+      <div class="metrics-card-value">
+        {{ value }} <span class="metrics-card-unit">{{ unit }}</span>
       </div>
     </div>
-    <div class="w-10 h-10 rounded-lg flex items-center justify-center" :class="bgClass">
-      <el-icon :size="20" :class="iconClass"><component :is="icon" /></el-icon>
+    <div class="metrics-card-icon" :class="`metrics-card-icon--${type}`">
+      <el-icon :size="20"><component :is="icon" /></el-icon>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
 const props = defineProps({
   title: String,
   value: [Number, String],
@@ -22,7 +20,68 @@ const props = defineProps({
   icon: String,
   type: { type: String, default: 'primary' }
 })
-
-const bgClass = computed(() => `bg-${props.type}-500/20`)
-const iconClass = computed(() => `text-${props.type}-400`)
 </script>
+
+<style scoped>
+.metrics-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  background: var(--bg-container);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.metrics-card-title {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-1);
+}
+
+.metrics-card-value {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.metrics-card-unit {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-left: var(--space-1);
+}
+
+.metrics-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metrics-card-icon--primary {
+  background: rgba(26, 115, 232, 0.1);
+  color: var(--primary);
+}
+
+.metrics-card-icon--success {
+  background: rgba(30, 142, 62, 0.1);
+  color: var(--color-success);
+}
+
+.metrics-card-icon--warning {
+  background: rgba(234, 134, 0, 0.1);
+  color: var(--color-warning);
+}
+
+.metrics-card-icon--error {
+  background: rgba(217, 48, 37, 0.1);
+  color: var(--color-error);
+}
+
+.metrics-card-icon--info {
+  background: rgba(26, 115, 232, 0.1);
+  color: var(--color-info);
+}
+</style>

@@ -1,23 +1,27 @@
 <template>
-  <div class="resource-page">
-    <!-- 页面标题 -->
+  <div class="page-container">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <div class="page-header-icon"><el-icon :size="24"><Cpu /></el-icon></div>
-      <div class="page-header-content">
-        <h2 class="page-title">资源分析配置</h2>
-        <p class="page-subtitle">配置数据源并生成集群资源分析报告</p>
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><Cpu /></el-icon>
+          </div>
+          资源分析配置
+        </div>
+        <div class="page-subtitle">配置数据源并生成集群资源分析报告</div>
       </div>
     </div>
-    
+
     <!-- 数据源配置 -->
-    <div class="bento-card">
-      <div class="bento-card-header">
-        <div class="bento-card-title">
-          <div class="bento-card-title-icon"><el-icon :size="16"><Setting /></el-icon></div>
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><Setting /></el-icon>
           Multi-Cluster数据源配置
         </div>
       </div>
-      <div class="bento-card-body">
+      <div class="content-card-body">
         <!-- 数据源选择 -->
         <div class="source-selector">
           <div :class="['source-option', dataSourceType === 'fetch' ? 'source-option-active' : '']" @click="dataSourceType = 'fetch'">
@@ -85,16 +89,14 @@
     </div>
 
     <!-- Excel数据源 -->
-    <div class="bento-card">
-      <div class="bento-card-header">
-        <div class="bento-card-title">
-          <div class="bento-card-title-icon" style="background: linear-gradient(135deg, var(--color-success), var(--color-success-dark));">
-            <el-icon :size="16"><Document /></el-icon>
-          </div>
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><Document /></el-icon>
           Excel数据源（可选）
         </div>
       </div>
-      <div class="bento-card-body">
+      <div class="content-card-body">
         <div class="upload-input">
           <el-input v-model="excelFileName" placeholder="未选择文件（可选）" readonly>
             <template #prefix><el-icon><Document /></el-icon></template>
@@ -106,14 +108,14 @@
     </div>
 
     <!-- 功能说明 -->
-    <div class="bento-card">
-      <div class="bento-card-header">
-        <div class="bento-card-title">
-          <div class="bento-card-title-icon"><el-icon :size="16"><InfoFilled /></el-icon></div>
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><InfoFilled /></el-icon>
           功能说明
         </div>
       </div>
-      <div class="bento-card-body">
+      <div class="content-card-body">
         <div class="feature-grid">
           <div class="feature-item"><el-icon class="feature-icon feature-icon-primary"><Check /></el-icon><span>Multi-Cluster数据：支持在线获取或上传JSON/YAML</span></div>
           <div class="feature-item"><el-icon class="feature-icon feature-icon-success"><Check /></el-icon><span>Excel数据：存储/网络/实例工作表</span></div>
@@ -130,42 +132,52 @@
     <div v-if="!canAnalyze" class="error-hint"><p>{{ analyzeErrorMsg }}</p></div>
 
     <!-- 分析进度 -->
-    <div v-if="analyzing" class="bento-card">
-      <div class="bento-card-header">
-        <div class="bento-card-title"><el-icon class="spin-icon"><Loading /></el-icon>分析进度</div>
+    <div v-if="analyzing" class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon class="spin-icon"><Loading /></el-icon>
+          分析进度
+        </div>
       </div>
-      <div class="bento-card-body">
+      <div class="content-card-body">
         <ProgressBar :percentage="analyzeProgress" />
         <p class="progress-text">{{ statusMessage }}</p>
       </div>
     </div>
 
     <!-- 分析结果 -->
-    <div v-if="analysisResult && !analyzing" class="bento-card bento-span-full">
-      <div class="bento-card-header">
-        <div class="bento-card-title"><el-icon class="success-icon"><SuccessFilled /></el-icon>分析完成</div>
-        <div class="result-actions">
+    <div v-if="analysisResult && !analyzing" class="content-card" style="grid-column: span 2;">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon class="success-icon"><SuccessFilled /></el-icon>
+          分析完成
+        </div>
+        <div class="content-card-extra">
           <el-button type="primary" @click="downloadReport"><el-icon><Download /></el-icon>下载报告</el-button>
           <el-button @click="openReport"><el-icon><FullScreen /></el-icon>全屏查看</el-button>
         </div>
       </div>
-      <div class="bento-card-body report-body">
+      <div class="content-card-body report-body">
         <div v-if="reportLoading" class="report-loading"><el-icon class="spin-icon"><Loading /></el-icon></div>
         <iframe v-if="reportUrl" :src="reportUrl" class="report-frame" @load="reportLoading = false" />
       </div>
     </div>
 
     <!-- 空状态 -->
-    <div v-if="!analyzing && !analysisResult" class="bento-card empty-card">
-      <el-icon class="empty-icon"><DataAnalysis /></el-icon>
-      <p>请选择或获取Multi-Cluster数据开始分析</p>
+    <div v-if="!analyzing && !analysisResult" class="empty-state">
+      <div class="empty-state-icon">
+        <el-icon><DataAnalysis /></el-icon>
+      </div>
+      <div class="empty-state-title">请选择或获取Multi-Cluster数据开始分析</div>
     </div>
 
     <!-- Cookie配置对话框 -->
-    <el-dialog v-model="showCookieDialog" title="Cookie配置" width="600px" class="unified-dialog">
-      <el-form><el-form-item label="Cookie值" label-width="80px">
-        <el-input v-model="cookieValue" type="textarea" :rows="6" placeholder="粘贴从浏览器复制的Cookie值" />
-      </el-form-item></el-form>
+    <el-dialog v-model="showCookieDialog" title="Cookie配置" width="600px" class="google-dialog">
+      <el-form class="google-form">
+        <el-form-item label="Cookie值" label-width="80px">
+          <el-input v-model="cookieValue" type="textarea" :rows="6" placeholder="粘贴从浏览器复制的Cookie值" />
+        </el-form-item>
+      </el-form>
       <template #footer>
         <el-button @click="showCookieDialog = false">取消</el-button>
         <el-button type="primary" @click="saveCookie">保存</el-button>
@@ -180,7 +192,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Cpu, DataAnalysis, TrendCharts, Download, Upload, List, FullScreen, SuccessFilled, Loading, Setting, Connection, FolderOpened, Document, Check, InfoFilled } from '@element-plus/icons-vue'
-import { Card, StateDisplay } from '@/components/common'
 import FileUpload from '@/components/common/FileUpload.vue'
 import ProgressBar from '@/components/common/ProgressBar.vue'
 import axios from '@/utils/axios'
@@ -359,15 +370,25 @@ const loadResourceConfig = async () => {
   loadingConfig.value = true
   try {
     const response = await axios.get('/api/v1/config/load?module=analysis')
-    
-    if (response.config && response.config.cluster_ids && response.config.cluster_ids.length > 0) {
-      const ids = Array.isArray(response.config.cluster_ids)
-        ? response.config.cluster_ids
-        : response.config.cluster_ids.split(',').map(id => id.trim())
-      clusterIdsText.value = ids.join('\n')
-      ElMessage.success(`已加载 ${ids.length} 个集群ID配置`)
+
+    // 获取 cluster_ids 配置
+    const clusterIds = response.config?.cluster_ids || response.data?.config?.cluster_ids
+
+    // 检查配置是否存在且非空
+    if (clusterIds && clusterIds !== '' && clusterIds.length > 0) {
+      // 处理数组或字符串格式
+      const ids = Array.isArray(clusterIds)
+        ? clusterIds
+        : clusterIds.split(',').map(id => id.trim()).filter(id => id)
+
+      if (ids.length > 0) {
+        clusterIdsText.value = ids.join('\n')
+        ElMessage.success(`已加载 ${ids.length} 个集群ID配置`)
+      } else {
+        ElMessage.warning('配置的集群ID列表为空，请先在系统配置中添加集群ID')
+      }
     } else {
-      ElMessage.warning('未找到配置的集群ID')
+      ElMessage.warning('未找到配置的集群ID，请先在系统配置中添加集群ID')
     }
   } catch (error) {
     ElMessage.error('加载配置失败: ' + (error.response?.data?.detail || error.message))
@@ -455,11 +476,6 @@ const reportUrl = computed(() => { const htmlFile = analysisResult.value?.html_f
 const downloadReport = () => { if (!taskId.value) { ElMessage.warning('没有可下载的报告'); return }; const link = document.createElement('a'); link.href = getFullBackendUrl(`/api/v1/resource/download/${taskId.value}`); link.download = `resource_report_${taskId.value}.html`; document.body.appendChild(link); link.click(); document.body.removeChild(link); ElMessage.success('报告下载已开始') }
 const openReport = () => { if (reportUrl.value) window.open(reportUrl.value, '_blank'); else ElMessage.warning('报告不可用') }
 
-// 组件挂载时自动加载配置
-onMounted(() => {
-  loadResourceConfig()
-})
-
 // 组件卸载时清理定时器
 onUnmounted(() => {
   if (pollTaskTimer) {
@@ -473,129 +489,93 @@ onUnmounted(() => {
 })
 </script>
 
-
 <style scoped>
-.resource-page { 
-  display: flex; 
-  flex-direction: column; 
-  gap: var(--spacing-6);
-  animation: slideInUp var(--duration-slow) var(--ease-out);
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 页面标题 */
-.page-header { display: flex; align-items: center; gap: var(--spacing-4); }
-.page-header-icon { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--color-primary-500), var(--color-secondary-500)); border-radius: var(--radius-lg); color: white; }
-.page-title { font-size: var(--font-size-2xl); font-weight: 700; color: var(--text-primary); margin: 0; }
-.page-subtitle { font-size: var(--font-size-sm); color: var(--text-tertiary); margin: var(--spacing-1) 0 0; }
-
 /* 数据源选择 */
-.source-selector { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacing-4); margin-bottom: var(--spacing-6); }
-.source-option { display: flex; align-items: center; gap: var(--spacing-4); padding: var(--spacing-4); border: 2px solid var(--border-color); border-radius: var(--radius-lg); cursor: pointer; transition: all var(--transition-normal); }
-.source-option:hover { border-color: var(--color-primary-400); background: var(--bg-spotlight); }
-.source-option-active { border-color: var(--color-primary-500); background: rgba(59, 130, 246, 0.1); }
-.source-icon { font-size: 32px; color: var(--color-primary-500); }
+.source-selector { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-4); margin-bottom: var(--space-6); }
+.source-option { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4); border: 2px solid var(--border-color); border-radius: var(--radius-lg); cursor: pointer; transition: all var(--transition-normal); }
+.source-option:hover {
+  border-color: var(--primary);
+  background: rgba(26, 115, 232, 0.05);
+}
+.source-option-active { border-color: var(--primary); background: rgba(26, 115, 232, 0.1); }
+.source-icon { font-size: 32px; color: var(--primary); }
 .source-title { font-weight: 600; color: var(--text-primary); }
-.source-desc { font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: var(--spacing-1); }
+.source-desc { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: var(--space-1); }
 
 /* 配置提示框 */
 .config-hint-box {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-3);
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: rgba(26, 115, 232, 0.1);
+  border: 1px solid rgba(26, 115, 232, 0.3);
   border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
-  margin-bottom: var(--spacing-3);
+  margin-bottom: var(--space-3);
 }
 
 .config-link {
-  color: var(--color-primary-500);
+  color: var(--primary);
   font-weight: 600;
   text-decoration: none;
   transition: color var(--duration-fast);
 }
 
 .config-link:hover {
-  color: var(--color-primary-600);
+  color: var(--primary);
   text-decoration: underline;
 }
 
 /* 输入区域 */
-.source-content { display: flex; flex-direction: column; gap: var(--spacing-4); }
-.input-section { background: var(--bg-elevated); padding: var(--spacing-4); border-radius: var(--radius-lg); border: 1px solid var(--border-color); }
-.input-label { display: flex; align-items: center; gap: var(--spacing-2); font-size: var(--font-size-sm); font-weight: 600; color: var(--text-secondary); margin-bottom: var(--spacing-3); }
-.input-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-3); }
-.input-hint { font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: var(--spacing-2); }
+.source-content { display: flex; flex-direction: column; gap: var(--space-4); }
+.input-section { background: var(--bg-secondary); padding: var(--space-4); border-radius: var(--radius-lg); border: 1px solid var(--border-color); }
+.input-label { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); margin-bottom: var(--space-3); }
+.input-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); }
+.input-hint { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: var(--space-2); }
 
 /* 操作按钮网格 */
-.action-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacing-3); }
+.action-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
 
 /* 进度区域 */
-.progress-section { background: rgba(59, 130, 246, 0.1); padding: var(--spacing-4); border-radius: var(--radius-lg); border: 1px solid rgba(59, 130, 246, 0.3); }
-.progress-text { font-size: var(--font-size-sm); color: var(--text-secondary); text-align: center; margin-top: var(--spacing-3); }
+.progress-section { background: rgba(26, 115, 232, 0.1); padding: var(--space-4); border-radius: var(--radius-lg); border: 1px solid rgba(26, 115, 232, 0.3); }
+.progress-text { font-size: var(--text-sm); color: var(--text-secondary); text-align: center; margin-top: var(--space-3); }
 
 /* 成功提示 */
-.success-section { display: flex; align-items: center; gap: var(--spacing-3); padding: var(--spacing-4); background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: var(--radius-lg); color: var(--color-success); font-weight: 500; }
+.success-section { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); background: rgba(30, 142, 62, 0.1); border: 1px solid rgba(30, 142, 62, 0.3); border-radius: var(--radius-lg); color: var(--color-success); font-weight: 500; }
 
 /* 上传区域 */
-.upload-section { text-align: center; padding: var(--spacing-6); border: 2px dashed var(--border-color); border-radius: var(--radius-lg); }
-.upload-icon { font-size: 48px; color: var(--color-primary-400); margin-bottom: var(--spacing-3); }
-.upload-title { font-size: var(--font-size-lg); font-weight: 600; color: var(--text-primary); margin-bottom: var(--spacing-2); }
-.upload-hint { font-size: var(--font-size-sm); color: var(--text-tertiary); margin-bottom: var(--spacing-4); }
-.upload-input { display: flex; gap: var(--spacing-3); max-width: 400px; margin: 0 auto; }
+.upload-section { text-align: center; padding: var(--space-6); border: 2px dashed var(--border-color); border-radius: var(--radius-lg); }
+.upload-icon { font-size: 48px; color: var(--primary); margin-bottom: var(--space-3); }
+.upload-title { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-2); }
+.upload-hint { font-size: var(--text-sm); color: var(--text-tertiary); margin-bottom: var(--space-4); }
+.upload-input { display: flex; gap: var(--space-3); max-width: 400px; margin: 0 auto; }
 
 /* 功能说明 */
-.feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacing-3); }
-.feature-item { display: flex; align-items: flex-start; gap: var(--spacing-2); font-size: var(--font-size-sm); color: var(--text-secondary); }
+.feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+.feature-item { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--text-sm); color: var(--text-secondary); }
 .feature-icon { flex-shrink: 0; margin-top: 2px; }
-.feature-icon-primary { color: var(--color-primary-500); }
+.feature-icon-primary { color: var(--primary); }
 .feature-icon-success { color: var(--color-success); }
-.feature-icon-info { color: var(--color-secondary-500); }
+.feature-icon-info { color: var(--color-info); }
 .feature-icon-warning { color: var(--color-warning); }
 
 /* 分析按钮 */
-.analyze-button { width: 100%; height: 56px; font-size: var(--font-size-lg); font-weight: 600; background: linear-gradient(135deg, var(--color-primary-500), var(--color-secondary-500)); border: none; }
-.analyze-button:hover { background: linear-gradient(135deg, var(--color-primary-600), var(--color-secondary-600)); }
-.error-hint { margin-top: var(--spacing-3); padding: var(--spacing-3); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-lg); }
-.error-hint p { font-size: var(--font-size-sm); color: var(--color-error); text-align: center; margin: 0; }
+.analyze-button { width: 100%; height: 56px; font-size: var(--text-lg); font-weight: 600; }
+.error-hint { margin-top: var(--space-3); padding: var(--space-3); background: rgba(217, 48, 37, 0.1); border: 1px solid rgba(217, 48, 37, 0.3); border-radius: var(--radius-lg); }
+.error-hint p { font-size: var(--text-sm); color: var(--color-error); text-align: center; margin: 0; }
 
 /* 加载动画 */
 .spin-icon { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.success-icon { color: var(--color-success); margin-right: var(--spacing-2); }
+.success-icon { color: var(--color-success); margin-right: var(--space-2); }
 
 /* 结果区域 */
-.result-actions { display: flex; gap: var(--spacing-3); }
 .report-body { position: relative; min-height: 600px; }
-.report-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--glass-bg-strong); backdrop-filter: blur(8px); z-index: 10; }
-.report-loading .spin-icon { font-size: 48px; color: var(--color-primary-500); }
+.report-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); z-index: 10; }
+.report-loading .spin-icon { font-size: 48px; color: var(--primary); }
 .report-frame { width: 100%; min-height: 600px; border: none; border-radius: var(--radius-lg); background: white; }
-
-/* 空状态 */
-.empty-card { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--spacing-16); text-align: center; }
-.empty-icon { font-size: 64px; color: var(--text-tertiary); margin-bottom: var(--spacing-4); }
-.empty-card p { color: var(--text-tertiary); }
-
-/* 弹窗样式 */
-.unified-dialog :deep(.el-dialog) { background-color: var(--bg-container); border: 1px solid var(--border-color); border-radius: var(--radius-xl); }
-.unified-dialog :deep(.el-dialog__header) { padding: var(--spacing-4) var(--spacing-5); border-bottom: 1px solid var(--border-color); }
-.unified-dialog :deep(.el-dialog__title) { color: var(--text-primary); font-weight: 600; }
-.unified-dialog :deep(.el-dialog__body) { padding: var(--spacing-5); }
-.unified-dialog :deep(.el-dialog__footer) { padding: var(--spacing-4) var(--spacing-5); border-top: 1px solid var(--border-color); }
 
 /* 响应式 */
 @media (max-width: 768px) {

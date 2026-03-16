@@ -32,14 +32,14 @@ html {
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--bg-base);
+  background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: var(--font-family-sans);
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-normal);
+  font-family: var(--font-google);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
   overflow: hidden;
-  transition: background-color var(--duration-normal) var(--ease-out),
-              color var(--duration-normal) var(--ease-out);
+  transition: background-color var(--duration-normal) var(--ease-standard),
+              color var(--duration-normal) var(--ease-standard);
 }
 
 /* ==================== 滚动条样式 ==================== */
@@ -69,69 +69,64 @@ body {
 
 /* ==================== 选择文本样式 ==================== */
 ::selection {
-  background: var(--color-primary-500);
-  color: white;
+  background: var(--primary-bg);
+  color: var(--text-primary);
 }
 
 /* ==================== 焦点样式 ==================== */
 :focus-visible {
-  outline: 2px solid var(--color-primary-400);
+  outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
 
 /* ==================== 链接样式 ==================== */
 a {
-  color: var(--color-primary);
+  color: var(--primary);
   text-decoration: none;
   transition: var(--transition-colors);
 }
 
 a:hover {
-  color: var(--color-primary-light);
+  color: var(--primary-hover);
 }
 
 /* ==================== 布局组件 ==================== */
 
 /* 侧边导航 */
 .sidebar {
-  background: var(--glass-bg-strong);
-  backdrop-filter: blur(var(--glass-blur-strong));
-  -webkit-backdrop-filter: blur(var(--glass-blur-strong));
-  border-right: 1px solid var(--glass-border);
-  transition: var(--transition-all);
+  background: var(--nav-bg);
+  border-right: 1px solid var(--nav-border);
+  transition: var(--transition-base);
 }
 
 /* 顶部栏 */
 .header-bar {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border-bottom: 1px solid var(--glass-border);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--divider);
   height: 56px;
-  transition: var(--transition-all);
+  transition: var(--transition-base);
 }
 
 /* 内容区 */
 .main-content {
-  background: var(--bg-base);
-  padding: var(--spacing-lg);
+  background: var(--bg-primary);
+  padding: var(--space-6);
   overflow: auto;
 }
 
 /* ==================== 卡片系统 ==================== */
 .card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-card);
-  padding: var(--component-padding-lg);
-  transition: var(--transition-all);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--card-shadow);
+  transition: var(--transition-base);
 }
 
 .card:hover {
-  border-color: var(--border-color-light);
   box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
 }
 
 .card-header {
@@ -335,23 +330,27 @@ a:hover {
 
 /* ==================== 按钮系统 ==================== */
 .btn-primary {
-  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
-  border: 1px solid var(--color-primary-400);
-  color: white;
-  border-radius: var(--radius-button);
-  padding: var(--spacing-2) var(--spacing-4);
-  font-weight: var(--font-weight-medium);
+  background: var(--button-primary-bg);
+  border: none;
+  color: var(--button-primary-text);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-weight: var(--font-medium);
+  font-size: var(--text-base);
   cursor: pointer;
-  transition: var(--transition-all);
+  transition: var(--transition-base);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-500));
+  background: var(--button-primary-bg-hover);
   box-shadow: var(--shadow-glow-primary);
+  transform: translateY(-1px);
 }
 
 .btn-primary:active {
-  transform: scale(0.98);
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 /* 操作按钮组 */
@@ -367,17 +366,17 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: var(--transition-all);
+  transition: var(--transition-base);
   background: transparent;
   border: none;
 }
 
 .icon-btn:hover {
   background: var(--bg-hover);
-  color: var(--color-primary);
+  color: var(--primary);
 }
 
 .icon-btn:active {
@@ -592,18 +591,26 @@ a:hover {
 }
 
 .el-button {
-  border-radius: var(--radius-button) !important;
-  transition: var(--transition-all) !important;
+  border-radius: var(--radius-md) !important;
+  font-family: var(--font-google) !important;
+  font-weight: var(--font-medium) !important;
+  transition: var(--transition-base) !important;
 }
 
 .el-button--primary {
-  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600)) !important;
-  border-color: var(--color-primary-400) !important;
+  background: var(--button-primary-bg) !important;
+  border-color: transparent !important;
+  box-shadow: var(--shadow-sm);
 }
 
 .el-button--primary:hover {
-  background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-500)) !important;
+  background: var(--button-primary-bg-hover) !important;
   box-shadow: var(--shadow-glow-primary);
+  transform: translateY(-1px);
+}
+
+.el-button--primary:active {
+  transform: translateY(0);
 }
 
 .el-progress-bar__outer {

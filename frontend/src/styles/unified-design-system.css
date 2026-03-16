@@ -1,0 +1,535 @@
+/**
+ * 统一设计系统 (Unified Design System)
+ *
+ * 参考业内成熟方案：
+ * - Google Material Design 3 (MD3)
+ * - Linear App
+ * - Vercel Design
+ * - Stripe Dashboard
+ *
+ * 设计原则：
+ * 1. 一致性 - 统一变量命名，避免重复定义
+ * 2. 克制 - hover 最多 2 种变化（颜色 + 阴影 OR 颜色 + 位移）
+ * 3. 层次 - 清晰的 z-index 层级系统
+ * 4. 韵律 - 基于 4px 的间距和 8px 网格
+ *
+ * @version 2.0.0
+ * @design-system Google Blue Unified
+ */
+
+/* ==================== 1. 颜色系统 ==================== */
+:root {
+  /* ===== Google Blue 主色系 ===== */
+  --color-primary-50: #e8f0fe;
+  --color-primary-100: #d2e3fc;
+  --color-primary-200: #aecbfa;
+  --color-primary-300: #8ab4f8;
+  --color-primary-400: #669df6;
+  --color-primary-500: #4285f4;  /* Google Blue 标准 */
+  --color-primary-600: #1a73e8;  /* 主色调 */
+  --color-primary-700: #1967d2;
+  --color-primary-800: #185abc;
+  --color-primary-900: #174ea6;
+
+  /* 主色快捷引用 */
+  --primary: var(--color-primary-600);
+  --primary-hover: var(--color-primary-500);
+  --primary-active: var(--color-primary-700);
+  --primary-light: var(--color-primary-100);
+  --primary-dark: var(--color-primary-800);
+
+  /* ===== Google 中性灰 ===== */
+  --color-neutral-50: #f8f9fa;
+  --color-neutral-100: #f1f3f4;
+  --color-neutral-200: #e8eaed;
+  --color-neutral-300: #dadce0;
+  --color-neutral-400: #bdc1c6;
+  --color-neutral-500: #9aa0a6;
+  --color-neutral-600: #80868b;
+  --color-neutral-700: #5f6368;
+  --color-neutral-800: #3c4043;
+  --color-neutral-900: #202124;
+
+  /* ===== 语义色 ===== */
+  --color-success: #1e8e3e;
+  --color-success-light: #81c995;
+  --color-success-bg: rgba(30, 142, 62, 0.08);
+  --color-success-border: rgba(30, 142, 62, 0.24);
+
+  --color-warning: #f9ab00;
+  --color-warning-light: #fdd663;
+  --color-warning-bg: rgba(249, 171, 0, 0.08);
+  --color-warning-border: rgba(249, 171, 0, 0.24);
+
+  --color-error: #d93025;
+  --color-error-light: #f28b82;
+  --color-error-bg: rgba(217, 48, 37, 0.08);
+  --color-error-border: rgba(217, 48, 37, 0.24);
+
+  --color-info: #1a73e8;
+  --color-info-light: #8ab4f8;
+  --color-info-bg: rgba(26, 115, 232, 0.08);
+  --color-info-border: rgba(26, 115, 232, 0.24);
+
+  /* ===== 统一透明度规范 ===== */
+  /* 参考 Material Design 3 的透明度层级 */
+  --alpha-hover: 0.04;      /* 悬停状态 */
+  --alpha-focus: 0.08;      /* 聚焦状态 */
+  --alpha-pressed: 0.12;    /* 按下状态 */
+  --alpha-dragged: 0.16;    /* 拖拽状态 */
+  --alpha-selected: 0.08;   /* 选中状态 */
+  --alpha-disabled: 0.38;   /* 禁用状态 */
+  --alpha-border: 0.12;     /* 边框 */
+  --alpha-divider: 0.08;    /* 分割线 */
+  --alpha-overlay: 0.5;     /* 遮罩层 */
+}
+
+/* ==================== 2. 间距系统 (统一使用 --space-*) ==================== */
+:root {
+  /* 基于 4px 网格 */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* 兼容旧变量 --spacing-* (映射到 --space-*) */
+  --spacing-0: var(--space-0);
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-7: 28px;
+  --spacing-8: var(--space-8);
+  --spacing-9: 36px;
+  --spacing-10: var(--space-10);
+  --spacing-12: var(--space-12);
+  --spacing-14: 56px;
+  --spacing-16: var(--space-16);
+  --spacing-20: var(--space-20);
+  --spacing-24: 96px;
+
+  /* 语义化间距 */
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-6);
+  --spacing-xl: var(--space-8);
+  --spacing-2xl: var(--space-12);
+  --spacing-3xl: var(--space-16);
+
+  /* 组件间距 */
+  --component-padding-xs: var(--space-2);
+  --component-padding-sm: var(--space-3);
+  --component-padding-md: var(--space-4);
+  --component-padding-lg: var(--space-6);
+  --component-padding-xl: var(--space-8);
+
+  --component-gap-xs: var(--space-2);
+  --component-gap-sm: var(--space-3);
+  --component-gap-md: var(--space-4);
+  --component-gap-lg: var(--space-6);
+  --component-gap-xl: var(--space-8);
+}
+
+/* ==================== 3. 圆角系统 ==================== */
+:root {
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+
+  /* 组件圆角 */
+  --radius-button: var(--radius-md);
+  --radius-card: var(--radius-xl);
+  --radius-input: var(--radius-md);
+  --radius-modal: var(--radius-2xl);
+  --radius-tag: var(--radius-sm);
+}
+
+/* ==================== 4. 字体系统 ==================== */
+:root {
+  /* 字体栈 - 本地优先，避免 Google Fonts 加载失败 */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                      "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC",
+                      "Microsoft YaHei", sans-serif;
+  --font-family-mono: "SF Mono", "Fira Code", Consolas, "Liberation Mono",
+                      Menlo, Monaco, monospace;
+
+  /* 简写 */
+  --font-google: var(--font-family-sans);
+  --font-mono: var(--font-family-mono);
+
+  /* 字体大小 - Material Design 3 Scale */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+  --text-4xl: 34px;
+  --text-5xl: 40px;
+  --text-6xl: 48px;
+
+  /* 兼容旧变量 */
+  --font-size-xs: var(--text-xs);
+  --font-size-sm: var(--text-sm);
+  --font-size-base: var(--text-base);
+  --font-size-lg: var(--text-lg);
+  --font-size-xl: var(--text-xl);
+  --font-size-2xl: var(--text-2xl);
+  --font-size-3xl: var(--text-3xl);
+  --font-size-4xl: var(--text-4xl);
+  --font-size-5xl: var(--text-5xl);
+
+  /* 字重 */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* 兼容旧变量 */
+  --font-weight-normal: var(--font-normal);
+  --font-weight-medium: var(--font-medium);
+  --font-weight-semibold: var(--font-semibold);
+  --font-weight-bold: var(--font-bold);
+
+  /* 行高 */
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+
+  /* 兼容旧变量 */
+  --line-height-tight: var(--leading-tight);
+  --line-height-snug: var(--leading-snug);
+  --line-height-normal: var(--leading-normal);
+  --line-height-relaxed: var(--leading-relaxed);
+  --line-height-loose: var(--leading-loose);
+}
+
+/* ==================== 5. 阴影系统 (统一 4 级) ==================== */
+:root {
+  /*
+   * 参考 Material Design 3 的阴影层级
+   * 只使用 4 级阴影，保持简洁
+   */
+  --shadow-sm: 0 1px 2px rgba(60, 64, 67, 0.3),
+               0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  --shadow-md: 0 1px 3px rgba(60, 64, 67, 0.3),
+               0 4px 8px 3px rgba(60, 64, 67, 0.15);
+  --shadow-lg: 0 2px 6px 2px rgba(60, 64, 67, 0.15),
+               0 8px 16px 4px rgba(60, 64, 67, 0.15);
+  --shadow-xl: 0 4px 12px 4px rgba(60, 64, 67, 0.15),
+               0 12px 24px 8px rgba(60, 64, 67, 0.15);
+
+  /* 兼容旧变量 */
+  --shadow-xs: var(--shadow-sm);
+  --shadow-2xl: var(--shadow-xl);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+
+  /* 卡片阴影 */
+  --card-shadow: var(--shadow-sm);
+  --card-shadow-hover: var(--shadow-md);
+
+  /* 发光阴影 (用于聚焦状态) */
+  --shadow-glow-primary: 0 0 0 3px rgba(26, 115, 232, 0.2);
+  --shadow-glow-success: 0 0 0 3px rgba(30, 142, 62, 0.2);
+  --shadow-glow-warning: 0 0 0 3px rgba(249, 171, 0, 0.2);
+  --shadow-glow-error: 0 0 0 3px rgba(217, 48, 37, 0.2);
+  --shadow-glow-secondary: 0 0 0 3px rgba(6, 182, 212, 0.2);
+}
+
+/* ==================== 6. 动画系统 (统一 3 级时长) ==================== */
+:root {
+  /*
+   * 参考 Material Design 3 Motion
+   * 只使用 3 级时长，避免过度复杂
+   */
+  --duration-fast: 100ms;     /* 微交互：开关、checkbox */
+  --duration-normal: 200ms;   /* 标准交互：hover、focus */
+  --duration-slow: 300ms;     /* 复杂动画：展开、折叠 */
+
+  /* 兼容旧变量 */
+  --duration-instant: 0ms;
+  --duration-slower: 400ms;
+
+  /*
+   * 缓动函数 - Material Design 3 Easing
+   * 只使用 2 种缓动，保持一致性
+   */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);  /* 标准缓动 */
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1); /* 强调缓动 */
+
+  /* 兼容旧变量 */
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: var(--ease-standard);
+  --ease-in-out: var(--ease-standard);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --ease-sharp: cubic-bezier(0.4, 0, 0.6, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* 预定义过渡 */
+  --transition-fast: all var(--duration-fast) var(--ease-standard);
+  --transition-normal: all var(--duration-normal) var(--ease-standard);
+  --transition-slow: all var(--duration-slow) var(--ease-standard);
+
+  /* 兼容旧变量 */
+  --transition-base: var(--transition-normal);
+  --transition-all: var(--transition-normal);
+  --transition-colors: color var(--duration-normal) var(--ease-standard),
+                       background-color var(--duration-normal) var(--ease-standard),
+                       border-color var(--duration-normal) var(--ease-standard);
+  --transition-opacity: opacity var(--duration-normal) var(--ease-standard);
+  --transition-shadow: box-shadow var(--duration-normal) var(--ease-standard);
+  --transition-transform: transform var(--duration-normal) var(--ease-standard);
+}
+
+/* ==================== 7. Z-Index 层级系统 ==================== */
+:root {
+  /*
+   * 层级系统 - 10 为单位递增
+   * 避免使用任意数值，保持一致性
+   */
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-notification: 1080;
+  --z-toast: 1090;
+
+  /* 卡片 hover 层级 - 不应超过 dropdown */
+  --z-card-hover: 10;
+}
+
+/* ==================== 8. 浅色主题 (默认且唯一) ==================== */
+:root,
+[data-theme="light"] {
+  /* 背景色 */
+  --bg-primary: #ffffff;
+  --bg-secondary: var(--color-neutral-50);
+  --bg-tertiary: var(--color-neutral-100);
+  --bg-elevated: #ffffff;
+  --bg-hover: rgba(0, 0, 0, var(--alpha-hover));
+  --bg-active: rgba(0, 0, 0, var(--alpha-focus));
+  --bg-selected: rgba(26, 115, 232, var(--alpha-selected));
+  --bg-overlay: rgba(0, 0, 0, var(--alpha-overlay));
+
+  /* 兼容旧变量 */
+  --bg-base: var(--bg-secondary);
+  --bg-container: var(--bg-primary);
+  --bg-spotlight: var(--bg-tertiary);
+
+  /* 文本色 */
+  --text-primary: var(--color-neutral-900);
+  --text-secondary: var(--color-neutral-700);
+  --text-tertiary: var(--color-neutral-600);
+  --text-disabled: var(--color-neutral-400);
+  --text-on-primary: #ffffff;
+  --text-inverse: #ffffff;
+
+  /* 边框色 */
+  --border-primary: var(--color-neutral-300);
+  --border-secondary: var(--color-neutral-200);
+  --border-focus: var(--color-primary-600);
+  --border-error: var(--color-error);
+
+  /* 兼容旧变量 */
+  --border-color: var(--border-primary);
+  --border-color-light: var(--border-secondary);
+  --border-color-strong: var(--color-neutral-400);
+  --border-color-focus: var(--border-focus);
+
+  /* 分隔线 */
+  --divider: var(--color-neutral-200);
+  --divider-light: var(--color-neutral-100);
+
+  /* 导航 */
+  --nav-bg: var(--bg-primary);
+  --nav-item-hover: var(--bg-hover);
+  --nav-item-active: var(--bg-selected);
+  --nav-border: var(--border-secondary);
+
+  /* 输入框 */
+  --input-bg: var(--bg-primary);
+  --input-border: var(--border-primary);
+  --input-border-hover: var(--color-neutral-400);
+  --input-border-focus: var(--color-primary-600);
+  --input-text: var(--text-primary);
+  --input-placeholder: var(--text-disabled);
+
+  /* 按钮 */
+  --button-primary-bg: var(--color-primary-600);
+  --button-primary-bg-hover: var(--color-primary-500);
+  --button-primary-bg-active: var(--color-primary-700);
+  --button-primary-text: #ffffff;
+
+  --button-secondary-bg: transparent;
+  --button-secondary-bg-hover: var(--bg-hover);
+  --button-secondary-bg-active: var(--bg-active);
+  --button-secondary-border: var(--border-primary);
+  --button-secondary-text: var(--text-primary);
+
+  --button-ghost-bg-hover: var(--bg-hover);
+  --button-ghost-text: var(--primary);
+
+  /* 表格 */
+  --table-header-bg: var(--bg-tertiary);
+  --table-row-hover: var(--bg-hover);
+  --table-row-selected: var(--bg-selected);
+  --table-border: var(--border-primary);
+
+  /* 滚动条 */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+
+  /* 玻璃拟态 (浅色主题下简化) */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-bg-light: rgba(255, 255, 255, 0.6);
+  --glass-bg-strong: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(0, 0, 0, var(--alpha-border));
+  --glass-blur: 12px;
+  --glass-blur-strong: 20px;
+
+  /* Element Plus 覆盖 */
+  --el-color-primary: var(--color-primary-600);
+  --el-color-primary-light-3: var(--color-primary-500);
+  --el-color-primary-light-5: var(--color-primary-400);
+  --el-color-primary-light-7: var(--color-primary-300);
+  --el-color-primary-light-8: var(--color-primary-200);
+  --el-color-primary-light-9: var(--color-primary-100);
+  --el-color-primary-dark-2: var(--color-primary-700);
+
+  --el-color-success: var(--color-success);
+  --el-color-warning: var(--color-warning);
+  --el-color-danger: var(--color-error);
+  --el-color-error: var(--color-error);
+  --el-color-info: var(--color-info);
+
+  --el-bg-color: var(--bg-secondary);
+  --el-bg-color-page: var(--bg-primary);
+  --el-bg-color-overlay: var(--bg-elevated);
+  --el-fill-color-blank: var(--bg-primary);
+  --el-fill-color-light: var(--bg-hover);
+
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--text-disabled);
+
+  --el-border-color: var(--border-primary);
+  --el-border-color-light: var(--border-secondary);
+  --el-border-color-lighter: var(--border-secondary);
+  --el-border-color-extra-light: var(--border-secondary);
+
+  --el-box-shadow: var(--shadow-md);
+  --el-box-shadow-light: var(--shadow-sm);
+  --el-box-shadow-lighter: var(--shadow-sm);
+  --el-box-shadow-dark: var(--shadow-lg);
+
+  --el-mask-color: rgba(0, 0, 0, 0.5);
+  --el-overlay-color: rgba(0, 0, 0, 0.5);
+}
+
+/* ==================== 9. Hover 效果规范 ==================== */
+/*
+ * 原则：hover 最多 2 种变化
+ *
+ * 按钮：背景色 + 位移(-1px)
+ * 卡片：阴影 + 位移(-2px)
+ * 链接：颜色变化
+ * 图标按钮：背景色
+ * 表格行：背景色
+ * 菜单项：背景色
+ */
+
+/* 统一 hover 位移量 */
+:root {
+  --hover-lift-sm: -1px;  /* 按钮等小元素 */
+  --hover-lift-md: -2px;  /* 卡片等中等元素 */
+  --hover-lift-lg: -4px;  /* 大型卡片（谨慎使用）*/
+}
+
+/* ==================== 10. 全局重置 ==================== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Firefox 滚动条 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* 选中文本 */
+::selection {
+  background-color: var(--color-primary-100);
+  color: var(--text-primary);
+}
+
+/* Focus 可见样式 */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* ==================== 11. 减少动画偏好 ==================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

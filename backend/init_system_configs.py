@@ -9,6 +9,7 @@
 import sys
 import os
 import json
+import time
 
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -16,33 +17,93 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app.core.database import SessionLocal
 from app.models.system_config import SystemConfig
 from loguru import logger
+from sqlalchemy import text
 
 
 def load_default_configs():
     """从JSON文件加载默认配置"""
     config_file = os.path.join(os.path.dirname(__file__), 'config', 'default_instance_ids.json')
-    
+
     if not os.path.exists(config_file):
-        logger.warning(f"配置文件不存在: {config_file}")
-        return {}
-    
-    with open(config_file, 'r', encoding='utf-8') as f:
-        return json.load(f)
+        logger.error(f"❌ 配置文件不存在: {config_file}")
+        logger.error(f"   当前工作目录: {os.getcwd()}")
+        logger.error(f"   脚本目录: {os.path.dirname(__file__)}")
+        raise FileNotFoundError(f"配置文件不存在: {config_file}")
+
+    try:
+        with open(config_file, 'r', encoding='utf-8') as f:
+            configs = json.load(f)
+
+        # 验证配置文件内容
+        required_keys = ['resource_analysis', 'eip_monitoring', 'bcc_monitoring', 'bos_monitoring']
+        missing_keys = [key for key in required_keys if key not in configs]
+
+        if missing_keys:
+            logger.error(f"❌ 配置文件缺少必需字段: {missing_keys}")
+            raise ValueError(f"配置文件格式错误，缺少字段: {missing_keys}")
+
+        # 检查是否所有配置都为空
+        all_empty = all(not configs.get(key) for key in required_keys)
+        if all_empty:
+            logger.error("❌ 配置文件所有字段都为空")
+            raise ValueError("配置文件无效，所有配置项都为空")
+
+        logger.info(f"✅ 成功加载配置文件: {config_file}")
+        logger.info(f"   - 资源分析集群数: {len(configs.get('resource_analysis', []))}")
+        logger.info(f"   - EIP监控实例数: {len(configs.get('eip_monitoring', []))}")
+        logger.info(f"   - BCC监控实例数: {len(configs.get('bcc_monitoring', []))}")
+        logger.info(f"   - BOS监控Bucket数: {len(configs.get('bos_monitoring', []))}")
+
+        return configs
+
+    except json.JSONDecodeError as e:
+        logger.error(f"❌ 配置文件JSON格式错误: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"❌ 加载配置文件失败: {e}")
+        raise
 
 
 def init_system_configs():
     """初始化系统配置"""
-    db = SessionLocal()
+
+    # 带重试的数据库连接（与故障手册导入脚本一致）
+    db = None
+    for attempt in range(10):  # 最多重试10次
+        try:
+            db = SessionLocal()
+            # 测试连接
+            db.execute(text("SELECT 1"))
+            logger.info(f"✅ 数据库连接成功 (尝试 {attempt+1}/10)")
+            break
+        except Exception as e:
+            if db:
+                db.close()
+                db = None
+
+            if attempt < 9:
+                logger.warning(f"⚠️  数据库连接失败（尝试 {attempt+1}/10）: {str(e)[:100]}，等待5秒后重试...")
+                time.sleep(5)
+            else:
+                logger.error(f"❌ 数据库连接失败（已重试10次）: {str(e)[:200]}")
+                logger.error("   可能原因：")
+                logger.error("   1. MySQL 正在处理大量写入（故障手册导入）")
+                logger.error("   2. 连接池已满，gunicorn workers 正在启动")
+                logger.error("   建议：")
+                logger.error("   - 稍后手动执行: docker compose -f docker-compose.prod.yml exec backend python3 init_system_configs.py")
+                logger.error("   - 或重启后端服务: docker compose -f docker-compose.prod.yml restart backend")
+                raise
+
+    if not db:
+        logger.error("❌ 无法建立数据库连接")
+        raise Exception("数据库连接失败")
+
     try:
         logger.info("开始初始化系统配置...")
-        
+
         # 加载配置
         configs = load_default_configs()
-        
-        if not configs:
-            logger.warning("没有找到默认配置，跳过初始化")
-            return
-        
+
         # 1. 监控配置
         monitoring_config = {
             'eip_instance_ids': ','.join(configs.get('eip_monitoring', [])),  # 转换为逗号分隔字符串

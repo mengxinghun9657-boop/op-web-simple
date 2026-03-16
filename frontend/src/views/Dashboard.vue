@@ -1,136 +1,143 @@
 <template>
-  <div class="dashboard">
-    <!-- 指标卡片 - Bento Grid -->
-    <div class="bento-metrics">
-      <div v-for="(card, index) in stats" :key="index" class="bento-metric-card">
-        <div class="bento-metric-header">
-          <span class="bento-metric-label">{{ card.title }}</span>
-          <div class="bento-metric-icon" :class="`bento-metric-icon-${card.iconClass}`">
-            <el-icon :size="18"><component :is="card.icon" /></el-icon>
+  <div class="page-container">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><TrendCharts /></el-icon>
+          </div>
+          系统仪表盘
+        </div>
+        <div class="page-subtitle">实时监控系统运行状态和资源使用情况</div>
+      </div>
+    </div>
+
+    <!-- 指标卡片 - 统一样式 -->
+    <div class="stats-grid">
+      <div v-for="(card, index) in stats" :key="index" class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-card-label">{{ card.title }}</div>
+          <div :class="`stat-card-icon ${card.iconClass}`">
+            <el-icon :size="20"><component :is="card.icon" /></el-icon>
           </div>
         </div>
-        <div class="bento-metric-body">
-          <span class="bento-metric-value">{{ card.value }}</span>
-          <span v-if="card.trend !== 0" class="bento-metric-trend" :class="card.trend > 0 ? 'bento-metric-trend-up' : 'bento-metric-trend-down'">
-            <el-icon :size="12"><component :is="card.trend > 0 ? 'Top' : 'Bottom'" /></el-icon>
-            {{ Math.abs(card.trend) }}%
-          </span>
+        <div class="stat-card-value">{{ card.value }}</div>
+        <div v-if="card.trend !== 0" :class="`stat-card-trend ${card.trend > 0 ? 'up' : 'down'}`">
+          <el-icon><component :is="card.trend > 0 ? 'Top' : 'Bottom'" /></el-icon>
+          {{ Math.abs(card.trend) }}%
         </div>
       </div>
       <!-- 系统运行时长 -->
-      <div class="bento-metric-card">
-        <div class="bento-metric-header">
-          <span class="bento-metric-label">系统运行</span>
-          <div class="bento-metric-icon bento-metric-icon-secondary">
-            <el-icon :size="18"><Timer /></el-icon>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-card-label">系统运行</div>
+          <div class="stat-card-icon info">
+            <el-icon :size="20"><Timer /></el-icon>
           </div>
         </div>
-        <div class="bento-metric-body">
-          <span class="bento-metric-value">{{ systemUptime }}</span>
-        </div>
+        <div class="stat-card-value">{{ systemUptime }}</div>
       </div>
       <!-- 存储使用量 -->
-      <div class="bento-metric-card">
-        <div class="bento-metric-header">
-          <span class="bento-metric-label">存储使用</span>
-          <div class="bento-metric-icon bento-metric-icon-info">
-            <el-icon :size="18"><FolderOpened /></el-icon>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-card-label">存储使用</div>
+          <div class="stat-card-icon warning">
+            <el-icon :size="20"><FolderOpened /></el-icon>
           </div>
         </div>
-        <div class="bento-metric-body">
-          <span class="bento-metric-value">{{ storageUsage }}</span>
-          <span class="bento-metric-sub">{{ storageFiles }} 文件</span>
+        <div class="stat-card-value">{{ storageUsage }}</div>
+        <div class="stat-card-trend">
+          {{ storageFiles }} 文件
         </div>
       </div>
     </div>
 
-    <!-- CMDB资源概览 - Bento Card -->
-    <div v-if="cmdbStats" class="bento-card bento-span-full">
-      <div class="bento-card-header">
-        <div class="bento-card-title">
-          <div class="bento-card-title-icon">
-            <el-icon :size="16"><Grid /></el-icon>
-          </div>
+    <!-- CMDB资源概览 -->
+    <div v-if="cmdbStats" class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><Grid /></el-icon>
           CMDB 资源概览
         </div>
-        <router-link to="/cmdb" class="bento-card-action">
-          查看详情
-          <el-icon :size="12"><ArrowRight /></el-icon>
-        </router-link>
+        <div class="content-card-extra">
+          <router-link to="/cmdb">
+            <el-button text type="primary">
+              查看详情
+              <el-icon><ArrowRight /></el-icon>
+            </el-button>
+          </router-link>
+        </div>
       </div>
-      <div class="bento-card-body">
-        <div class="bento-stats">
-          <div class="bento-stat-item glass-card-light">
-            <div class="bento-stat-value">{{ cmdbStats.servers }}</div>
-            <div class="bento-stat-label">物理服务器</div>
+      <div class="content-card-body">
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+          <div class="stat-card">
+            <div class="stat-card-label">物理服务器</div>
+            <div class="stat-card-value">{{ cmdbStats.servers }}</div>
           </div>
-          <div class="bento-stat-item glass-card-light">
-            <div class="bento-stat-value">{{ cmdbStats.instances }}</div>
-            <div class="bento-stat-label">虚拟实例</div>
+          <div class="stat-card">
+            <div class="stat-card-label">虚拟实例</div>
+            <div class="stat-card-value">{{ cmdbStats.instances }}</div>
           </div>
-          <div class="bento-stat-item glass-card-light">
-            <div class="bento-stat-value">{{ cmdbStats.active_instances }}</div>
-            <div class="bento-stat-label">运行中实例</div>
+          <div class="stat-card">
+            <div class="stat-card-label">运行中实例</div>
+            <div class="stat-card-value">{{ cmdbStats.active_instances }}</div>
           </div>
-          <div class="bento-stat-item glass-card-light">
-            <div class="bento-stat-value">{{ cmdbStats.vcpus_used }}/{{ cmdbStats.vcpus_total }}</div>
-            <div class="bento-stat-label">vCPU 使用</div>
-            <div class="resource-progress">
-              <el-progress 
-                :percentage="cmdbStats.vcpu_usage" 
-                :stroke-width="6" 
-                :show-text="false" 
-                :color="getProgressColor(cmdbStats.vcpu_usage)" 
-              />
-            </div>
+          <div class="stat-card">
+            <div class="stat-card-label">vCPU 使用</div>
+            <div class="stat-card-value">{{ cmdbStats.vcpus_used }}/{{ cmdbStats.vcpus_total }}</div>
+            <el-progress
+              :percentage="cmdbStats.vcpu_usage"
+              :stroke-width="6"
+              :show-text="false"
+              :color="getProgressColor(cmdbStats.vcpu_usage)"
+              style="margin-top: 8px;"
+            />
           </div>
-          <div class="bento-stat-item glass-card-light">
-            <div class="bento-stat-value">{{ cmdbStats.memory_used_gb }}/{{ cmdbStats.memory_total_gb }} GB</div>
-            <div class="bento-stat-label">内存使用</div>
-            <div class="resource-progress">
-              <el-progress 
-                :percentage="cmdbStats.memory_usage" 
-                :stroke-width="6" 
-                :show-text="false"
-                :color="getProgressColor(cmdbStats.memory_usage)" 
-              />
-            </div>
+          <div class="stat-card">
+            <div class="stat-card-label">内存使用</div>
+            <div class="stat-card-value">{{ cmdbStats.memory_used_gb }}/{{ cmdbStats.memory_total_gb }} GB</div>
+            <el-progress
+              :percentage="cmdbStats.memory_usage"
+              :stroke-width="6"
+              :show-text="false"
+              :color="getProgressColor(cmdbStats.memory_usage)"
+              style="margin-top: 8px;"
+            />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 图表和任务 - Bento Content Grid -->
-    <div class="bento-content">
+    <!-- 图表和任务 -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-4);">
       <!-- 系统概览图表 -->
-      <div class="bento-card chart-card">
-        <div class="bento-card-header">
-          <div class="bento-card-title">
-            <div class="bento-card-title-icon" style="background: linear-gradient(135deg, var(--color-primary-500), var(--color-secondary-500));">
-              <el-icon :size="16"><TrendCharts /></el-icon>
-            </div>
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="content-card-title">
+            <el-icon><TrendCharts /></el-icon>
             系统资源监控
           </div>
-          <div class="chart-legend" v-if="systemHealthData?.current">
-            <span class="legend-item">
-              <span class="legend-dot" style="background: var(--color-primary-500)"></span>
+          <div class="content-card-extra" v-if="systemHealthData?.current" style="display: flex; gap: var(--space-3); font-size: var(--text-xs);">
+            <span style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary);">
+              <span class="status-dot primary"></span>
               CPU {{ systemHealthData.current.cpu }}%
             </span>
-            <span class="legend-item">
-              <span class="legend-dot" style="background: var(--color-success)"></span>
+            <span style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary);">
+              <span class="status-dot success"></span>
               内存 {{ systemHealthData.current.memory }}%
             </span>
-            <span class="legend-item">
-              <span class="legend-dot" style="background: var(--color-secondary-500)"></span>
+            <span style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary);">
+              <span class="status-dot info"></span>
               磁盘 {{ systemHealthData.current.disk }}%
             </span>
           </div>
         </div>
-        <div class="bento-card-body">
+        <div class="content-card-body">
           <ChartView v-if="systemHealthData" :options="systemHealthOptions" height="280px" />
-          <div v-else class="bento-loading">
-            <div class="bento-loading-spinner"></div>
-            <span>加载中...</span>
+          <div v-else class="loading-state">
+            <el-icon class="is-loading"><Loading /></el-icon>
+            <div class="loading-state-text">加载中...</div>
           </div>
         </div>
       </div>
@@ -140,34 +147,38 @@
     </div>
 
     <!-- 最近任务 -->
-    <div class="bento-card task-card">
-      <div class="bento-card-header">
-        <div class="bento-card-title">
-          <div class="bento-card-title-icon" style="background: linear-gradient(135deg, var(--color-warning), var(--color-warning-dark));">
-            <el-icon :size="16"><Clock /></el-icon>
-          </div>
+    <div class="content-card" style="grid-column: span 2;">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><Clock /></el-icon>
           最近任务
         </div>
-        <router-link to="/task-history" class="bento-card-action">
-          查看全部
-          <el-icon :size="12"><ArrowRight /></el-icon>
-        </router-link>
+        <div class="content-card-extra">
+          <router-link to="/task-history">
+            <el-button text type="primary">
+              查看全部
+              <el-icon><ArrowRight /></el-icon>
+            </el-button>
+          </router-link>
+        </div>
       </div>
-      <div class="bento-card-body">
-        <div v-if="recentTasks.length" class="bento-list">
-          <div v-for="task in recentTasks" :key="task.id" class="bento-list-item">
-            <div class="bento-list-item-info">
-              <span class="bento-list-item-title">{{ task.name }}</span>
-              <span class="bento-list-item-subtitle">{{ task.created_at }}</span>
+      <div class="content-card-body">
+        <div v-if="recentTasks.length" style="display: flex; flex-direction: column; gap: var(--space-3);">
+          <div v-for="task in recentTasks" :key="task.id" style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-3); border-radius: var(--radius-lg); background: var(--bg-secondary);">
+            <div>
+              <div style="font-weight: var(--font-medium); color: var(--text-primary); margin-bottom: var(--space-1);">{{ task.name }}</div>
+              <div style="font-size: var(--text-sm); color: var(--text-tertiary);">{{ task.created_at }}</div>
             </div>
-            <span class="glass-tag" :class="`glass-tag-${getStatusClass(task.status)}`">
+            <span :class="`status-badge ${getStatusClass(task.status)}`">
               {{ getStatusText(task.status) }}
             </span>
           </div>
         </div>
-        <div v-else class="bento-empty">
-          <el-icon class="bento-empty-icon"><Document /></el-icon>
-          <span class="bento-empty-text">暂无任务记录</span>
+        <div v-else class="empty-state">
+          <div class="empty-state-icon">
+            <el-icon><Document /></el-icon>
+          </div>
+          <div class="empty-state-title">暂无任务记录</div>
         </div>
       </div>
     </div>
@@ -394,92 +405,26 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-}
-
-/* 图表卡片特殊样式 */
-.chart-card .bento-card-body {
-  padding: var(--spacing-4);
-}
-
-/* 图表图例 */
-.chart-legend {
-  display: flex;
-  gap: var(--spacing-4);
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-}
-
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-/* 任务卡片 */
-.task-card .bento-card-body {
-  max-height: 340px;
-  overflow-y: auto;
-}
-
-/* 指标子文本 */
-.bento-metric-sub {
-  font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
-  margin-left: var(--spacing-2);
-}
-
-/* 资源进度条 */
-.resource-progress {
-  margin-top: var(--spacing-2);
-  width: 100%;
-}
-
-.resource-progress :deep(.el-progress-bar__outer) {
-  background: var(--bg-hover);
-  border-radius: var(--radius-full);
-}
-
-.resource-progress :deep(.el-progress-bar__inner) {
-  border-radius: var(--radius-full);
-}
-
-/* 统计项增强 */
-.bento-stat-item {
-  padding: var(--spacing-4);
-  border-radius: var(--radius-lg);
-  text-align: center;
-}
-
-/* 响应式适配 */
+/* 网格布局自适应 */
 @media (max-width: 1200px) {
-  .bento-stats {
-    grid-template-columns: repeat(3, 1fr);
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
   }
 }
 
 @media (max-width: 768px) {
-  .bento-stats {
-    grid-template-columns: repeat(2, 1fr);
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
-  
-  .chart-legend {
-    display: none;
+
+  div[style*="grid-template-columns: 2fr 1fr"] {
+    grid-template-columns: 1fr !important;
   }
 }
 
 @media (max-width: 480px) {
-  .bento-stats {
-    grid-template-columns: 1fr;
+  .stats-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 </style>

@@ -137,24 +137,15 @@ services:
       ERNIE_API_URL: ${ERNIE_API_URL:-http://llms-se.baidu-int.com:8200/chat/completions}
       ERNIE_API_KEY: ${ERNIE_API_KEY:-}
       ERNIE_MODEL: ${ERNIE_MODEL:-ernie-4.5-8k-preview}
-      # AI 智能查询功能配置
-      VECTOR_DB_TYPE: ${VECTOR_DB_TYPE:-faiss}
-      VECTOR_DB_PATH: /app/vector_store
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-small-zh}
-      EMBEDDING_API_URL: ${EMBEDDING_API_URL:-}
-      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
-      MAX_QUERY_LENGTH: ${MAX_QUERY_LENGTH:-1000}
-      SQL_EXECUTION_TIMEOUT: ${SQL_EXECUTION_TIMEOUT:-5}
-      SESSION_TTL: ${SESSION_TTL:-1800}
       DEBUG: ${DEBUG:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8089}
-      # 代理配置（绕过代理访问内网服务）
+      # 代理配置（绕过代理访问内网服务和百度云控制台）
       # 注意：只绕过内网IP和百度内网域名，外部服务（飞书、如流）仍走代理
       HTTP_PROXY: http://agent.baidu.com:8891
       HTTPS_PROXY: http://agent.baidu.com:8891
-      NO_PROXY: localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,llms-se.baidu-int.com
-      no_proxy: localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,llms-se.baidu-int.com
-      WORKERS: ${WORKERS:-4}  # Worker 数量，默认 4（内网环境），外网可设置为 2
+      NO_PROXY: localhost,127.0.0.1,10.175.96.168,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,console.bce.baidu.com,llms-se.baidu-int.com
+      no_proxy: localhost,127.0.0.1,10.175.96.168,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,console.bce.baidu.com,llms-se.baidu-int.com
+      WORKERS: ${WORKERS:-2}  # Worker 数量，内网环境降低为2避免启动时耗尽MySQL连接池
       # 宿主机MySQL配置（用于查询集群信息）
       HOST_MYSQL_IP: ${HOST_MYSQL_IP:-host.docker.internal}
       PYTHONUNBUFFERED: 1
@@ -166,7 +157,6 @@ services:
       - backend_results:/app/results
       - backend_logs:/app/logs
       - backend_data:/app/data
-      - backend_vector_store:/app/vector_store
       - /data/HAS_file/changan:/app/alerts_source:ro  # 源文件目录（只读）
       - backend_alerts:/app/alerts  # 处理目录（读写，支持文件名修正）
       - /data/HAS_file:/data/HAS_file:ro
@@ -233,5 +223,4 @@ volumes:
   backend_results:
   backend_logs:
   backend_data:
-  backend_vector_store:
   backend_alerts:  # 新增：告警文件处理目录（读写，支持文件名修正）

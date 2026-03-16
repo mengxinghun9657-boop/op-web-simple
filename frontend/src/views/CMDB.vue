@@ -1,124 +1,156 @@
 <template>
-  <div class="cmdb-page">
-    <!-- 统计卡片 - 使用 StatCard 组件 -->
-    <div class="bento-metrics animate-slide-in-up">
-      <StatCard
-        title="物理服务器"
-        :value="stats.total_servers || 0"
-        icon="Monitor"
-        variant="primary"
-      />
-      <StatCard
-        title="虚拟实例"
-        :value="stats.total_instances || 0"
-        icon="Cpu"
-        variant="success"
-      />
-      <StatCard
-        title="vCPU总数"
-        :value="stats.resource_summary?.vcpus_total || 0"
-        icon="Odometer"
-        variant="info"
-      />
-      <StatCard
-        title="内存总量"
-        :value="`${stats.resource_summary?.memory_total_gb || 0} GB`"
-        icon="Coin"
-        variant="warning"
-      />
+  <div class="page-container">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><Grid /></el-icon>
+          </div>
+          CMDB 资源管理
+        </div>
+        <div class="page-subtitle">集中管理物理服务器和虚拟实例资源配置信息</div>
+      </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-card-label">物理服务器</div>
+          <div class="stat-card-icon primary">
+            <el-icon><Monitor /></el-icon>
+          </div>
+        </div>
+        <div class="stat-card-value">{{ stats.total_servers || 0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-card-label">虚拟实例</div>
+          <div class="stat-card-icon success">
+            <el-icon><Cpu /></el-icon>
+          </div>
+        </div>
+        <div class="stat-card-value">{{ stats.total_instances || 0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-card-label">vCPU总数</div>
+          <div class="stat-card-icon info">
+            <el-icon><Odometer /></el-icon>
+          </div>
+        </div>
+        <div class="stat-card-value">{{ stats.resource_summary?.vcpus_total || 0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-card-label">内存总量</div>
+          <div class="stat-card-icon warning">
+            <el-icon><Coin /></el-icon>
+          </div>
+        </div>
+        <div class="stat-card-value">{{ stats.resource_summary?.memory_total_gb || 0 }} GB</div>
+      </div>
     </div>
 
     <!-- 配置提示卡片 -->
-    <Card class="animate-slide-in-up permission-hint-card">
-      <div class="permission-hint">
-        <el-icon class="hint-icon"><Tools /></el-icon>
-        <div class="hint-content">
-          <h4>CMDB 配置管理</h4>
-          <p>CMDB 的 Cookie 配置、数据同步、定时同步等功能已统一到系统配置页面。</p>
-          <el-button type="primary" @click="handleGoToConfig" style="margin-top: 12px;">
+    <div class="content-card" style="background: linear-gradient(135deg, rgba(26, 115, 232, 0.05), rgba(26, 115, 232, 0.02)); border: 1px solid rgba(26, 115, 232, 0.2);">
+      <div class="content-card-body" style="display: flex; align-items: flex-start; gap: var(--space-4);">
+        <el-icon style="font-size: 32px; color: var(--primary); flex-shrink: 0; margin-top: 4px;"><Tools /></el-icon>
+        <div style="flex: 1;">
+          <h4 style="font-size: var(--text-base); font-weight: var(--font-semibold); color: var(--text-primary); margin: 0 0 var(--space-2);">CMDB 配置管理</h4>
+          <p style="font-size: var(--text-sm); color: var(--text-secondary); margin: 0 0 var(--space-3); line-height: 1.6;">
+            CMDB 的 Cookie 配置、数据同步、定时同步等功能已统一到系统配置页面。
+          </p>
+          <el-button type="primary" @click="handleGoToConfig">
             <el-icon><Tools /></el-icon>
             前往系统配置
           </el-button>
         </div>
       </div>
-    </Card>
+    </div>
 
-    <!-- 操作栏 - 使用 Card 组件 -->
-    <Card class="animate-slide-in-up">
-      <div class="cmdb-toolbar">
-        <div class="toolbar-left">
-          <el-input 
-            v-model="searchText" 
-            placeholder="搜索主机名/SN/IP/UUID（支持跨视图搜索）" 
-            clearable 
-            class="search-input"
-            @keyup.enter="handleSearch"
-          >
-            <template #prefix><el-icon><Search /></el-icon></template>
-          </el-input>
-          <el-select v-model="filterManufacturer" placeholder="服务器品牌" clearable @change="handleSearch">
-            <el-option v-for="m in filters.manufacturers" :key="m" :label="m" :value="m" />
-          </el-select>
-          <el-select v-model="filterNodeType" placeholder="节点类型" clearable @change="handleSearch">
-            <el-option v-for="n in filters.node_types" :key="n" :label="n" :value="n" />
-          </el-select>
-          <el-radio-group v-model="viewMode" @change="handleViewChange" class="view-toggle">
-            <el-radio-button value="servers">服务器视图</el-radio-button>
-            <el-radio-button value="instances">实例视图</el-radio-button>
-          </el-radio-group>
-        </div>
-        <div class="toolbar-right">
-          <!-- 配置管理按钮（仅管理员可见） -->
-          <el-button
-            v-if="isAdmin"
-            @click="handleGoToConfig"
-          >
-            <el-icon><Tools /></el-icon>
-            配置管理
-          </el-button>
-          <!-- 字段配置按钮 -->
-          <el-button @click="fieldConfigVisible = true">
-            <el-icon><Setting /></el-icon>
-            字段配置
-          </el-button>
-          <!-- 导入数据按钮 -->
-          <el-upload :show-file-list="false" :before-upload="handleImport" accept=".xlsx,.xls">
-            <el-dropdown split-button type="primary">
-              <el-icon><Upload /></el-icon>导入数据
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="importMode = 'update'">
-                    <el-icon><Refresh /></el-icon>更新模式（推荐）
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="importMode = 'replace'">
-                    <el-icon><Delete /></el-icon>覆盖模式
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </el-upload>
+    <!-- 操作栏 -->
+    <div class="content-card">
+      <div class="content-card-body"  style="padding: var(--space-4);"
+>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+          <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+            <div class="search-box">
+              <el-input
+                v-model="searchText"
+                placeholder="搜索主机名/SN/IP/UUID（支持跨视图搜索）"
+                clearable
+                @keyup.enter="handleSearch"
+              >
+                <template #prefix><el-icon><Search /></el-icon></template>
+              </el-input>
+            </div>
+            <el-select v-model="filterManufacturer" placeholder="服务器品牌" clearable @change="handleSearch" style="width: 160px;">
+              <el-option v-for="m in filters.manufacturers" :key="m" :label="m" :value="m" />
+            </el-select>
+            <el-select v-model="filterNodeType" placeholder="节点类型" clearable @change="handleSearch" style="width: 140px;">
+              <el-option v-for="n in filters.node_types" :key="n" :label="n" :value="n" />
+            </el-select>
+            <el-radio-group v-model="viewMode" @change="handleViewChange">
+              <el-radio-button value="servers">服务器视图</el-radio-button>
+              <el-radio-button value="instances">实例视图</el-radio-button>
+            </el-radio-group>
+          </div>
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <!-- 配置管理按钮（仅管理员可见） -->
+            <el-button
+              v-if="isAdmin"
+              @click="handleGoToConfig"
+            >
+              <el-icon><Tools /></el-icon>
+              配置管理
+            </el-button>
+            <!-- 字段配置按钮 -->
+            <el-button @click="fieldConfigVisible = true">
+              <el-icon><Setting /></el-icon>
+              字段配置
+            </el-button>
+            <!-- 导入数据按钮 - 修复对齐问题 -->
+            <div class="import-button-group">
+              <el-upload :show-file-list="false" :before-upload="handleImport" accept=".xlsx,.xls" class="import-upload">
+                <el-dropdown split-button type="primary" class="import-dropdown">
+                  <el-icon><Upload /></el-icon>导入数据
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item @click="importMode = 'update'">
+                        <el-icon><Refresh /></el-icon>更新模式（推荐）
+                      </el-dropdown-item>
+                      <el-dropdown-item @click="importMode = 'replace'">
+                        <el-icon><Delete /></el-icon>覆盖模式
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </el-upload>
+            </div>
+          </div>
         </div>
       </div>
-    </Card>
+    </div>
 
-    <!-- 数据表格 - 使用 Card 组件 -->
-    <Card
-      :title="viewMode === 'servers' ? '服务器列表' : '实例列表'"
-      icon="Grid"
-      class="bento-span-full animate-slide-in-up"
-    >
-      <template #header>
-        <span class="glass-tag glass-tag-primary">共 {{ total }} 条</span>
-      </template>
+    <!-- 数据表格 -->
+    <div class="table-container">
+      <div class="table-header">
+        <div class="table-title">{{ viewMode === 'servers' ? '服务器列表' : '实例列表' }}</div>
+        <div class="table-toolbar">
+          <span class="status-badge primary">共 {{ total }} 条</span>
+        </div>
+      </div>
       <div class="table-body">
         <!-- 服务器列表 - 动态列 -->
-        <el-table 
-          v-if="viewMode === 'servers'" 
-          :data="servers" 
-          v-loading="loading" 
+        <el-table
+          v-if="viewMode === 'servers'"
+          :data="servers"
+          v-loading="loading"
           @row-click="showServerDetail"
           @sort-change="handleSortChange"
-          class="modern-table"
+          class="google-table"
         >
           <el-table-column
             v-for="fieldConfig in currentFieldConfigs"
@@ -153,10 +185,12 @@
           <!-- 空状态插槽 -->
           <template #empty>
             <div class="empty-state">
-              <el-icon class="empty-icon"><FolderOpened /></el-icon>
-              <h3>暂无服务器数据</h3>
-              <p>请导入 Excel 文件或前往系统配置页面同步数据</p>
-              <div class="empty-actions">
+              <div class="empty-state-icon">
+                <el-icon><FolderOpened /></el-icon>
+              </div>
+              <div class="empty-state-title">暂无服务器数据</div>
+              <div class="empty-state-description">请导入 Excel 文件或前往系统配置页面同步数据</div>
+              <div style="display: flex; gap: var(--space-2); margin-top: var(--space-4);">
                 <el-upload :show-file-list="false" :before-upload="handleImport" accept=".xlsx,.xls">
                   <el-button type="primary">
                     <el-icon><Upload /></el-icon>
@@ -173,7 +207,7 @@
         </el-table>
 
         <!-- 实例列表 - 动态列 -->
-        <el-table v-else :data="instances" v-loading="loading" class="modern-table">
+        <el-table v-else :data="instances" v-loading="loading" class="google-table">
           <el-table-column
             v-for="fieldConfig in currentFieldConfigs"
             :key="fieldConfig.key"
@@ -207,10 +241,12 @@
           <!-- 空状态插槽 -->
           <template #empty>
             <div class="empty-state">
-              <el-icon class="empty-icon"><FolderOpened /></el-icon>
-              <h3>暂无实例数据</h3>
-              <p>请导入 Excel 文件或前往系统配置页面同步数据</p>
-              <div class="empty-actions">
+              <div class="empty-state-icon">
+                <el-icon><FolderOpened /></el-icon>
+              </div>
+              <div class="empty-state-title">暂无实例数据</div>
+              <div class="empty-state-description">请导入 Excel 文件或前往系统配置页面同步数据</div>
+              <div style="display: flex; gap: var(--space-2); margin-top: var(--space-4);">
                 <el-upload :show-file-list="false" :before-upload="handleImport" accept=".xlsx,.xls">
                   <el-button type="primary">
                     <el-icon><Upload /></el-icon>
@@ -227,21 +263,24 @@
         </el-table>
 
         <!-- 分页 -->
-        <div class="table-pagination">
-          <el-pagination 
-            v-model:current-page="page" 
-            v-model:page-size="pageSize" 
-            :total="total"
-            :page-sizes="[20, 50, 100]" 
-            layout="total, sizes, prev, pager, next" 
-            @change="fetchData" 
-          />
+        <div class="table-footer">
+          <div>共 {{ total }} 条</div>
+          <div class="google-pagination">
+            <el-pagination
+              v-model:current-page="page"
+              v-model:page-size="pageSize"
+              :total="total"
+              :page-sizes="[20, 50, 100]"
+              layout="total, sizes, prev, pager, next"
+              @change="fetchData"
+            />
+          </div>
         </div>
       </div>
-    </Card>
+    </div>
 
     <!-- 服务器详情抽屉 -->
-    <el-drawer v-model="drawerVisible" :title="currentServer?.bns_hostname" size="60%" class="modern-drawer">
+    <el-drawer v-model="drawerVisible" :title="currentServer?.bns_hostname" size="60%" class="google-drawer">
       <template v-if="currentServer">
         <el-descriptions :column="2" border class="modern-descriptions">
           <el-descriptions-item label="主机名">{{ currentServer.bns_hostname }}</el-descriptions-item>
@@ -335,7 +374,6 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElLoading } from 'element-plus'
 import { Monitor, Cpu, Odometer, Coin, Search, Upload, Refresh, Delete, Grid, DocumentCopy, Setting, Tools, FolderOpened } from '@element-plus/icons-vue'
-import { Card, StatCard } from '@/components/common'
 import FieldConfigDialog from '@/components/cmdb/FieldConfigDialog.vue'
 import { getAllFields, getDefaultVisibleFields } from '@/config/cmdbFields'
 import { useUserStore } from '@/stores/user'
@@ -691,92 +729,39 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.cmdb-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-  animation: slideInUp var(--duration-slow) var(--ease-out);
+/* 所有样式已由 google-pages.css 统一提供 */
+/* 只保留页面特定的特殊样式 */
+
+/* 搜索框宽度 */
+.search-box :deep(.el-input) {
+  width: 350px;
 }
 
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 工具栏 */
-.cmdb-toolbar {
-  display: flex;
-  justify-content: space-between;
+/* 导入按钮组 - 修复对齐问题 */
+.import-button-group {
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-4);
 }
 
-.toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-  flex-wrap: wrap;
+.import-upload {
+  display: inline-block;
+  line-height: normal;
 }
 
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
+.import-upload :deep(.el-upload) {
+  display: inline-block;
+  line-height: normal;
 }
 
-.search-input {
-  width: 250px;
+.import-dropdown {
+  vertical-align: middle;
 }
 
-.view-toggle {
-  margin-left: var(--spacing-2);
-}
-
-/* 表格容器 */
-.table-body {
-  padding: 0;
-}
-
-.table-pagination {
-  display: flex;
-  justify-content: flex-end;
-  padding: var(--spacing-4);
-  border-top: 1px solid var(--border-color);
-}
-
-/* 单元格包装器 - 确保 tooltip 定位正确 */
-.cell-wrapper {
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 资源单元格 */
-.resource-cell {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-1);
-}
-
-.resource-text {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-}
-
-/* 可复制单元格 */
+/* 可复制单元格样式 */
 .copyable-cell {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
-  position: relative;
+  gap: var(--space-2);
 }
 
 .copyable-cell .cell-text {
@@ -788,9 +773,9 @@ onMounted(() => {
 
 .copyable-cell .copy-icon {
   opacity: 0;
-  transition: opacity var(--transition-fast);
+  transition: opacity var(--duration-normal);
   cursor: pointer;
-  color: var(--color-primary);
+  color: var(--primary);
   font-size: 14px;
   flex-shrink: 0;
 }
@@ -800,198 +785,13 @@ onMounted(() => {
 }
 
 .copyable-cell .copy-icon:hover {
-  color: var(--color-primary-hover);
+  color: var(--primary-hover);
   transform: scale(1.1);
 }
 
-.copyable-cell .copy-icon:active {
-  transform: scale(0.95);
-}
-
-/* 现代表格样式 */
-.modern-table {
-  --el-table-bg-color: transparent;
-  --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: var(--bg-elevated);
-  --el-table-row-hover-bg-color: var(--bg-spotlight);
-  --el-table-border-color: var(--border-color);
-}
-
-.modern-table :deep(.el-table__inner-wrapper::before) {
-  background-color: var(--border-color);
-}
-
-.modern-table :deep(th.el-table__cell) {
-  background-color: var(--bg-elevated);
-  color: var(--text-primary);
-  font-weight: 600;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.modern-table :deep(td.el-table__cell) {
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-
-.modern-table :deep(.el-table__row) {
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-}
-
-.modern-table :deep(.el-table__row:hover td.el-table__cell) {
-  background-color: var(--bg-spotlight);
-}
-
-/* 抽屉样式 */
-.modern-drawer :deep(.el-drawer) {
-  background-color: var(--bg-container);
-}
-
-.modern-drawer :deep(.el-drawer__header) {
-  color: var(--text-primary);
-  margin-bottom: 0;
-  padding: var(--spacing-4) var(--spacing-5);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.modern-drawer :deep(.el-drawer__body) {
-  padding: var(--spacing-5);
-  background-color: var(--bg-container);
-}
-
-/* 描述列表 */
-.modern-descriptions {
-  margin-bottom: var(--spacing-6);
-}
-
-.modern-descriptions :deep(.el-descriptions__label) {
-  background-color: var(--bg-elevated);
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.modern-descriptions :deep(.el-descriptions__content) {
-  background-color: var(--bg-container);
-  color: var(--text-primary);
-}
-
-.modern-descriptions :deep(.el-descriptions__cell) {
-  border-color: var(--border-color);
-}
-
-/* 抽屉内部区块 */
-.drawer-section {
-  margin-top: var(--spacing-6);
-}
-
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-4);
-}
-
-/* 响应式 */
-@media (max-width: 1200px) {
-  .toolbar-left {
-    width: 100%;
-  }
-  
-  .search-input {
-    width: 200px;
-  }
-}
-
 @media (max-width: 768px) {
-  .cmdb-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .toolbar-left {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .search-input {
+  .search-box :deep(.el-input) {
     width: 100%;
   }
-  
-  .view-toggle {
-    margin-left: 0;
-  }
-}
-
-/* 权限提示卡片 */
-.permission-hint-card {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(147, 51, 234, 0.05));
-  border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-.permission-hint {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-4);
-  padding: var(--spacing-4);
-}
-
-.permission-hint .hint-icon {
-  font-size: 32px;
-  color: var(--color-primary-500);
-  flex-shrink: 0;
-  margin-top: var(--spacing-1);
-}
-
-.permission-hint .hint-content h4 {
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-2);
-}
-
-.permission-hint .hint-content p {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  margin: 0;
-  line-height: 1.6;
-}
-
-/* 空状态样式 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-16) var(--spacing-8);
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 64px;
-  color: var(--text-tertiary);
-  margin-bottom: var(--spacing-4);
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-2);
-}
-
-.empty-state p {
-  font-size: var(--font-size-sm);
-  color: var(--text-tertiary);
-  margin: 0 0 var(--spacing-6);
-}
-
-.empty-actions {
-  display: flex;
-  gap: var(--spacing-3);
-  align-items: center;
 }
 </style>

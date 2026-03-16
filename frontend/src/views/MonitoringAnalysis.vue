@@ -1,7 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { Monitor, Connection, Coin, Folder, ArrowRight } from '@element-plus/icons-vue'
-import { Card } from '@/components/common'
 
 const router = useRouter()
 
@@ -40,92 +39,50 @@ const navigateTo = (path) => router.push(path)
 </script>
 
 <template>
-  <div class="monitoring-analysis-page">
-    <!-- 页面标题 -->
+  <div class="page-container">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <div class="page-header-icon">
-        <el-icon :size="24"><Monitor /></el-icon>
-      </div>
-      <div class="page-header-content">
-        <h2 class="page-title">监控数据分析中心</h2>
-        <p class="page-subtitle">EIP带宽 · BOS存储 · BCC实例 · PFS文件系统监控</p>
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><Monitor /></el-icon>
+          </div>
+          监控数据分析中心
+        </div>
+        <div class="page-subtitle">EIP带宽 · BOS存储 · BCC实例 · PFS文件系统监控</div>
       </div>
     </div>
 
     <!-- 监控模块卡片 -->
     <div class="monitoring-modules">
-      <Card
+      <div
         v-for="mod in modules"
         :key="mod.path"
-        :title="mod.title"
-        :icon="mod.icon"
-        class="module-card animate-slide-in-up"
+        class="content-card module-card"
         @click="navigateTo(mod.path)"
       >
-        <template #header>
-          <el-icon class="arrow-icon">
-            <ArrowRight />
-          </el-icon>
-        </template>
-        <p class="module-desc">{{ mod.desc }}</p>
-      </Card>
+        <div class="content-card-header">
+          <div class="content-card-title">
+            <el-icon><component :is="mod.icon" /></el-icon>
+            {{ mod.title }}
+          </div>
+          <div class="content-card-extra">
+            <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+          </div>
+        </div>
+        <div class="content-card-body">
+          <p class="module-desc">{{ mod.desc }}</p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.monitoring-analysis-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-  animation: slideInUp var(--duration-slow) var(--ease-out);
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-4);
-}
-
-.page-header-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--color-primary-500), var(--color-secondary-500));
-  border-radius: var(--radius-lg);
-  color: white;
-}
-
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.page-subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--text-tertiary);
-  margin: var(--spacing-1) 0 0;
-}
-
 .monitoring-modules {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--spacing-6);
+  gap: var(--space-6);
 }
 
 .module-card {
@@ -135,7 +92,7 @@ const navigateTo = (path) => router.push(path)
 
 .module-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 24px rgba(26, 115, 232, 0.15);
 }
 
 .arrow-icon {
@@ -144,12 +101,12 @@ const navigateTo = (path) => router.push(path)
 }
 
 .module-card:hover .arrow-icon {
-  color: var(--color-primary);
+  color: var(--primary);
   transform: translateX(4px);
 }
 
 .module-desc {
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   line-height: 1.6;
   margin: 0;

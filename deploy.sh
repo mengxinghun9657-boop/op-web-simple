@@ -286,24 +286,52 @@ echo "⚙️  初始化系统配置..."
 if [ -f "backend/config/default_instance_ids.json" ]; then
     echo "📋 复制默认配置文件..."
     BACKEND_CONTAINER=$(docker compose -f docker-compose.prod.yml ps -q backend)
-    docker cp backend/config/default_instance_ids.json "${BACKEND_CONTAINER}:/app/config/default_instance_ids.json" || {
-        echo -e "${YELLOW}⚠️  配置文件复制失败${NC}"
-    }
+
+    if [ -z "$BACKEND_CONTAINER" ]; then
+        echo -e "${RED}❌ 错误: Backend容器未运行${NC}"
+        echo -e "${YELLOW}   请检查容器状态: docker compose -f docker-compose.prod.yml ps${NC}"
+        exit 1
+    fi
+
+    if docker cp backend/config/default_instance_ids.json "${BACKEND_CONTAINER}:/app/config/default_instance_ids.json"; then
+        echo -e "${GREEN}✓ 配置文件复制成功${NC}"
+
+        # 验证文件是否存在
+        if docker compose -f docker-compose.prod.yml exec -T backend test -f /app/config/default_instance_ids.json; then
+            echo -e "${GREEN}✓ 验证配置文件存在于容器内${NC}"
+        else
+            echo -e "${YELLOW}⚠️  警告: 配置文件复制后验证失败${NC}"
+        fi
+    else
+        echo -e "${RED}❌ 错误: 配置文件复制失败${NC}"
+        echo -e "${YELLOW}   请检查容器状态和权限${NC}"
+        exit 1
+    fi
 else
-    echo -e "${YELLOW}⚠️  未找到 default_instance_ids.json，将跳过默认配置初始化${NC}"
+    echo -e "${RED}❌ 错误: 未找到 backend/config/default_instance_ids.json${NC}"
+    echo -e "${YELLOW}   配置初始化将被跳过，监控和分析功能将无默认配置${NC}"
+    exit 1
 fi
 
 # 等待后端服务完全启动
 sleep 10
-docker compose -f docker-compose.prod.yml exec -T backend python3 init_system_configs.py || {
-    echo -e "${YELLOW}⚠️  系统配置初始化失败，请手动执行${NC}"
-}
+
+# 执行初始化
+echo "🔧 执行系统配置初始化..."
+if docker compose -f docker-compose.prod.yml exec -T backend python3 init_system_configs.py; then
+    echo -e "${GREEN}✓ 系统配置初始化成功${NC}"
+else
+    echo -e "${RED}❌ 系统配置初始化失败${NC}"
+    echo -e "${YELLOW}   请查看详细日志:${NC}"
+    echo -e "${YELLOW}   docker compose -f docker-compose.prod.yml logs backend --tail=100 | grep -i 'init_system\\|系统配置'${NC}"
+    exit 1
+fi
 
 # 导入故障手册
 echo ""
 echo "📚 导入故障手册..."
 # 1. 在容器内创建knowledge目录
-docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /knowledge 2>/dev/null || true
+docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /app/knowledge 2>/dev/null || true
 
 # 2. 复制故障手册文件到容器（优先CSV）
 CSV_FILE="knowledge/故障维修手册.csv"
@@ -311,26 +339,26 @@ MD_FILE="knowledge/故障维修手册.md"
 
 if [ -f "$CSV_FILE" ]; then
     echo "  ✅ 发现CSV格式手册，优先使用..."
-    docker cp "$CSV_FILE" $(docker compose -f docker-compose.prod.yml ps -q backend):/knowledge/故障维修手册.csv
+    docker cp "$CSV_FILE" $(docker compose -f docker-compose.prod.yml ps -q backend):/app/knowledge/故障维修手册.csv
     echo "  ✓ CSV文件已复制"
 elif [ -f "$MD_FILE" ]; then
     echo "  ⚠️  仅发现MD格式手册，使用降级方案..."
-    docker cp "$MD_FILE" $(docker compose -f docker-compose.prod.yml ps -q backend):/knowledge/故障维修手册.md
+    docker cp "$MD_FILE" $(docker compose -f docker-compose.prod.yml ps -q backend):/app/knowledge/故障维修手册.md
     echo "  ✓ MD文件已复制"
 else
     echo -e "${YELLOW}⚠️  未找到故障手册文件${NC}"
     echo "  跳过手册导入"
 fi
 
-# 3. 复制导入脚本到容器
+# 3. 复制导入脚本到容器并执行
 if [ -f "backend/scripts/import_fault_manual.py" ]; then
-    docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /app/backend/scripts 2>/dev/null || true
-    docker cp backend/scripts/import_fault_manual.py $(docker compose -f docker-compose.prod.yml ps -q backend):/app/backend/scripts/
+    docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /app/scripts 2>/dev/null || true
+    docker cp backend/scripts/import_fault_manual.py $(docker compose -f docker-compose.prod.yml ps -q backend):/app/scripts/
     echo "  ✓ 导入脚本已复制"
-    
-    # 4. 调用导入脚本（自动优先使用CSV）
+
+    # 4. 调用导入脚本（从/app目录执行）
     echo "  导入手册数据到数据库..."
-    docker compose -f docker-compose.prod.yml exec -T backend bash -c "cd /app && python3 backend/scripts/import_fault_manual.py" && \
+    docker compose -f docker-compose.prod.yml exec -T backend python3 /app/scripts/import_fault_manual.py && \
     echo -e "${GREEN}✓ 故障手册导入成功${NC}" || \
     echo -e "${YELLOW}⚠️  故障手册导入失败，请手动导入${NC}"
     
@@ -395,13 +423,6 @@ else
     echo -e "${YELLOW}⚠️  未找到导入脚本: backend/scripts/import_fault_manual.py${NC}"
     echo "  跳过手册导入"
 fi
-
-# 初始化路由规则模板
-echo ""
-echo "📋 初始化路由规则模板..."
-docker compose -f docker-compose.prod.yml exec -T backend python3 scripts/init_rule_templates.py && \
-echo -e "${GREEN}✓ 路由规则模板初始化成功${NC}" || \
-echo -e "${YELLOW}⚠️  路由规则模板初始化失败或已存在，跳过${NC}"
 
 # 询问是否配置宿主机MySQL
 echo ""

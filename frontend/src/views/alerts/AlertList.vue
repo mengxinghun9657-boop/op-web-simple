@@ -1,20 +1,28 @@
 <template>
-  <div class="alert-list-container">
-    <!-- 页面标题 -->
+  <div class="page-container">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <h1 class="page-title">硬件告警管理</h1>
-      <p class="page-description">实时监控硬件告警,快速定位和诊断问题</p>
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><Bell /></el-icon>
+          </div>
+          硬件告警管理
+        </div>
+        <div class="page-subtitle">实时监控硬件告警,快速定位和诊断问题</div>
+      </div>
     </div>
 
     <!-- 筛选器 -->
-    <el-card class="filter-card" shadow="never">
-      <el-form :model="filters" inline>
-        <el-form-item label="告警类型">
+    <div class="filter-section">
+      <el-form :model="filters" class="filter-row">
+        <div class="filter-item">
+          <span class="filter-item-label">告警类型</span>
           <el-select
             v-model="filters.alert_type"
             placeholder="全部"
             clearable
-            style="width: 180px"
+            style="width: 100%"
           >
             <el-option
               v-for="type in filterOptions.alert_types"
@@ -23,27 +31,29 @@
               :value="type"
             />
           </el-select>
-        </el-form-item>
+        </div>
 
-        <el-form-item label="严重程度">
+        <div class="filter-item">
+          <span class="filter-item-label">严重程度</span>
           <el-select
             v-model="filters.severity"
             placeholder="全部"
             clearable
-            style="width: 150px"
+            style="width: 100%"
           >
             <el-option label="Critical" value="critical" />
             <el-option label="Warning" value="warning" />
             <el-option label="Info" value="info" />
           </el-select>
-        </el-form-item>
+        </div>
 
-        <el-form-item label="组件类型">
+        <div class="filter-item">
+          <span class="filter-item-label">组件类型</span>
           <el-select
             v-model="filters.component"
             placeholder="全部"
             clearable
-            style="width: 150px"
+            style="width: 100%"
           >
             <el-option
               v-for="comp in filterOptions.components"
@@ -52,14 +62,15 @@
               :value="comp"
             />
           </el-select>
-        </el-form-item>
+        </div>
 
-        <el-form-item label="处理状态">
+        <div class="filter-item">
+          <span class="filter-item-label">处理状态</span>
           <el-select
             v-model="filters.status"
             placeholder="全部"
             clearable
-            style="width: 150px"
+            style="width: 100%"
           >
             <el-option
               v-for="stat in filterOptions.statuses"
@@ -68,21 +79,22 @@
               :value="stat"
             />
           </el-select>
-        </el-form-item>
+        </div>
 
-        <el-form-item label="时间范围">
+        <div class="filter-item" style="min-width: 360px;">
+          <span class="filter-item-label">时间范围</span>
           <el-date-picker
             v-model="dateRange"
             type="datetimerange"
             range-separator="至"
             start-placeholder="开始时间"
             end-placeholder="结束时间"
-            style="width: 360px"
+            style="width: 100%"
             @change="handleDateRangeChange"
           />
-        </el-form-item>
+        </div>
 
-        <el-form-item>
+        <div class="filter-actions">
           <el-button type="primary" @click="handleSearch">
             <el-icon><Search /></el-icon>
             查询
@@ -91,205 +103,166 @@
             <el-icon><Refresh /></el-icon>
             重置
           </el-button>
-        </el-form-item>
+        </div>
       </el-form>
-    </el-card>
+    </div>
 
     <!-- 告警列表 -->
-    <el-card class="table-card" shadow="never">
-      <!-- 操作栏 -->
-      <div class="table-toolbar" style="margin-bottom: 16px;">
-        <el-button
-          type="warning"
-          :icon="Notification"
-          @click="handleBatchResendNotifications"
-          :loading="batchResending"
-        >
-          批量补发通知（全部）
-        </el-button>
-        <el-button
-          type="primary"
-          :icon="Notification"
-          @click="handleSelectedResendNotifications"
-          :disabled="selectedAlerts.length === 0"
-          :loading="batchResending"
-        >
-          补发选中通知（{{ selectedAlerts.length }}）
-        </el-button>
-        <el-button
-          type="success"
-          :icon="Edit"
-          @click="handleDetectAndCorrectClusterIds"
-          :loading="batchCorrecting"
-        >
-          检测并修正cluster_id
-        </el-button>
-        <el-tooltip
-          content="从宿主机数据库查询正确的cluster_id，修正容器内数据库的告警记录"
-          placement="top"
-        >
-          <el-icon style="margin-left: 8px; cursor: help;">
-            <QuestionFilled />
-          </el-icon>
-        </el-tooltip>
+    <div class="table-container">
+      <!-- 表头 -->
+      <div class="table-header">
+        <div class="table-title">告警列表</div>
+        <div class="table-toolbar">
+          <el-button
+            type="warning"
+            :icon="Notification"
+            @click="handleBatchResendNotifications"
+            :loading="batchResending"
+          >
+            批量补发通知（全部）
+          </el-button>
+          <el-button
+            type="primary"
+            :icon="Notification"
+            @click="handleSelectedResendNotifications"
+            :disabled="selectedAlerts.length === 0"
+            :loading="batchResending"
+          >
+            补发选中通知（{{ selectedAlerts.length }}）
+          </el-button>
+          <el-button
+            type="success"
+            :icon="Edit"
+            @click="handleDetectAndCorrectClusterIds"
+            :loading="batchCorrecting"
+          >
+            检测并修正cluster_id
+          </el-button>
+          <el-tooltip
+            content="从宿主机数据库查询正确的cluster_id，修正容器内数据库的告警记录"
+            placement="top"
+          >
+            <el-icon style="margin-left: 8px; cursor: help; color: var(--text-tertiary);">
+              <QuestionFilled />
+            </el-icon>
+          </el-tooltip>
+        </div>
       </div>
 
-      <!-- 首次加载：显示骨架屏 -->
-      <el-skeleton 
-        v-if="loading && !alertList.length" 
-        :rows="10" 
-        animated 
-        class="skeleton-table"
-      />
-      
-      <!-- 数据加载完成：显示表格 -->
-      <el-table
-        v-else-if="alertList.length > 0"
-        v-loading="loading"
-        :data="alertList"
-        stripe
-        style="width: 100%"
-        @row-click="handleRowClick"
-        @selection-change="handleSelectionChange"
-        @sort-change="handleSortChange"
-        class="alert-table"
-        aria-label="硬件告警列表"
-      >
-        <el-table-column type="selection" width="55" />
-        
-        <el-table-column prop="id" label="ID" width="80" sortable="custom" />
-        
-        <el-table-column prop="alert_type" label="告警类型" min-width="180" sortable="custom" />
-        
-        <el-table-column prop="component" label="组件" width="120" sortable="custom">
-          <template #default="{ row }">
-            <el-tag :type="getComponentTagType(row.component)" size="small">
-              {{ row.component }}
-            </el-tag>
-          </template>
-        </el-table-column>
+      <!-- 表格主体 -->
+      <div class="table-body">
+        <!-- 首次加载：显示骨架屏 -->
+        <el-skeleton
+          v-if="loading && !alertList.length"
+          :rows="10"
+          animated
+        />
 
-        <el-table-column prop="severity" label="严重程度" width="120" sortable="custom">
-          <template #default="{ row }">
-            <el-tag 
-              :type="getSeverityTagType(row.severity)" 
-              size="small"
-              :aria-label="`严重程度：${getSeverityLabel(row.severity)}`"
-            >
-              {{ getSeverityLabel(row.severity) }}
-            </el-tag>
-          </template>
-        </el-table-column>
+        <!-- 数据加载完成：显示表格 -->
+        <el-table
+          v-else-if="alertList.length > 0"
+          v-loading="loading"
+          :data="alertList"
+          @row-click="handleRowClick"
+          @selection-change="handleSelectionChange"
+          @sort-change="handleSortChange"
+          class="google-table"
+          aria-label="硬件告警列表"
+        >
+          <el-table-column type="selection" width="55" />
 
-        <el-table-column prop="ip" label="节点IP" width="140" sortable="custom" />
-        
-        <el-table-column prop="cluster_id" label="集群ID" width="150" show-overflow-tooltip sortable="custom" />
-        
-        <el-table-column prop="timestamp" label="发生时间" width="180" sortable="custom">
-          <template #default="{ row }">
-            {{ formatDateTime(row.timestamp) }}
-          </template>
-        </el-table-column>
+          <el-table-column prop="id" label="ID" width="80" sortable="custom" />
 
-        <el-table-column prop="status" label="状态" width="120" sortable="custom">
-          <template #default="{ row }">
-            <el-tag 
-              :type="getStatusTagType(row.status)" 
-              size="small"
-              :class="{ 'resolved-tag': row.status === 'resolved' }"
-            >
-              {{ statusLabels[row.status] }}
-            </el-tag>
-          </template>
-        </el-table-column>
+          <el-table-column prop="alert_type" label="告警类型" min-width="180" sortable="custom" />
 
-        <el-table-column label="诊断" width="80" align="center">
-          <template #default="{ row }">
-            <el-icon 
-              v-if="row.has_diagnosis" 
-              color="#67C23A" 
-              :size="18"
-              aria-label="已诊断"
-            >
-              <CircleCheck />
-            </el-icon>
-            <el-icon 
-              v-else 
-              color="#909399" 
-              :size="18"
-              aria-label="未诊断"
-            >
-              <CircleClose />
-            </el-icon>
-          </template>
-        </el-table-column>
+          <el-table-column prop="component" label="组件" width="120" sortable="custom">
+            <template #default="{ row }">
+              <span :class="`status-badge ${getComponentBadgeClass(row.component)}`">
+                {{ row.component }}
+              </span>
+            </template>
+          </el-table-column>
 
-        <el-table-column label="操作" width="380" fixed="right">
-          <template #default="{ row }">
-            <div class="action-buttons">
-              <el-button
-                type="primary"
-                size="small"
-                @click.stop="handleViewDetail(row.id)"
-                aria-label="查看告警详情"
-                class="action-btn"
+          <el-table-column prop="severity" label="严重程度" width="120" sortable="custom">
+            <template #default="{ row }">
+              <span
+                :class="`status-badge ${getSeverityBadgeClass(row.severity)}`"
+                :aria-label="`严重程度：${getSeverityLabel(row.severity)}`"
               >
-                查看详情
-              </el-button>
-              <el-button
-                type="primary"
-                size="small"
-                :icon="Edit"
-                @click.stop="handleChangeStatus(row)"
-                aria-label="修改状态"
-                class="action-btn"
+                <span :class="`status-dot ${getSeverityBadgeClass(row.severity)}`"></span>
+                {{ getSeverityLabel(row.severity) }}
+              </span>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="ip" label="节点IP" width="140" sortable="custom" />
+
+          <el-table-column prop="cluster_id" label="集群ID" width="150" show-overflow-tooltip sortable="custom" />
+
+          <el-table-column prop="timestamp" label="发生时间" width="180" sortable="custom">
+            <template #default="{ row }">
+              {{ formatDateTime(row.timestamp) }}
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="status" label="状态" width="120" sortable="custom">
+            <template #default="{ row }">
+              <span
+                :class="`status-badge ${getStatusBadgeClass(row.status)}`"
               >
-                修改状态
-              </el-button>
-              <el-button
-                type="primary"
-                size="small"
-                :icon="EditPen"
-                @click.stop="handleEditAlert(row)"
-                aria-label="编辑告警字段"
-                class="action-btn"
+                <span :class="`status-dot ${getStatusBadgeClass(row.status)}`"></span>
+                {{ statusLabels[row.status] }}
+              </span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="诊断" width="80" align="center">
+            <template #default="{ row }">
+              <el-icon
+                v-if="row.has_diagnosis"
+                :size="18"
+                aria-label="已诊断"
+                style="color: var(--color-success);"
               >
-                编辑字段
-              </el-button>
-              <el-button
-                type="primary"
-                size="small"
-                :icon="EditPen"
-                @click.stop="handleAddNote(row)"
-                aria-label="添加备注"
-                class="action-btn"
+                <CircleCheck />
+              </el-icon>
+              <el-icon
+                v-else
+                :size="18"
+                aria-label="未诊断"
+                style="color: var(--text-disabled);"
               >
-                添加备注
-              </el-button>
-              <el-button
-                type="primary"
-                size="small"
-                @click.stop="handleDiagnose(row.id)"
-                :loading="diagnosingIds.includes(row.id)"
-                aria-label="重新诊断告警"
-                class="action-btn"
-              >
-                重新诊断
-              </el-button>
-              <el-button
-                type="primary"
-                size="small"
-                @click.stop="handleCreateICafeCard(row)"
-                aria-label="创建iCafe卡片"
-                class="action-btn"
-              >
-                创建卡片
-              </el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
-      
+                <CircleClose />
+              </el-icon>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="操作" width="380" fixed="right">
+            <template #default="{ row }">
+              <div class="action-buttons">
+                <button class="action-btn" @click.stop="handleViewDetail(row.id)" aria-label="查看告警详情">
+                  查看详情
+                </button>
+                <button class="action-btn" @click.stop="handleChangeStatus(row)" aria-label="修改状态">
+                  修改状态
+                </button>
+                <button class="action-btn" @click.stop="handleEditAlert(row)" aria-label="编辑告警字段">
+                  编辑字段
+                </button>
+                <button class="action-btn" @click.stop="handleAddNote(row)" aria-label="添加备注">
+                  添加备注
+                </button>
+                <button class="action-btn" @click.stop="handleDiagnose(row.id)" :disabled="diagnosingIds.includes(row.id)" aria-label="重新诊断告警">
+                  {{ diagnosingIds.includes(row.id) ? '诊断中...' : '重新诊断' }}
+                </button>
+                <button class="action-btn" @click.stop="handleCreateICafeCard(row)" aria-label="创建iCafe卡片">
+                  创建卡片
+                </button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+
       <!-- 空状态 -->
       <el-empty
         v-else-if="!loading && !alertList.length"
@@ -301,17 +274,17 @@
             {{ hasFilters ? '尝试调整筛选条件' : '系统运行正常，暂无硬件告警' }}
           </p>
         </template>
-        
+
         <template #default>
-          <el-button 
-            v-if="hasFilters" 
-            type="primary" 
+          <el-button
+            v-if="hasFilters"
+            type="primary"
             @click="handleReset"
           >
             <el-icon><Refresh /></el-icon>
             清除筛选
           </el-button>
-          <el-button 
+          <el-button
             v-else
             @click="fetchAlerts"
           >
@@ -320,20 +293,24 @@
           </el-button>
         </template>
       </el-empty>
+      </div>
 
       <!-- 分页 -->
-      <div v-if="alertList.length > 0" class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.page_size"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+      <div v-if="alertList.length > 0" class="table-footer">
+        <div>共 {{ pagination.total }} 条</div>
+        <div class="google-pagination">
+          <el-pagination
+            v-model:current-page="pagination.page"
+            v-model:page-size="pagination.page_size"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="pagination.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
+          />
+        </div>
       </div>
-    </el-card>
+    </div>
 
     <!-- 编辑告警字段对话框 -->
     <el-dialog
@@ -341,12 +318,14 @@
       title="编辑告警字段"
       width="600px"
       :close-on-click-modal="false"
+      class="google-dialog"
     >
       <el-form
         ref="editFormRef"
         :model="editForm"
         :rules="editFormRules"
-        label-width="100px"
+        label-position="top"
+        class="google-form"
         @submit.prevent="handleEditSubmit"
       >
         <el-form-item label="告警ID">
@@ -433,23 +412,26 @@
       title="修改告警状态"
       width="500px"
       :close-on-click-modal="false"
+      class="google-dialog"
     >
       <el-form
         ref="statusFormRef"
         :model="statusForm"
-        label-width="100px"
+        label-position="top"
+        class="google-form"
         @submit.prevent="handleStatusSubmit"
       >
         <el-form-item label="告警类型">
           <el-input v-model="statusForm.alertType" readonly />
         </el-form-item>
-        
+
         <el-form-item label="当前状态">
-          <el-tag :type="getStatusTagType(statusForm.currentStatus)">
+          <span :class="`status-badge ${getStatusBadgeClass(statusForm.currentStatus)}`">
+            <span :class="`status-dot ${getStatusBadgeClass(statusForm.currentStatus)}`"></span>
             {{ statusLabels[statusForm.currentStatus] }}
-          </el-tag>
+          </span>
         </el-form-item>
-        
+
         <el-form-item label="新状态" required>
           <el-select v-model="statusForm.newStatus" style="width: 100%">
             <el-option label="待处理" value="pending" />
@@ -461,14 +443,12 @@
           </el-select>
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="handleStatusCancel">取消</el-button>
-          <el-button type="primary" @click="handleStatusSubmit">
-            确定
-          </el-button>
-        </div>
+        <el-button @click="handleStatusCancel">取消</el-button>
+        <el-button type="primary" @click="handleStatusSubmit">
+          确定
+        </el-button>
       </template>
     </el-dialog>
 
@@ -478,17 +458,19 @@
       title="添加告警备注"
       width="600px"
       :close-on-click-modal="false"
+      class="google-dialog"
     >
       <el-form
         ref="noteFormRef"
         :model="noteForm"
-        label-width="100px"
+        label-position="top"
+        class="google-form"
         @submit.prevent="handleNoteSubmit"
       >
         <el-form-item label="告警类型">
           <el-input v-model="noteForm.alertType" readonly />
         </el-form-item>
-        
+
         <el-form-item label="备注内容" required>
           <el-input
             v-model="noteForm.notes"
@@ -500,14 +482,12 @@
           />
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="handleNoteCancel">取消</el-button>
-          <el-button type="primary" @click="handleNoteSubmit">
-            确定
-          </el-button>
-        </div>
+        <el-button @click="handleNoteCancel">取消</el-button>
+        <el-button type="primary" @click="handleNoteSubmit">
+          确定
+        </el-button>
       </template>
     </el-dialog>
 
@@ -517,10 +497,13 @@
       title="创建 iCafe 卡片"
       width="700px"
       :close-on-click-modal="false"
+      class="google-dialog"
     >
       <el-form
         ref="icafeFormRef"
         :model="icafeForm"
+        label-position="top"
+        class="google-form"
         label-width="120px"
         :rules="icafeFormRules"
         @submit.prevent="handleICafeSubmit"
@@ -612,7 +595,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, CircleCheck, CircleClose, Notification, QuestionFilled, Edit, EditPen } from '@element-plus/icons-vue'
+import { Search, Refresh, CircleCheck, CircleClose, Notification, QuestionFilled, Edit, EditPen, Bell } from '@element-plus/icons-vue'
 import { getAlerts, getFilterOptions, diagnoseAlert, batchResendNotifications, updateAlertStatus, createICafeCard, detectIncorrectAlerts, correctClusterIds, testHostConnection, updateAlertFields } from '@/api/alerts'
 
 const router = useRouter()
@@ -625,6 +608,33 @@ const statusLabels = {
   notified: '已通知',
   failed: '失败',
   resolved: '已处理'
+}
+
+// Google Blue 样式映射函数
+const getSeverityBadgeClass = (severity) => {
+  const classes = {
+    critical: 'error',
+    warning: 'warning',
+    info: 'info'
+  }
+  return classes[severity] || 'primary'
+}
+
+const getComponentBadgeClass = (component) => {
+  // 组件类型默认用primary风格
+  return 'primary'
+}
+
+const getStatusBadgeClass = (status) => {
+  const classes = {
+    resolved: 'success',
+    notified: 'info',
+    diagnosed: 'primary',
+    processing: 'warning',
+    pending: 'warning',
+    failed: 'error'
+  }
+  return classes[status] || 'primary'
 }
 
 // 数据
@@ -801,7 +811,7 @@ const fetchFilterOptions = async () => {
       Object.assign(filterOptions, response.data)
     }
   } catch (error) {
-    console.error('获取筛选选项失败:', error)
+    // Silent error handling
   }
 }
 
@@ -821,7 +831,7 @@ const fetchAlerts = async () => {
       pagination.total = response.data.total
     }
   } catch (error) {
-    console.error('获取告警列表失败:', error)
+    // Silent error handling
   } finally {
     loading.value = false
   }
@@ -903,8 +913,6 @@ const handleDiagnose = async (id) => {
     }
     
   } catch (error) {
-    console.error('触发诊断失败:', error)
-    
     // 检查是否是axios拦截器抛出的错误（基础流程可能已完成）
     if (error.message && (
       error.message.includes('重新诊断') || 
@@ -956,7 +964,6 @@ const handleBatchResendNotifications = async () => {
     }
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('批量补发通知失败:', error)
       ElMessage.error('批量补发通知失败')
     }
   } finally {
@@ -1003,7 +1010,6 @@ const handleSelectedResendNotifications = async () => {
     }
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('补发选中通知失败:', error)
       ElMessage.error('补发选中通知失败')
     }
   } finally {
@@ -1092,7 +1098,6 @@ const handleDetectAndCorrectClusterIds = async () => {
     
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('检测并修正cluster_id失败:', error)
       ElMessage.error('操作失败，请检查宿主机数据库连接')
     }
   } finally {
@@ -1198,7 +1203,6 @@ const handleEditSubmit = async () => {
     }
   } catch (error) {
     if (error !== 'validation failed') {
-      console.error('更新告警字段失败:', error)
       const errorMsg = error.response?.data?.error || error.message || '更新失败'
       ElMessage.error(`更新告警字段失败：${errorMsg}`)
     }
@@ -1249,7 +1253,6 @@ const handleStatusSubmit = async () => {
       fetchAlerts()
     }
   } catch (error) {
-    console.error('更新告警状态失败:', error)
     ElMessage.error('更新告警状态失败')
   }
 }
@@ -1268,7 +1271,6 @@ const handleNoteSubmit = async () => {
       fetchAlerts()
     }
   } catch (error) {
-    console.error('添加备注失败:', error)
     ElMessage.error('添加备注失败')
   }
 }
@@ -1343,7 +1345,6 @@ const handleICafeSubmit = async () => {
     }
   } catch (error) {
     if (error !== 'validation failed') {
-      console.error('创建 iCafe 卡片失败:', error)
       ElMessage.error('创建 iCafe 卡片失败')
     }
   } finally {
@@ -1389,154 +1390,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.alert-list-container {
-  padding: 20px;
-}
-
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0 0 8px 0;
-}
-
-.page-description {
-  font-size: 14px;
-  color: #64748b;
-  margin: 0;
-}
-
-.filter-card {
-  margin-bottom: 20px;
-}
-
-.filter-card :deep(.el-card__body) {
-  padding: 20px;
-}
-
-.table-card :deep(.el-card__body) {
-  padding: 20px;
-}
-
-.alert-table {
-  cursor: pointer;
-}
-
-.alert-table :deep(.el-table__row) {
-  transition: background-color 0.2s;
-}
-
-.alert-table :deep(.el-table__row:hover) {
-  background-color: #f8fafc;
-}
-
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-/* 操作按钮样式优化 - 统一蓝色背景白色字体 */
-.action-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-}
-
-.action-btn {
-  margin: 0 !important;
-  font-size: 12px !important;
-  padding: 4px 8px !important;
-  height: 28px !important;
-  line-height: 1.2 !important;
-  border-radius: 4px !important;
-  font-weight: 500 !important;
-  min-width: 60px !important;
-  text-align: center !important;
-  /* 统一蓝色背景白色字体 */
-  background-color: #409eff !important;
-  border-color: #409eff !important;
-  color: #ffffff !important;
-}
-
-.action-btn:hover {
-  background-color: #66b1ff !important;
-  border-color: #66b1ff !important;
-  color: #ffffff !important;
-}
-
-.action-btn:active {
-  background-color: #3a8ee6 !important;
-  border-color: #3a8ee6 !important;
-  color: #ffffff !important;
-}
-
-.action-btn:focus {
-  background-color: #409eff !important;
-  border-color: #409eff !important;
-  color: #ffffff !important;
-}
-
-/* 确保loading状态下的样式 */
-.action-btn.is-loading {
-  background-color: #409eff !important;
-  border-color: #409eff !important;
-  color: #ffffff !important;
-}
-
-/* 移除旧的特殊样式类 */
-.icafe-btn {
-  /* 已统一到 action-btn */
-}
-
-/* 确保Element Plus按钮样式被覆盖 */
-.alert-table :deep(.action-btn.el-button--primary) {
-  background-color: #409eff !important;
-  border-color: #409eff !important;
-  color: #ffffff !important;
-}
-
-.alert-table :deep(.action-btn.el-button--primary:hover) {
-  background-color: #66b1ff !important;
-  border-color: #66b1ff !important;
-  color: #ffffff !important;
-}
-
-.alert-table :deep(.action-btn.el-button--primary:active) {
-  background-color: #3a8ee6 !important;
-  border-color: #3a8ee6 !important;
-  color: #ffffff !important;
-}
-
-.alert-table :deep(.action-btn.el-button--primary:focus) {
-  background-color: #409eff !important;
-  border-color: #409eff !important;
-  color: #ffffff !important;
-}
-
-/* 移除旧的按钮样式 - 已统一到action-btn */
-
-/* 已处理状态特殊样式 */
-.resolved-tag {
-  background-color: #67c23a !important;
-  border-color: #67c23a !important;
-  color: #ffffff !important;
-}
-
-/* 对话框样式 */
-.dialog-footer {
-  text-align: right;
-}
-
-/* 表单提示样式 */
-.form-tip {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 4px;
-}
+/* 所有样式已由 google-pages.css 统一提供 */
+/* 只保留页面特定的额外样式 */
 </style>

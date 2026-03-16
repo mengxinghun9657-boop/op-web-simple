@@ -337,7 +337,7 @@ const loadConfig = async () => {
       }))
     }
   } catch (error) {
-    console.error('加载CMDB配置失败:', error)
+    // 加载配置失败，静默处理
   }
   
   // 加载自动同步配置
@@ -354,7 +354,7 @@ const loadScheduleConfig = async () => {
       scheduleForm.value.azones = response.azones || ['AZONE-cdhmlcc001']
     }
   } catch (error) {
-    console.error('加载自动同步配置失败:', error)
+    // 加载自动同步配置失败，静默处理
   }
 }
 
@@ -375,24 +375,15 @@ const handleTestCookie = async () => {
   testing.value = true
   try {
     const response = await cmdbApi.testCookie(apiAuthForm.value.cookie)
-    
-    // 调试日志
-    console.log('[DEBUG CMDBConfig] Cookie测试响应:', response)
-    console.log('[DEBUG CMDBConfig] response.valid:', response.valid)
-    console.log('[DEBUG CMDBConfig] response.valid === true:', response.valid === true)
-    console.log('[DEBUG CMDBConfig] typeof response.valid:', typeof response.valid)
-    
+
     // 检查响应中的 valid 字段
     if (response && response.valid === true) {
-      console.log('[DEBUG CMDBConfig] 进入成功分支')
       ElMessage.success(response.message || 'Cookie有效，可以正常访问CMDB API')
     } else {
-      console.log('[DEBUG CMDBConfig] 进入失败分支')
       const errorMsg = response?.message || 'Cookie无效或已过期'
       ElMessage.error(errorMsg)
     }
   } catch (error) {
-    console.log('[DEBUG CMDBConfig] 进入异常分支:', error)
     ElMessage.error('Cookie无效或已过期: ' + (error.response?.data?.detail || error.message))
   } finally {
     testing.value = false
@@ -495,8 +486,6 @@ const handleSyncNow = async () => {
       loadSyncLogs()
     }, 3000)
   } catch (error) {
-    console.error('CMDB同步失败:', error)
-    
     // 友好的错误提示
     let errorMessage = '同步失败'
     let suggestions = []
@@ -585,7 +574,7 @@ const loadSyncLogs = async () => {
     const response = await cmdbApi.getSyncLogs({ limit: 20 })
     syncLogs.value = response.logs || []
   } catch (error) {
-    console.error('加载同步日志失败:', error)
+    // 加载日志失败，静默处理
   } finally {
     loadingLogs.value = false
   }

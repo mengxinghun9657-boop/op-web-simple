@@ -109,15 +109,6 @@ services:
       ERNIE_API_URL: ${ERNIE_API_URL:-http://llms-se.baidu-int.com:8200/chat/completions}
       ERNIE_API_KEY: ${ERNIE_API_KEY:-}
       ERNIE_MODEL: ${ERNIE_MODEL:-ernie-4.5-8k-preview}
-      # AI 智能查询功能配置
-      VECTOR_DB_TYPE: ${VECTOR_DB_TYPE:-faiss}
-      VECTOR_DB_PATH: /app/vector_store
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-small-zh}
-      EMBEDDING_API_URL: ${EMBEDDING_API_URL:-}
-      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
-      MAX_QUERY_LENGTH: ${MAX_QUERY_LENGTH:-1000}
-      SQL_EXECUTION_TIMEOUT: ${SQL_EXECUTION_TIMEOUT:-5}
-      SESSION_TTL: ${SESSION_TTL:-1800}
       DEBUG: ${DEBUG:-false}
       WORKERS: ${WORKERS:-4}  # Worker 数量，默认 4（内网环境），外网可设置为 2
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8089}
@@ -134,7 +125,6 @@ services:
       - backend_results:/app/results
       - backend_logs:/app/logs
       - backend_data:/app/data
-      - backend_vector_store:/app/vector_store
       # 外网环境禁用文件监控（避免启动超时）
       # - /data/HAS_file/changan:/app/alerts_source:ro
       # - /data/HAS_file:/data/HAS_file:ro
@@ -199,4 +189,3 @@ volumes:
   backend_results:
   backend_logs:
   backend_data:
-  backend_vector_store:

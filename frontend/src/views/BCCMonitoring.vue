@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
 import { Monitor, Loading, Document, ArrowLeft, InfoFilled, Download } from '@element-plus/icons-vue'
-import { Card, StateDisplay } from '@/components/common'
+import { StateDisplay } from '@/components/common'
 import { getFullBackendUrl } from '@/utils/config'
 
 const router = useRouter()
@@ -29,15 +29,25 @@ const loadBCCConfig = async () => {
   loadingConfig.value = true
   try {
     const response = await axios.get('/api/v1/config/load?module=monitoring')
-    
-    if (response.config && response.config.bcc_instance_ids && response.config.bcc_instance_ids.length > 0) {
-      const ids = Array.isArray(response.config.bcc_instance_ids)
-        ? response.config.bcc_instance_ids
-        : response.config.bcc_instance_ids.split(',').map(id => id.trim())
-      instanceIdsText.value = ids.join('\n')
-      ElMessage.success(`已加载 ${ids.length} 个BCC实例ID配置`)
+
+    // 获取 bcc_instance_ids 配置
+    const bccIds = response.config?.bcc_instance_ids || response.data?.config?.bcc_instance_ids
+
+    // 检查配置是否存在且非空
+    if (bccIds && bccIds !== '' && bccIds.length > 0) {
+      // 处理数组或字符串格式
+      const ids = Array.isArray(bccIds)
+        ? bccIds
+        : bccIds.split(',').map(id => id.trim()).filter(id => id)
+
+      if (ids.length > 0) {
+        instanceIdsText.value = ids.join('\n')
+        ElMessage.success(`已加载 ${ids.length} 个BCC实例ID配置`)
+      } else {
+        ElMessage.warning('配置的BCC实例ID列表为空，请先在系统配置中添加')
+      }
     } else {
-      ElMessage.warning('未找到配置的BCC实例ID')
+      ElMessage.warning('未找到配置的BCC实例ID，请先在系统配置中添加')
     }
   } catch (error) {
     ElMessage.error('加载配置失败: ' + (error.response?.data?.detail || error.message))
@@ -116,195 +126,185 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="monitoring-page">
-    <!-- 页面标题 -->
+  <div class="page-container">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <div class="page-header-icon">
-        <el-icon :size="24"><Monitor /></el-icon>
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><Monitor /></el-icon>
+          </div>
+          BCC实例监控分析
+        </div>
+        <div class="page-subtitle">监控BCC实例CPU、内存、磁盘等指标</div>
       </div>
-      <div class="page-header-content">
-        <h2 class="page-title">BCC实例监控分析</h2>
-        <p class="page-subtitle">监控BCC实例CPU、内存、磁盘等指标</p>
+      <div class="page-actions">
+        <el-button @click="router.push('/monitoring')">
+          <el-icon><ArrowLeft /></el-icon>返回监控分析
+        </el-button>
       </div>
-      <el-button @click="router.push('/monitoring')">
-        <el-icon><ArrowLeft /></el-icon>返回监控分析
-      </el-button>
     </div>
     
     <!-- 认证配置 -->
-    <Card
-      title="BCE认证配置（可选）"
-      icon="Monitor"
-      class="animate-slide-in-up"
-    >
-      <el-form :model="auth" label-width="120px">
-        <el-form-item label="AK (Access Key)">
-          <el-input v-model="auth.ak" placeholder="留空则使用默认配置" />
-        </el-form-item>
-        <el-form-item label="SK (Secret Key)">
-          <el-input v-model="auth.sk" type="password" placeholder="留空则使用默认配置" show-password />
-        </el-form-item>
-      </el-form>
-    </Card>
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><Monitor /></el-icon>
+          BCE认证配置（可选）
+        </div>
+      </div>
+      <div class="content-card-body">
+        <el-form :model="auth" label-width="120px">
+          <el-form-item label="AK (Access Key)">
+            <el-input v-model="auth.ak" placeholder="留空则使用默认配置" />
+          </el-form-item>
+          <el-form-item label="SK (Secret Key)">
+            <el-input v-model="auth.sk" type="password" placeholder="留空则使用默认配置" show-password />
+          </el-form-item>
+        </el-form>
+      </div>
+    </div>
 
     <!-- 实例ID列表 -->
-    <Card
-      title="实例ID列表（可选）"
-      icon="Monitor"
-      class="animate-slide-in-up"
-    >
-      <div class="input-label-row">
-        <span></span>
-        <el-button size="small" @click="loadBCCConfig" :loading="loadingConfig">
-          <el-icon><Download /></el-icon>
-          加载配置
-        </el-button>
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><Monitor /></el-icon>
+          实例ID列表（可选）
+        </div>
+        <div class="content-card-extra">
+          <el-button size="small" @click="loadBCCConfig" :loading="loadingConfig">
+            <el-icon><Download /></el-icon>
+            加载配置
+          </el-button>
+        </div>
       </div>
-      <div class="config-hint-box">
-        <el-icon><InfoFilled /></el-icon>
-        <span>提示：您可以在 <router-link to="/system-config?section=monitoring" class="config-link">系统配置</router-link> 中设置默认BCC实例ID</span>
+      <div class="content-card-body">
+        <div class="config-hint-box">
+          <el-icon><InfoFilled /></el-icon>
+          <span>提示：您可以在 <router-link to="/system-config?section=monitoring" class="config-link">系统配置</router-link> 中设置默认BCC实例ID</span>
+        </div>
+        <el-input
+          v-model="instanceIdsText"
+          type="textarea"
+          :rows="6"
+          placeholder="请输入BCC实例ID列表，每行一个&#10;留空则使用默认测试数据"
+        />
+        <p class="input-hint">当前已输入 {{ instanceIds.length }} 个实例ID（留空使用默认）</p>
       </div>
-      <el-input 
-        v-model="instanceIdsText" 
-        type="textarea" 
-        :rows="6" 
-        placeholder="请输入BCC实例ID列表，每行一个&#10;留空则使用默认测试数据" 
-      />
-      <p class="input-hint">当前已输入 {{ instanceIds.length }} 个实例ID（留空使用默认）</p>
-    </Card>
+    </div>
 
     <!-- 功能说明和操作 -->
     <div class="action-grid">
-      <Card title="功能说明" class="animate-slide-in-up">
-        <ul class="feature-list">
-          <li>监控指标: CPU使用率、内存使用率、磁盘IO、网络流量</li>
-          <li>数据源: 百度云BCM API</li>
-          <li>输出格式: 交互式HTML报告</li>
-          <li>监控周期: 最近1天数据</li>
-        </ul>
-      </Card>
-      <Card class="action-card animate-slide-in-up">
-        <el-button 
-          type="primary" 
-          size="large" 
-          @click="startMonitoring" 
-          :loading="analyzing" 
-          :disabled="analyzing"
-          class="action-button"
-        >
-          开始监控
-        </el-button>
-      </Card>
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="content-card-title">功能说明</div>
+        </div>
+        <div class="content-card-body">
+          <ul class="feature-list">
+            <li>监控指标: CPU使用率、内存使用率、磁盘IO、网络流量</li>
+            <li>数据源: 百度云BCM API</li>
+            <li>输出格式: 交互式HTML报告</li>
+            <li>监控周期: 最近1天数据</li>
+          </ul>
+        </div>
+      </div>
+      <div class="content-card action-card">
+        <div class="content-card-body">
+          <el-button
+            type="primary"
+            size="large"
+            @click="startMonitoring"
+            :loading="analyzing"
+            :disabled="analyzing"
+            class="action-button"
+          >
+            开始监控
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 进度 -->
-    <Card
-      v-if="analyzing || logs.length > 0"
-      title="监控进度"
-      class="animate-slide-in-up"
-    >
-      <StateDisplay
-        v-if="analyzing"
-        state="loading"
-        :loading-text="statusMessage"
-      >
-        <div class="progress-section">
-          <el-progress :percentage="progress" :stroke-width="10" />
-        </div>
-      </StateDisplay>
-      <div v-if="logs.length > 0" class="log-container">
-        <p v-for="(log, index) in logs" :key="index" class="log-line">{{ log }}</p>
+    <div v-if="analyzing || logs.length > 0" class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">监控进度</div>
       </div>
-    </Card>
+      <div class="content-card-body">
+        <StateDisplay
+          v-if="analyzing"
+          state="loading"
+          :loading-text="statusMessage"
+        >
+          <div class="progress-section">
+            <el-progress :percentage="progress" :stroke-width="10" />
+          </div>
+        </StateDisplay>
+        <div v-if="logs.length > 0" class="log-container">
+          <p v-for="(log, index) in logs" :key="index" class="log-line">{{ log }}</p>
+        </div>
+      </div>
+    </div>
     
     <!-- 报告预览 -->
-    <Card
-      v-if="reportUrl"
-      title="报告预览"
-      class="bento-span-full animate-slide-in-up"
-    >
-      <template #header>
-        <el-button type="success" @click="downloadReport">
-          <el-icon><Document /></el-icon>下载报告
-        </el-button>
-      </template>
-      <div class="report-preview">
-        <div v-if="iframeLoading" class="report-loading">
-          <el-icon class="spin-icon"><Loading /></el-icon>
+    <div v-if="reportUrl" class="content-card" style="grid-column: span 2;">
+      <div class="content-card-header">
+        <div class="content-card-title">报告预览</div>
+        <div class="content-card-extra">
+          <el-button type="success" @click="downloadReport">
+            <el-icon><Document /></el-icon>下载报告
+          </el-button>
         </div>
-        <iframe :src="reportUrl" @load="iframeLoading = false" class="report-frame" />
       </div>
-    </Card>
+      <div class="content-card-body report-body">
+        <div class="report-preview">
+          <div v-if="iframeLoading" class="report-loading">
+            <el-icon class="spin-icon"><Loading /></el-icon>
+          </div>
+          <iframe :src="reportUrl" @load="iframeLoading = false" class="report-frame" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.monitoring-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-  animation: slideInUp var(--duration-slow) var(--ease-out);
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-header {
+/* 配置提示框 */
+.config-hint-box {
   display: flex;
   align-items: center;
-  gap: var(--spacing-4);
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: rgba(26, 115, 232, 0.1);
+  border: 1px solid rgba(26, 115, 232, 0.3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
 }
 
-.page-header-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--color-info), var(--color-info-dark));
-  border-radius: var(--radius-lg);
-  color: white;
+.config-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-  flex: 1;
-}
-
-.page-subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--text-tertiary);
-  margin: var(--spacing-1) 0 0;
+.config-link:hover {
+  color: var(--primary);
+  text-decoration: underline;
 }
 
 .input-hint {
-  font-size: var(--font-size-xs);
+  font-size: var(--text-xs);
   color: var(--text-tertiary);
-  margin-top: var(--spacing-2);
-}
-
-.input-label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-3);
+  margin-top: var(--space-2);
 }
 
 .action-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: var(--spacing-6);
+  gap: var(--space-6);
 }
 
 @media (max-width: 768px) {
@@ -320,15 +320,15 @@ onMounted(() => {
 }
 
 .feature-list li {
-  padding: var(--spacing-2) 0;
+  padding: var(--space-2) 0;
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   line-height: 1.6;
 }
 
 .feature-list li::before {
   content: "•";
-  color: var(--color-primary);
+  color: var(--primary);
   font-weight: bold;
   display: inline-block;
   width: 1em;
@@ -344,27 +344,32 @@ onMounted(() => {
 .action-button {
   width: 100%;
   height: 56px;
-  font-size: var(--font-size-lg);
+  font-size: var(--text-lg);
 }
 
 .progress-section {
-  margin-bottom: var(--spacing-4);
+  margin-bottom: var(--space-4);
 }
 
 .log-container {
-  background: var(--bg-elevated);
+  background: var(--bg-secondary);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-4);
+  padding: var(--space-4);
   max-height: 240px;
   overflow-y: auto;
   font-family: 'Monaco', 'Menlo', monospace;
-  font-size: var(--font-size-xs);
+  font-size: var(--text-xs);
 }
 
 .log-line {
   color: var(--text-secondary);
-  margin: var(--spacing-1) 0;
+  margin: var(--space-1) 0;
   white-space: pre-wrap;
+}
+
+.report-body {
+  position: relative;
+  min-height: 600px;
 }
 
 .report-preview {
@@ -378,14 +383,14 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--glass-bg-strong);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
   z-index: 10;
 }
 
 .spin-icon {
   font-size: 48px;
-  color: var(--color-primary-500);
+  color: var(--primary);
   animation: spin 1s linear infinite;
 }
 
@@ -400,31 +405,5 @@ onMounted(() => {
   border: none;
   border-radius: var(--radius-lg);
   background: white;
-}
-
-/* 配置提示框 */
-.config-hint-box {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-3);
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  margin-bottom: var(--spacing-3);
-}
-
-.config-link {
-  color: var(--color-info);
-  font-weight: 600;
-  text-decoration: none;
-  transition: color var(--duration-fast);
-}
-
-.config-link:hover {
-  color: var(--color-info-dark);
-  text-decoration: underline;
 }
 </style>

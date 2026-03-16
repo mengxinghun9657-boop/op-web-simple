@@ -110,7 +110,6 @@ watch(() => resourceConfig.value.text, (newText) => {
 const loadConfig = async () => {
   try {
     const res = await configApi.loadConfig('analysis')
-    console.log('分析配置API响应:', res) // 调试日志
     const config = res.data?.config || res.config // 兼容新旧格式
     if (config && Object.keys(config).length > 0) {
       if (config.cluster_ids) {
@@ -123,7 +122,7 @@ const loadConfig = async () => {
       }
     }
   } catch (error) {
-    console.error('加载资源分析配置失败:', error)
+    // Silent error handling
   }
 }
 
@@ -134,15 +133,21 @@ const saveResourceConfig = async () => {
     return
   }
 
+  // 验证配置
+  if (resourceConfig.value.ids.length === 0) {
+    ElMessage.warning('请至少输入一个集群ID')
+    return
+  }
+
   saving.value = true
   try {
     const config = {
       cluster_ids: resourceConfig.value.ids.join(','),  // 转换为逗号分隔字符串
-      description: resourceConfig.value.description || null
+      description: resourceConfig.value.description || '资源分析默认集群ID列表'
     }
-    
+
     await configApi.saveConfig('analysis', config)
-    ElMessage.success('资源分析配置保存成功')
+    ElMessage.success(`资源分析配置保存成功 (${resourceConfig.value.ids.length} 个集群ID)`)
   } catch (error) {
     ElMessage.error('保存配置失败: ' + (error.response?.data?.detail || error.message))
   } finally {

@@ -17,10 +17,10 @@
           class="toast-retry"
           @click="handleRetry(toast)"
         >
-          🔄 重试
+          重试
         </button>
       </div>
-      <button class="toast-close" @click="removeToast(toast.id)">✕</button>
+      <button class="toast-close" @click="removeToast(toast.id)">×</button>
     </div>
   </transition-group>
 </template>
@@ -74,10 +74,10 @@ export default {
 
     const getIcon = (type) => {
       const icons = {
-        error: '❌',
-        warning: '⚠️',
-        success: '✅',
-        info: 'ℹ️'
+        error: '✕',
+        warning: '⚠',
+        success: '✓',
+        info: 'ℹ'
       };
       return icons[type] || icons.info;
     };
@@ -96,46 +96,64 @@ export default {
 <style scoped>
 .toast-container {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 9999;
+  top: var(--space-5);
+  right: var(--space-5);
+  z-index: var(--z-notification);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-3);
   max-width: 400px;
 }
 
 .toast {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg-container);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   border-left: 4px solid;
   min-width: 300px;
 }
 
 .toast-error {
-  border-left-color: #f44336;
+  border-left-color: var(--color-error);
 }
 
 .toast-warning {
-  border-left-color: #ff9800;
+  border-left-color: var(--color-warning);
 }
 
 .toast-success {
-  border-left-color: #4caf50;
+  border-left-color: var(--color-success);
 }
 
 .toast-info {
-  border-left-color: #2196f3;
+  border-left-color: var(--color-info);
 }
 
 .toast-icon {
-  font-size: 24px;
+  font-size: var(--text-2xl);
   flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.toast-error .toast-icon {
+  color: var(--color-error);
+}
+
+.toast-warning .toast-icon {
+  color: var(--color-warning);
+}
+
+.toast-success .toast-icon {
+  color: var(--color-success);
+}
+
+.toast-info .toast-icon {
+  color: var(--color-info);
 }
 
 .toast-content {
@@ -144,52 +162,53 @@ export default {
 
 .toast-title {
   font-weight: 600;
-  margin-bottom: 4px;
-  color: #333;
+  margin-bottom: var(--space-1);
+  color: var(--text-primary);
 }
 
 .toast-message {
-  font-size: 14px;
-  color: #666;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
 .toast-retry {
-  margin-top: 8px;
-  padding: 4px 12px;
-  background: #2196f3;
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: var(--primary);
   color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background var(--transition-fast);
 }
 
 .toast-retry:hover {
-  background: #1976d2;
+  background: var(--primary-dark);
 }
 
 .toast-close {
   background: none;
   border: none;
-  font-size: 18px;
-  color: #999;
+  font-size: var(--text-lg);
+  color: var(--text-tertiary);
   cursor: pointer;
   padding: 0;
   width: 24px;
   height: 24px;
   flex-shrink: 0;
+  transition: color var(--transition-fast);
 }
 
 .toast-close:hover {
-  color: #333;
+  color: var(--text-primary);
 }
 
 /* 动画 */
 .toast-enter-active,
 .toast-leave-active {
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
 }
 
 .toast-enter-from {

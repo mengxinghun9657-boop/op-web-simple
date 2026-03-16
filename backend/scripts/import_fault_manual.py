@@ -121,15 +121,17 @@ def main():
     """主函数"""
     # 故障手册文件路径（优先使用CSV）
     # 支持两个位置：
-    # 1. /app/knowledge/ (pack-offline.sh 部署时使用)
-    # 2. /app/scripts/ (deploy.sh 部署时使用)
+    # 1. /app/knowledge/ (deploy.sh 部署时使用)
+    # 2. /app/scripts/ (备用路径)
     csv_paths = [
         Path('/app/knowledge/故障维修手册.csv'),
-        Path('/app/scripts/故障维修手册.csv')
+        Path('/app/scripts/故障维修手册.csv'),
+        Path('/knowledge/故障维修手册.csv')  # 兼容旧路径
     ]
     md_paths = [
         Path('/app/knowledge/故障维修手册.md'),
-        Path('/app/scripts/故障维修手册.md')
+        Path('/app/scripts/故障维修手册.md'),
+        Path('/knowledge/故障维修手册.md')  # 兼容旧路径
     ]
     
     # 优先使用CSV文件

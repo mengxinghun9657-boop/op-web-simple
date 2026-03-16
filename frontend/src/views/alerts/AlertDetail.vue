@@ -1,18 +1,28 @@
 <template>
-  <div class="alert-detail-container">
-    <el-page-header @back="handleBack" class="page-header">
-      <template #content>
-        <span class="page-title">告警详情</span>
-      </template>
-    </el-page-header>
+  <div class="page-container">
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><Document /></el-icon>
+          </div>
+          告警详情
+        </div>
+      </div>
+      <div class="page-actions">
+        <el-button @click="handleBack">
+          <el-icon><ArrowLeft /></el-icon>返回
+        </el-button>
+      </div>
+    </div>
 
-    <div v-loading="loading" class="content-wrapper">
+    <div v-loading="loading">
       <template v-if="!loading && alertData">
         <!-- 基本信息卡片 -->
-        <el-card class="info-card" shadow="never">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">基本信息</span>
+        <div class="content-card">
+          <div class="content-card-header">
+            <div class="content-card-title">基本信息</div>
+            <div class="content-card-extra">
               <el-button
                 type="warning"
                 size="small"
@@ -23,7 +33,8 @@
                 重新诊断
               </el-button>
             </div>
-          </template>
+          </div>
+          <div class="content-card-body">
 
           <el-descriptions :column="2" border>
             <el-descriptions-item label="告警ID">
@@ -81,20 +92,20 @@
               </div>
             </el-descriptions-item>
           </el-descriptions>
-        </el-card>
+          </div>
+        </div>
 
         <!-- 诊断结果 -->
         <template v-if="alertData.diagnosis">
           <!-- 手册匹配结果 -->
-          <el-card v-if="alertData.diagnosis.manual_matched" class="diagnosis-card" shadow="never">
-            <template #header>
-              <div class="card-header">
-                <span class="card-title">
-                  <el-icon color="#67C23A"><CircleCheck /></el-icon>
-                  手册匹配结果
-                </span>
+          <div v-if="alertData.diagnosis.manual_matched" class="content-card">
+            <div class="content-card-header">
+              <div class="content-card-title">
+                <el-icon color="#67C23A"><CircleCheck /></el-icon>
+                手册匹配结果
               </div>
-            </template>
+            </div>
+            <div class="content-card-body">
 
             <el-descriptions :column="1" border>
               <el-descriptions-item label="故障名称">
@@ -120,21 +131,23 @@
                 <div class="text-content">{{ alertData.diagnosis.manual_recovery || '-' }}</div>
               </el-descriptions-item>
             </el-descriptions>
-          </el-card>
+            </div>
+          </div>
 
           <!-- API诊断结果 -->
-          <el-card v-if="alertData.diagnosis.api_diagnosis" class="diagnosis-card" shadow="never">
-            <template #header>
-              <div class="card-header">
-                <span class="card-title">
-                  <el-icon color="#409EFF"><Document /></el-icon>
-                  API诊断结果
-                </span>
+          <div v-if="alertData.diagnosis.api_diagnosis" class="content-card">
+            <div class="content-card-header">
+              <div class="content-card-title">
+                <el-icon color="#409EFF"><Document /></el-icon>
+                API诊断结果
+              </div>
+              <div class="content-card-extra">
                 <el-tag :type="getApiStatusTagType(alertData.diagnosis.api_status)">
                   {{ alertData.diagnosis.api_status }}
                 </el-tag>
               </div>
-            </template>
+            </div>
+            <div class="content-card-body">
 
             <div class="api-diagnosis-summary">
               <el-statistic title="诊断项总数" :value="alertData.diagnosis.api_items_count" />
@@ -190,23 +203,23 @@
                 </el-table>
               </el-collapse-item>
             </el-collapse>
-          </el-card>
+            </div>
+          </div>
 
           <!-- AI解读结果 -->
-          <el-card v-if="alertData.diagnosis.ai_interpretation" class="diagnosis-card" shadow="never">
-            <template #header>
-              <div class="card-header">
-                <span class="card-title">
-                  <el-icon color="#9333EA"><MagicStick /></el-icon>
-                  AI智能解读
-                </span>
+          <div v-if="alertData.diagnosis.ai_interpretation" class="content-card">
+            <div class="content-card-header">
+              <div class="content-card-title">
+                <el-icon color="#9333EA"><MagicStick /></el-icon>
+                AI智能解读
               </div>
-            </template>
-
-            <div class="ai-interpretation">
-              <div v-html="renderMarkdown(alertData.diagnosis.ai_interpretation)"></div>
             </div>
-          </el-card>
+            <div class="content-card-body">
+              <div class="ai-interpretation">
+                <div v-html="renderMarkdown(alertData.diagnosis.ai_interpretation)"></div>
+              </div>
+            </div>
+          </div>
         </template>
 
         <!-- 无诊断结果提示 -->
@@ -227,7 +240,8 @@ import {
   Document,
   Warning,
   WarningFilled,
-  MagicStick
+  MagicStick,
+  ArrowLeft
 } from '@element-plus/icons-vue'
 import { getAlertDetail, diagnoseAlert } from '@/api/alerts'
 import { marked } from 'marked'
@@ -258,7 +272,6 @@ const fetchAlertDetail = async () => {
       alertData.value = response.data
     }
   } catch (error) {
-    console.error('获取告警详情失败:', error)
     ElMessage.error('获取告警详情失败')
   } finally {
     loading.value = false
@@ -270,8 +283,6 @@ const handleDiagnose = async () => {
   diagnosing.value = true
   try {
     const response = await diagnoseAlert(route.params.id, true)  // 传递布尔值而不是对象
-    console.log('诊断响应:', response) // 添加调试日志
-    
     // 检查响应是否成功
     if (response && response.success) {
       ElMessage.success(response.message || '诊断任务已创建,正在处理中...')
@@ -286,9 +297,6 @@ const handleDiagnose = async () => {
     }
     
   } catch (error) {
-    console.error('触发诊断失败:', error)
-    console.log('错误详情:', error.response) // 添加调试日志
-    
     // 检查是否是axios拦截器抛出的错误（基础流程可能已完成）
     if (error.message && (
       error.message.includes('重新诊断') || 
@@ -327,7 +335,6 @@ const startDiagnosisPolling = () => {
         }
       }
     } catch (error) {
-      console.error('轮询诊断状态失败:', error)
       clearInterval(pollInterval)
     }
   }, 6000) // 每6秒轮询一次
@@ -410,104 +417,60 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.alert-detail-container {
-  padding: 20px;
-}
-
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.content-wrapper {
-  min-height: 400px;
-}
-
-.info-card,
-.diagnosis-card {
-  margin-bottom: 20px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.file-path {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  color: #64748b;
-}
-
 .text-content {
   line-height: 1.6;
-  color: #475569;
+  color: var(--text-secondary);
   white-space: pre-wrap;
 }
 
 .api-diagnosis-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
 }
 
 .ai-interpretation {
-  padding: 16px;
-  background-color: #f8fafc;
-  border-radius: 8px;
+  padding: var(--space-4);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
   line-height: 1.8;
 }
 
 .ai-interpretation :deep(h1),
 .ai-interpretation :deep(h2),
 .ai-interpretation :deep(h3) {
-  margin-top: 16px;
-  margin-bottom: 12px;
-  color: #1e293b;
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-3);
+  color: var(--text-primary);
 }
 
 .ai-interpretation :deep(p) {
-  margin-bottom: 12px;
-  color: #475569;
+  margin-bottom: var(--space-3);
+  color: var(--text-secondary);
 }
 
 .ai-interpretation :deep(ul),
 .ai-interpretation :deep(ol) {
-  margin-left: 24px;
-  margin-bottom: 12px;
+  margin-left: var(--space-6);
+  margin-bottom: var(--space-3);
 }
 
 .ai-interpretation :deep(code) {
-  background-color: #e2e8f0;
+  background-color: var(--bg-tertiary);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-family: 'Courier New', monospace;
   font-size: 13px;
 }
 
 .ai-interpretation :deep(pre) {
-  background-color: #1e293b;
-  color: #f1f5f9;
-  padding: 16px;
-  border-radius: 8px;
+  background-color: var(--text-primary);
+  color: white;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
   overflow-x: auto;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .ai-interpretation :deep(pre code) {
@@ -517,12 +480,12 @@ onMounted(() => {
 }
 
 .resolution-notes {
-  padding: 12px;
-  background-color: #f0f9ff;
-  border-left: 4px solid #3b82f6;
-  border-radius: 4px;
+  padding: var(--space-3);
+  background-color: rgba(26, 115, 232, 0.1);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
   line-height: 1.6;
-  color: #1e40af;
+  color: var(--primary);
   white-space: pre-wrap;
 }
 </style>

@@ -84,14 +84,14 @@ defineProps({
   align-items: center;
   justify-content: center;
   min-height: 200px;
-  padding: var(--spacing-6);
+  padding: var(--space-6);
 }
 
 .state-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-4);
+  gap: var(--space-4);
   text-align: center;
 }
 
@@ -107,7 +107,7 @@ defineProps({
   width: 40px;
   height: 40px;
   border: 3px solid var(--border-color);
-  border-top-color: var(--color-primary);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -130,30 +130,30 @@ defineProps({
 }
 
 .state-icon-success {
-  background: var(--color-success-bg);
+  background: rgba(30, 142, 62, 0.1);
   color: var(--color-success);
 }
 
 .state-icon-error {
-  background: var(--color-error-bg);
+  background: rgba(217, 48, 37, 0.1);
   color: var(--color-error);
 }
 
 .state-text {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--text-base);
+  font-weight: 500;
   color: var(--text-primary);
 }
 
 .state-detail {
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   max-width: 300px;
 }
 
 .state-action {
   display: flex;
-  gap: var(--spacing-2);
-  margin-top: var(--spacing-2);
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 </style>

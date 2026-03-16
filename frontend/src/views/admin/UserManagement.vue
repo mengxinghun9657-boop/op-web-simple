@@ -1,84 +1,105 @@
 <template>
-  <div class="space-y-6">
-    <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-4 flex justify-between items-center glow-card">
-      <div class="flex gap-4">
-        <el-input v-model="searchQuery" placeholder="搜索用户名/邮箱..." prefix-icon="Search" class="w-64 custom-input glow-input" clearable />
-        <el-select v-model="roleFilter" placeholder="角色筛选" clearable class="w-40">
-          <el-option label="全部" value="" />
-          <el-option label="管理员" value="admin" />
-          <el-option label="分析师" value="analyst" />
-          <el-option label="只读用户" value="viewer" />
-        </el-select>
-      </div>
-      <div class="flex gap-2">
-        <el-button :type="glowEnabled ? 'success' : 'info'" @click="toggleGlow" class="glow-btn">
-          <el-icon class="mr-1"><MagicStick /></el-icon>
-          {{ glowEnabled ? '关闭光效' : '开启光效' }}
-        </el-button>
-        <el-button type="primary" icon="Plus" class="bg-gradient-to-r from-blue-500 to-purple-600 border-none glow-btn" @click="handleCreate">
-          新建用户
-        </el-button>
+  <div class="page-container">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><User /></el-icon>
+          </div>
+          用户管理
+        </div>
+        <div class="page-subtitle">管理系统用户和权限设置</div>
       </div>
     </div>
 
-    <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
-      <el-table :data="filteredUsers" style="width: 100%" v-loading="loading" 
-        :header-cell-style="{ background: 'rgba(30, 41, 59, 0.5)', color: '#fff' }"
-        :cell-style="{ background: 'transparent', color: '#ccc' }"
-        :row-class-name="'hover:bg-white/5'"
-      >
-        <el-table-column prop="username" label="用户名" width="150">
-          <template #default="{ row }">
-            <div class="flex items-center gap-2">
-              <el-avatar :size="24" class="bg-blue-500">{{ row.username.charAt(0).toUpperCase() }}</el-avatar>
-              {{ row.username }}
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="email" label="邮箱" min-width="180" />
-        <el-table-column prop="role" label="角色" width="120">
-          <template #default="{ row }">
-            <el-tag :type="getRoleTag(row.role)">{{ formatRole(row.role) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="is_active" label="状态" width="100">
-          <template #default="{ row }">
-            <el-switch 
-              v-model="row.is_active" 
-              style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
-              @change="handleStatusChange(row)"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column prop="last_login" label="最后登录" width="180" />
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="warning" @click="handleResetPwd(row)">重置密码</el-button>
-            <el-popconfirm title="确认删除该用户?" @confirm="handleDelete(row)">
-              <template #reference>
-                <el-button link type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
-      
-      <div class="mt-4 flex justify-end">
-        <el-pagination 
-          background 
-          layout="total, prev, pager, next, sizes" 
-          :total="totalUsers" 
-          :page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-        />
+    <!-- 筛选和操作区域 -->
+    <div class="content-card">
+      <div class="content-card-body">
+        <div class="filter-actions">
+          <div class="filter-inputs">
+            <el-input v-model="searchQuery" placeholder="搜索用户名/邮箱..." prefix-icon="Search" clearable style="width: 240px" />
+            <el-select v-model="roleFilter" placeholder="角色筛选" clearable style="width: 160px">
+              <el-option label="全部" value="" />
+              <el-option label="管理员" value="admin" />
+              <el-option label="分析师" value="analyst" />
+              <el-option label="只读用户" value="viewer" />
+            </el-select>
+          </div>
+          <div class="filter-buttons">
+            <el-button :type="glowEnabled ? 'success' : 'info'" @click="toggleGlow">
+              <el-icon><MagicStick /></el-icon>
+              {{ glowEnabled ? '关闭光效' : '开启光效' }}
+            </el-button>
+            <el-button type="primary" icon="Plus" @click="handleCreate">
+              新建用户
+            </el-button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" class="unified-dialog">
-      <el-form :model="form" label-width="80px" class="mt-4">
+    <!-- 用户列表 -->
+    <!-- 用户列表 -->
+    <div class="content-card">
+      <div class="content-card-body">
+        <el-table :data="filteredUsers" v-loading="loading" class="google-table">
+          <el-table-column prop="username" label="用户名" width="150">
+            <template #default="{ row }">
+              <div class="user-cell">
+                <el-avatar :size="24" class="user-avatar">{{ row.username.charAt(0).toUpperCase() }}</el-avatar>
+                {{ row.username }}
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="email" label="邮箱" min-width="180" />
+          <el-table-column prop="role" label="角色" width="120">
+            <template #default="{ row }">
+              <el-tag :type="getRoleTag(row.role)">{{ formatRole(row.role) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="is_active" label="状态" width="100">
+            <template #default="{ row }">
+              <el-switch
+                v-model="row.is_active"
+                @change="handleStatusChange(row)"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column prop="last_login" label="最后登录" width="180" />
+          <el-table-column label="操作" width="220" fixed="right">
+            <template #default="{ row }">
+              <div class="action-buttons">
+                <el-button link type="primary" @click="handleEdit(row)" class="action-btn">编辑</el-button>
+                <el-button link type="warning" @click="handleResetPwd(row)" class="action-btn">重置密码</el-button>
+                <el-popconfirm title="确认删除该用户?" @confirm="handleDelete(row)">
+                  <template #reference>
+                    <el-button link type="danger" class="action-btn">删除</el-button>
+                  </template>
+                </el-popconfirm>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="table-footer">
+          <el-pagination
+            background
+            layout="total, prev, pager, next, sizes"
+            :total="totalUsers"
+            :page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            class="google-pagination"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- 用户表单对话框 -->
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" class="google-dialog">
+      <el-form :model="form" label-width="80px" class="google-form">
         <el-form-item label="用户名">
           <el-input v-model="form.username" :disabled="isEdit" />
         </el-form-item>
@@ -86,7 +107,7 @@
           <el-input v-model="form.email" />
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="form.role" class="w-full">
+          <el-select v-model="form.role" style="width: 100%">
             <el-option label="管理员 (Admin)" value="admin" />
             <el-option label="分析师 (Analyst)" value="analyst" />
             <el-option label="只读用户 (Viewer)" value="viewer" />
@@ -103,8 +124,8 @@
     </el-dialog>
 
     <!-- 重置密码对话框 -->
-    <el-dialog v-model="resetPwdVisible" title="重置密码" width="400px" class="unified-dialog">
-      <el-form :model="resetForm" label-width="80px">
+    <el-dialog v-model="resetPwdVisible" title="重置密码" width="400px" class="google-dialog">
+      <el-form :model="resetForm" label-width="80px" class="google-form">
         <el-form-item label="用户名">
           <el-input v-model="resetForm.username" disabled />
         </el-form-item>
@@ -123,7 +144,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Search, MagicStick } from '@element-plus/icons-vue'
+import { Plus, Search, MagicStick, User } from '@element-plus/icons-vue'
 import axios from '@/utils/axios'
 import glowEffectManager from '@/utils/glowEffectManager'
 
@@ -163,12 +184,6 @@ const fetchUsers = async () => {
       }
     })
     
-    // 添加调试日志
-    console.log('🔍 用户列表响应:', response)
-    console.log('🔍 response.success:', response.success)
-    console.log('🔍 response.data:', response.data)
-    console.log('🔍 response.data?.list:', response.data?.list)
-    
     // 修复：正确解析响应格式 {success, data: {list, total, page, page_size}, message}
     if (response.success && response.data && response.data.list) {
       users.value = response.data.list
@@ -178,9 +193,6 @@ const fetchUsers = async () => {
     }
   } catch (error) {
     ElMessage.error('获取用户列表失败')
-    console.error('❌ 获取用户列表错误:', error)
-    console.error('❌ error.response:', error.response)
-    console.error('❌ error.response?.data:', error.response?.data)
   } finally {
     loading.value = false
   }
@@ -359,9 +371,47 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 自定义输入框样式 */
-:deep(.custom-input .el-input__wrapper) {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.filter-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.filter-inputs {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.filter-buttons {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.user-avatar {
+  background: var(--primary);
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .filter-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-inputs {
+    flex-direction: column;
+  }
+
+  .filter-inputs .el-input,
+  .filter-inputs .el-select {
+    width: 100% !important;
+  }
 }
 </style>

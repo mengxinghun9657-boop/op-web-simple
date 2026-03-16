@@ -225,7 +225,6 @@ const originalConfig = ref({})
 const loadConfig = async () => {
   try {
     const response = await configApi.loadConfig('pfs')
-    console.log('PFS 配置响应:', response)
     
     // 统一响应格式处理：response.data.config
     const config = response.data?.config || response.config || {}
@@ -250,15 +249,11 @@ const loadConfig = async () => {
       
       // 保存原始配置
       originalConfig.value = JSON.parse(JSON.stringify(configForm.value))
-      
-      console.log('✅ PFS 配置加载成功:', configForm.value)
     } else {
-      console.log('⚠️  未找到 PFS 配置，使用默认值')
       // 保存默认配置
       originalConfig.value = JSON.parse(JSON.stringify(configForm.value))
     }
   } catch (error) {
-    console.error('加载 PFS 配置失败:', error)
     ElMessage.warning('加载配置失败，使用默认配置')
     // 保存默认配置
     originalConfig.value = JSON.parse(JSON.stringify(configForm.value))
@@ -293,12 +288,10 @@ const handleTestConnection = async () => {
 
     if (response.success) {
       ElMessage.success(response.message || '连接测试成功！')
-      console.log('连接详情:', response.data)
     } else {
       ElMessage.error(response.error || '连接测试失败')
     }
   } catch (error) {
-    console.error('测试连接失败:', error)
     ElMessage.error('连接测试失败：' + (error.message || '未知错误'))
   } finally {
     testing.value = false
@@ -328,7 +321,6 @@ const handleSaveConfig = async () => {
     
     ElMessage.success('PFS 配置保存成功！')
   } catch (error) {
-    console.error('保存配置失败:', error)
     ElMessage.error('保存配置失败：' + error.message)
   } finally {
     saving.value = false

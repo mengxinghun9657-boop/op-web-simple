@@ -14,6 +14,8 @@ const props = defineProps({
 const chartDom = ref(null)
 let chartInstance = null
 
+const handleResize = () => chartInstance?.resize()
+
 const init = () => {
   if(chartDom.value) {
     chartInstance = echarts.init(chartDom.value)
@@ -27,11 +29,11 @@ watch(() => props.options, (newVal) => {
 
 onMounted(() => {
   init()
-  window.addEventListener('resize', () => chartInstance?.resize())
+  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', () => chartInstance?.resize())
+  window.removeEventListener('resize', handleResize)
   chartInstance?.dispose()
 })
 </script>

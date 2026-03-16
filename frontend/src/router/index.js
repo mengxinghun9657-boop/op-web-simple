@@ -36,14 +36,7 @@ const routes = [
       { path: 'admin/users', name: 'UserManagement', component: () => import('@/views/admin/UserManagement.vue'), meta: { title: '用户管理', roles: ['super_admin', 'admin'] } },
       { path: 'admin/audit', name: 'AuditLog', component: () => import('@/views/admin/AuditLog.vue'), meta: { title: '审计日志', roles: ['super_admin', 'admin'] } },
       { path: 'minio', name: 'MinIO', component: () => import('@/views/MinIO.vue'), meta: { title: 'MinIO存储', roles: ['super_admin', 'admin'] } },
-      { path: 'ai-query', name: 'AIIntelligentQuery', component: () => import('@/views/AIIntelligentQuery.vue'), meta: { title: 'AI 智能查询' } },
-      { path: 'knowledge-management', name: 'KnowledgeManagement', component: () => import('@/views/KnowledgeManagement.vue'), meta: { title: '知识库管理', roles: ['super_admin'] } },
-      { path: 'report-browser', name: 'ReportIndexBrowser', component: () => import('@/views/ReportIndexBrowser.vue'), meta: { title: '报告索引浏览' } },
       { path: 'system-config', name: 'SystemConfig', component: () => import('@/views/SystemConfig.vue'), meta: { title: '系统配置', roles: ['super_admin', 'admin'] } },
-      // 路由规则管理
-      { path: 'routing/suggestions/review', name: 'SuggestionReview', component: () => import('@/views/routing/SuggestionReview.vue'), meta: { title: '规则建议审核', roles: ['super_admin', 'admin'] } },
-      { path: 'routing/rules', name: 'RoutingRules', component: () => import('@/views/routing/RoutingRules.vue'), meta: { title: '路由规则管理', roles: ['super_admin', 'admin'] } },
-      { path: 'routing/statistics', name: 'RoutingStatistics', component: () => import('@/views/routing/RoutingStatistics.vue'), meta: { title: '路由统计' } },
       // 硬件告警管理
       { path: 'alerts', name: 'AlertList', component: () => import('@/views/alerts/AlertList.vue'), meta: { title: '硬件告警管理' } },
       { path: 'alerts/:id', name: 'AlertDetail', component: () => import('@/views/alerts/AlertDetail.vue'), meta: { title: '告警详情' } },

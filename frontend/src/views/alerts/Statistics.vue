@@ -1,14 +1,22 @@
 <template>
-  <div class="statistics-container">
-    <!-- 页面标题 -->
+  <div class="page-container">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <h1 class="page-title">告警统计分析</h1>
-      <p class="page-description">可视化展示告警趋势和分布情况</p>
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><DataAnalysis /></el-icon>
+          </div>
+          告警统计分析
+        </div>
+        <div class="page-subtitle">可视化展示告警趋势和分布情况</div>
+      </div>
     </div>
 
     <!-- 时间范围选择 -->
-    <el-card class="filter-card" shadow="never">
-      <el-form inline>
+    <div class="content-card">
+      <div class="content-card-body">
+        <el-form inline>
         <el-form-item label="时间范围">
           <el-date-picker
             v-model="dateRange"
@@ -36,16 +44,17 @@
           </el-button>
         </el-form-item>
       </el-form>
-    </el-card>
+      </div>
+    </div>
 
     <!-- 统计图表 -->
     <el-row :gutter="20">
       <!-- 告警趋势图 -->
       <el-col :span="24">
-        <el-card class="chart-card" shadow="never">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">告警趋势</span>
+        <div class="content-card">
+          <div class="content-card-header">
+            <div class="content-card-title">告警趋势</div>
+            <div class="content-card-extra">
               <el-radio-group v-model="trendGroupBy" size="small" @change="fetchTrendData">
                 <el-radio-button label="hour">按小时</el-radio-button>
                 <el-radio-button label="day">按天</el-radio-button>
@@ -53,17 +62,19 @@
                 <el-radio-button label="month">按月</el-radio-button>
               </el-radio-group>
             </div>
-          </template>
-          <div ref="trendChartRef" class="chart" style="height: 400px"></div>
-        </el-card>
+          </div>
+          <div class="content-card-body">
+            <div ref="trendChartRef" class="chart" style="height: 400px"></div>
+          </div>
+        </div>
       </el-col>
 
       <!-- 告警类型分布 -->
       <el-col :xs="24" :sm="24" :md="12">
-        <el-card class="chart-card" shadow="never">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">告警类型分布</span>
+        <div class="content-card">
+          <div class="content-card-header">
+            <div class="content-card-title">告警类型分布</div>
+            <div class="content-card-extra">
               <el-select v-model="distributionDimension" size="small" @change="fetchDistributionData">
                 <el-option label="按告警类型" value="alert_type" />
                 <el-option label="按组件" value="component" />
@@ -71,25 +82,29 @@
                 <el-option label="按集群" value="cluster" />
               </el-select>
             </div>
-          </template>
-          <div ref="distributionChartRef" class="chart" style="height: 400px"></div>
-        </el-card>
+          </div>
+          <div class="content-card-body">
+            <div ref="distributionChartRef" class="chart" style="height: 400px"></div>
+          </div>
+        </div>
       </el-col>
 
       <!-- 节点告警排行 -->
       <el-col :xs="24" :sm="24" :md="12">
-        <el-card class="chart-card" shadow="never">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">节点告警排行 TOP 10</span>
+        <div class="content-card">
+          <div class="content-card-header">
+            <div class="content-card-title">节点告警排行 TOP 10</div>
+            <div class="content-card-extra">
               <el-radio-group v-model="topNodesOrderBy" size="small" @change="fetchTopNodesData">
                 <el-radio-button label="total">总数</el-radio-button>
                 <el-radio-button label="critical">严重</el-radio-button>
               </el-radio-group>
             </div>
-          </template>
-          <div ref="topNodesChartRef" class="chart" style="height: 400px"></div>
-        </el-card>
+          </div>
+          <div class="content-card-body">
+            <div ref="topNodesChartRef" class="chart" style="height: 400px"></div>
+          </div>
+        </div>
       </el-col>
     </el-row>
   </div>
@@ -97,7 +112,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, DataAnalysis } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { getAlertTrend, getAlertDistribution, getTopNodes } from '@/api/statistics'
 
@@ -430,47 +445,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.statistics-container {
-  padding: 20px;
-}
-
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0 0 8px 0;
-}
-
-.page-description {
-  font-size: 14px;
-  color: #64748b;
-  margin: 0;
-}
-
-.filter-card {
-  margin-bottom: 20px;
-}
-
-.chart-card {
-  margin-bottom: 20px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
 .chart {
   width: 100%;
 }

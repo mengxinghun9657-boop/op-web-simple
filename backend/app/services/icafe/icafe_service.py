@@ -33,39 +33,57 @@ class ICafeService:
     def test_connection(self) -> tuple[bool, str]:
         """
         测试 iCafe API 连接
-        
+
         Returns:
             tuple[bool, str]: (是否成功, 消息)
         """
         try:
-            # 构造测试URL - 使用简单的API端点
-            test_url = f"{self.api_url}/space/{self.space_id}/info"
-            
-            # 测试请求 - 使用较短的超时时间
+            # 构造测试URL - 使用获取空间字段的API端点验证连接和权限
+            test_url = f"{self.api_url}/spaces/{self.space_id}/fieldsForCreate"
+
+            # iCafe API 使用查询参数传递认证信息（不支持 HTTP Basic Auth）
+            params = {
+                'username': self.username,
+                'password': self.password,
+                'issueTypeName': 'Bug'
+            }
+
             headers = {"Content-Type": "application/json"}
-            
+
             logger.info(f"测试 iCafe 连接: {test_url}")
-            
+
             response = requests.get(
-                test_url, 
-                headers=headers, 
-                timeout=10,  # 10秒超时
-                auth=(self.username, self.password) if self.username and self.password else None
+                test_url,
+                headers=headers,
+                params=params,
+                timeout=10
             )
             
-            # 检查响应状态
-            if response.status_code == 200:
+            # 检查 HTTP 状态
+            if response.status_code != 200:
+                logger.warning(f"❌ iCafe 连接失败: HTTP {response.status_code}")
+                return False, f"连接失败：HTTP {response.status_code}"
+
+            # 解析 iCafe API 响应（使用 JSON body 中的 status 字段判断）
+            result = response.json()
+            api_status = result.get('status')
+            api_message = result.get('message', '')
+
+            if api_status == 200:
                 logger.success("✅ iCafe 连接测试成功")
                 return True, "连接测试成功"
-            elif response.status_code == 401:
+            elif api_status == 100:
                 logger.warning("❌ iCafe 认证失败")
                 return False, "认证失败：用户名或密码错误"
-            elif response.status_code == 404:
+            elif api_status == 101:
+                logger.warning("❌ iCafe 权限不足")
+                return False, f"权限不足：用户 {self.username} 没有空间 {self.space_id} 的访问权限"
+            elif api_status == 304:
                 logger.warning("❌ iCafe 空间不存在")
                 return False, f"空间 {self.space_id} 不存在"
             else:
-                logger.warning(f"❌ iCafe 连接失败: HTTP {response.status_code}")
-                return False, f"连接失败：HTTP {response.status_code}"
+                logger.warning(f"❌ iCafe 连接失败: status={api_status}, message={api_message}")
+                return False, f"连接失败：{api_message}"
                 
         except requests.exceptions.Timeout:
             logger.error("❌ iCafe 连接超时")
@@ -77,10 +95,39 @@ class ICafeService:
             logger.error(f"❌ iCafe 连接测试失败: {e}")
             return False, f"测试失败：{str(e)}"
 
+    def _send_create_request(self, card_data: Dict[str, Any], fields: Dict[str, Any]) -> Dict[str, Any]:
+        """发送创建卡片请求"""
+        url = f"{self.api_url}/space/{self.space_id}/issue/new"
+
+        payload = {
+            "username": self.username,
+            "password": self.password,
+            "issues": [{
+                "title": card_data.get('title', ''),
+                "detail": card_data.get('detail', ''),
+                "type": card_data.get('type', 'Bug'),
+                "fields": fields,
+                "creator": card_data.get('creator', self.username),
+                "comment": card_data.get('comment', '')
+            }]
+        }
+
+        headers = {"Content-Type": "application/json"}
+
+        logger.info(f"创建 iCafe 卡片: {card_data.get('title', '')}")
+        logger.info(f"请求字段: {json.dumps(fields, ensure_ascii=False)}")
+
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
+        response.raise_for_status()
+        return response.json()
+
     def create_card(self, card_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         创建 iCafe 卡片
-        
+
+        如果包含自定义字段导致 "Field name or value is incorrect" 错误，
+        自动回退到仅使用标准字段重试。
+
         Args:
             card_data: 卡片数据
                 - title: 标题
@@ -89,40 +136,16 @@ class ICafeService:
                 - fields: 字段字典
                 - creator: 创建人
                 - comment: 评论
-        
+
         Returns:
             创建结果字典
         """
         try:
-            url = f"{self.api_url}/space/{self.space_id}/issue/new"
-            
-            payload = {
-                "username": self.username,
-                "password": self.password,
-                "issues": [{
-                    "title": card_data.get('title', ''),
-                    "detail": card_data.get('detail', ''),
-                    "type": card_data.get('type', 'Task'),
-                    "fields": card_data.get('fields', {}),
-                    "creator": card_data.get('creator', self.username),
-                    "comment": card_data.get('comment', '')
-                }]
-            }
-            
-            headers = {
-                "Content-Type": "application/json"
-            }
-            
-            logger.info(f"创建 iCafe 卡片: {card_data.get('title', '')}")
-            logger.debug(f"请求 URL: {url}")
-            logger.debug(f"请求 payload: {json.dumps(payload, ensure_ascii=False, indent=2)}")
-            
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
-            response.raise_for_status()
-            
-            result = response.json()
+            all_fields = card_data.get('fields', {})
+
+            result = self._send_create_request(card_data, all_fields)
             logger.debug(f"响应结果: {json.dumps(result, ensure_ascii=False, indent=2)}")
-            
+
             if result.get("status") == 200:
                 logger.success(f"✅ iCafe 卡片创建成功: {card_data.get('title', '')}")
                 return {
@@ -130,15 +153,43 @@ class ICafeService:
                     "message": "卡片创建成功",
                     "data": result
                 }
-            else:
-                error_msg = result.get('message', '未知错误')
-                logger.error(f"❌ iCafe 卡片创建失败: {error_msg}")
-                return {
-                    "success": False,
-                    "message": error_msg,
-                    "data": result
-                }
-                
+
+            error_msg = result.get('message', '未知错误')
+
+            # 如果是字段错误，用标准字段重试
+            if 'field name or value is incorrect' in error_msg.lower():
+                logger.warning(f"字段不匹配，回退到标准字段重试: {error_msg}")
+                # 只保留 iCafe 标准字段
+                standard_fields = {}
+                for key in ('负责人', '流程状态', '优先级'):
+                    if key in all_fields:
+                        standard_fields[key] = all_fields[key]
+
+                retry_result = self._send_create_request(card_data, standard_fields)
+
+                if retry_result.get("status") == 200:
+                    logger.success(f"✅ iCafe 卡片创建成功（使用标准字段）: {card_data.get('title', '')}")
+                    return {
+                        "success": True,
+                        "message": "卡片创建成功（部分自定义字段不支持，已自动跳过）",
+                        "data": retry_result
+                    }
+                else:
+                    retry_error = retry_result.get('message', '未知错误')
+                    logger.error(f"❌ iCafe 卡片创建失败（标准字段重试）: {retry_error}")
+                    return {
+                        "success": False,
+                        "message": retry_error,
+                        "data": retry_result
+                    }
+
+            logger.error(f"❌ iCafe 卡片创建失败: {error_msg}")
+            return {
+                "success": False,
+                "message": error_msg,
+                "data": result
+            }
+
         except requests.exceptions.Timeout:
             logger.error("iCafe API 请求超时")
             return {
@@ -234,41 +285,46 @@ class ICafeService:
     
     def build_card_fields(self, form_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        构建卡片字段（基于 HMLCC-2136 的字段结构）
-        
+        构建卡片字段（基于 HMLCC 空间 Bug 类型的字段结构）
+
+        注意：必须使用 Bug 类型，Task 类型的方向大类/汇总分类/细分分类为必填字段，
+        即使传了最基础的字段也会报 "Field name or value is incorrect"。
+
         Args:
             form_data: 表单数据
                 - responsible_person: 负责人
                 - subcategory: 细分分类
                 - work_hours: 工时
                 - plan: 所属计划
-        
+
         Returns:
             字段字典
         """
         fields = {}
-        
-        # 手动填写字段
+
+        # 标准字段
         if form_data.get('responsible_person'):
             fields['负责人'] = form_data['responsible_person']
-        
+
+        fields['流程状态'] = '新建'
+        fields['优先级'] = 'P1-High'
+
+        # 用户填写的自定义字段
         if form_data.get('subcategory'):
-            # 细分分类：BCC,GPU 格式
             fields['细分分类'] = form_data['subcategory']
-        
+
         if form_data.get('work_hours'):
             fields['占用工时'] = str(form_data['work_hours'])
-        
-        # 下拉选择字段
+
         if form_data.get('plan'):
             fields['所属计划'] = form_data['plan']
-        
-        # 固定字段（基于 HMLCC-2136 的字段）
+
+        # 固定业务字段（Bug 类型下均已验证支持）
         fields['有感事件'] = '否'
         fields['TAM负责人'] = '陈少禄'
         fields['汇总分类'] = '运维事件'
-        fields['方向大类'] = '计算'  # 从 HMLCC-2136 复制
-        
+        fields['方向大类'] = '计算'
+
         return fields
 
 

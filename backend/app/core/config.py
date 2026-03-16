@@ -100,18 +100,7 @@ class Settings(BaseSettings):
     
     # Worker配置
     WORKERS: int = 4
-    
-    # 向量数据库配置
-    VECTOR_DB_TYPE: str = "faiss"  # 或 "chroma"
-    VECTOR_DB_PATH: str = "/app/vector_store"
-    VECTOR_DIMENSION: int = 768  # bge-small-zh 的向量维度
-    
-    # Embedding 模型配置
-    EMBEDDING_MODEL: str = "bge-small-zh"  # 模型名称
-    EMBEDDING_API_URL: str = ""  # Embedding API 地址（必填，如果使用 API 模式）
-    EMBEDDING_API_KEY: str = ""  # Embedding API 密钥（可选）
-    EMBEDDING_USE_LOCAL: bool = False  # 是否使用本地模型（默认 False，使用 API）
-    
+
     # ERNIE API 配置（百度文心一言）
     ERNIE_API_URL: str = "http://llms-se.baidu-int.com:8200/chat/completions"
     ERNIE_API_KEY: str = ""  # API 密钥
@@ -130,7 +119,6 @@ def ensure_directories():
         settings.UPLOAD_DIR,
         settings.RESULT_DIR,
         settings.LOG_DIR,
-        settings.VECTOR_DB_PATH,  # 向量数据库目录
     ]
     for directory in directories:
         os.makedirs(directory, exist_ok=True)

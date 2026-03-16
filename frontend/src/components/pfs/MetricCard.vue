@@ -172,7 +172,7 @@ const trendText = computed(() => {
   background: var(--bg-container);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
-  padding: var(--spacing-4);
+  padding: var(--space-4);
   transition: all 0.3s ease;
 }
 
@@ -190,14 +190,14 @@ const trendText = computed(() => {
 }
 
 .metric-card.status-critical {
-  border-left: 4px solid var(--color-danger);
+  border-left: 4px solid var(--color-error);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--spacing-3);
+  margin-bottom: var(--space-3);
 }
 
 .metric-info {
@@ -205,14 +205,14 @@ const trendText = computed(() => {
 }
 
 .metric-name {
-  font-size: var(--font-size-lg);
+  font-size: var(--text-lg);
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 var(--spacing-1) 0;
+  margin: 0 0 var(--space-1) 0;
 }
 
 .metric-desc {
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.4;
@@ -231,49 +231,49 @@ const trendText = computed(() => {
 }
 
 .status-icon.status-critical {
-  color: var(--color-danger);
+  color: var(--color-error);
 }
 
 .card-body {
-  margin-bottom: var(--spacing-3);
+  margin-bottom: var(--space-3);
 }
 
 .metric-value {
   display: flex;
   align-items: baseline;
-  gap: var(--spacing-2);
-  margin-bottom: var(--spacing-3);
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .value {
-  font-size: var(--font-size-3xl);
+  font-size: var(--text-3xl);
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .unit {
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   color: var(--text-secondary);
 }
 
 .metric-stats {
   display: flex;
-  gap: var(--spacing-4);
+  gap: var(--space-4);
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
+  gap: var(--space-1);
 }
 
 .stat-label {
-  font-size: var(--font-size-xs);
+  font-size: var(--text-xs);
   color: var(--text-tertiary);
 }
 
 .stat-value {
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -282,19 +282,19 @@ const trendText = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: var(--spacing-3);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--border-color);
 }
 
 .trend-indicator {
   display: flex;
   align-items: center;
-  gap: var(--spacing-1);
-  font-size: var(--font-size-sm);
+  gap: var(--space-1);
+  font-size: var(--text-sm);
 }
 
 .trend-indicator.trend-up {
-  color: var(--color-danger);
+  color: var(--color-error);
 }
 
 .trend-indicator.trend-down {

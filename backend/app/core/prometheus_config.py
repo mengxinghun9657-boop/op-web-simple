@@ -142,35 +142,55 @@ class PrometheusConfig:
     def test_connection(self) -> tuple[bool, str]:
         """
         测试连接是否有效
-        
+
         Returns:
             (是否成功, 消息)
         """
         try:
             import requests
             import time
-            
+
             url = f"{self.get_base_url()}/api/datasources/proxy/{self.get_datasource_id()}/api/v1/query"
             params = {
                 'query': 'up',
                 'time': int(time.time())
             }
-            
+
+            # 检查Cookie配置
+            cookies = self.get_cookies()
+            if not cookies:
+                return False, "⚠️  Cookie 未配置，请先配置 Cookie"
+
             response = requests.get(
                 url,
                 headers=self.get_headers(),
-                cookies=self.get_cookies(),
+                cookies=cookies,
                 params=params,
-                timeout=10
+                timeout=10,
+                verify=False  # 内网环境跳过SSL证书验证
             )
-            
+
             if response.status_code == 200:
-                return True, "连接成功！Cookie有效"
+                data = response.json()
+                if data.get('status') == 'success':
+                    return True, "✅ 连接成功！Cookie有效"
+                else:
+                    return False, f"❌ 连接失败，Prometheus 返回错误: {data.get('error', 'Unknown')}"
+            elif response.status_code == 401:
+                return False, "❌ Cookie 已过期或无效（状态码: 401）"
+            elif response.status_code == 403:
+                return False, "❌ 权限不足（状态码: 403），请检查账号权限"
             else:
-                return False, f"连接失败，状态码: {response.status_code}"
-                
+                return False, f"❌ 连接失败，状态码: {response.status_code}"
+
+        except requests.exceptions.SSLError as e:
+            return False, f"❌ SSL 连接错误: {str(e)[:200]}\n提示: 这通常是 Cookie 认证失败或网络配置问题"
+        except requests.exceptions.ConnectionError as e:
+            return False, f"❌ 网络连接错误: {str(e)[:200]}\n提示: 请检查网络连接和代理配置"
+        except requests.exceptions.Timeout:
+            return False, "❌ 请求超时（10秒），请检查网络连接"
         except Exception as e:
-            return False, f"连接错误: {str(e)}"
+            return False, f"❌ 连接错误: {str(e)[:200]}"
     
     def get_all_config(self) -> Dict:
         """获取完整配置（用于API返回）"""

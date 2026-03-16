@@ -75,6 +75,7 @@ async def get_alerts(
         
         # 排序逻辑
         sort_field_map = {
+            'id': AlertRecord.id,
             'timestamp': AlertRecord.timestamp,
             'severity': AlertRecord.severity,
             'status': AlertRecord.status,
@@ -880,7 +881,7 @@ async def create_icafe_card(
         create_data = {
             'title': title,
             'detail': detail,
-            'type': 'Task',  # 固定为 Task 类型
+            'type': 'Bug',  # 使用 Bug 类型（与 HMLCC 空间自定义字段匹配）
             'fields': fields,
             'creator': icafe_config.get('username', ''),
             'comment': f'由告警系统自动创建，告警ID: {alert_id}'

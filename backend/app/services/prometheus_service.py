@@ -6,9 +6,13 @@ Prometheus查询服务
 """
 import time
 import requests
+import urllib3
 from typing import Dict, List, Optional, Any
 from app.core.prometheus_config import get_prometheus_config
 from app.core.logger import logger
+
+# 禁用 SSL 警告（仅限内网环境）
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class PrometheusService:
@@ -21,41 +25,65 @@ class PrometheusService:
     def query_metric(self, query: str, query_time: Optional[int] = None) -> Optional[str]:
         """
         查询单个Prometheus指标
-        
+
         Args:
             query: Prometheus查询语句
             query_time: 查询时间戳，None则使用当前时间
-            
+
         Returns:
             查询结果值，失败返回None
         """
         try:
             url = f"{self.config.get_base_url()}/api/datasources/proxy/{self.config.get_datasource_id()}/api/v1/query"
-            
+
             params = {
                 'query': query,
                 'time': query_time or int(time.time())
             }
-            
+
+            # 检查Cookie配置
+            cookies = self.config.get_cookies()
+            if not cookies:
+                logger.warning("⚠️  Prometheus Cookie 未配置，请在资源分析页面配置 Cookie")
+                return None
+
             response = requests.get(
                 url,
                 headers=self.config.get_headers(),
-                cookies=self.config.get_cookies(),
+                cookies=cookies,
                 params=params,
-                timeout=30
+                timeout=30,
+                verify=False  # 内网环境跳过SSL证书验证
             )
-            
+
             if response.status_code == 200:
                 data = response.json()
                 if data.get('status') == 'success' and data['data']['result']:
                     return data['data']['result'][0]['value'][1]
+                else:
+                    logger.warning(f"查询无结果: {query[:100]}...")
+            elif response.status_code == 401:
+                logger.error(f"❌ Cookie 已过期或无效，状态码: 401，请在资源分析页面重新配置 Cookie")
+            elif response.status_code == 403:
+                logger.error(f"❌ 权限不足，状态码: 403，请检查 Cookie 对应账号的权限")
             else:
-                logger.warning(f"查询失败，状态码: {response.status_code}, 查询: {query}")
-                
+                logger.warning(f"查询失败，状态码: {response.status_code}, 查询: {query[:100]}...")
+
             return None
-            
+
+        except requests.exceptions.SSLError as e:
+            logger.error(f"❌ SSL 连接错误: {str(e)[:200]}")
+            logger.error(f"   提示: 如果在内网环境，这通常是 Cookie 认证失败导致")
+            return None
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"❌ 网络连接错误: {str(e)[:200]}")
+            logger.error(f"   提示: 请检查网络连接和代理配置")
+            return None
+        except requests.exceptions.Timeout as e:
+            logger.error(f"❌ 请求超时: {str(e)[:200]}")
+            return None
         except Exception as e:
-            logger.error(f"查询指标失败: {query}, 错误: {str(e)}")
+            logger.error(f"查询指标失败: {query[:100]}..., 错误: {str(e)[:200]}")
             return None
     
     def get_cluster_metrics(self, cluster_id: str) -> Dict[str, Any]:

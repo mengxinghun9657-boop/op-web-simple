@@ -1,204 +1,159 @@
 <template>
-  <div class="minio-page">
-    <!-- 页面标题 -->
+  <div class="page-container">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <div class="page-header-icon minio">
-        <el-icon :size="24"><Box /></el-icon>
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon minio-icon">
+            <el-icon><Box /></el-icon>
+          </div>
+          MinIO 对象存储
+        </div>
+        <div class="page-subtitle">管理分析报告文件存储</div>
       </div>
-      <div class="page-header-content">
-        <h2 class="page-title">MinIO 对象存储</h2>
-        <p class="page-subtitle">管理分析报告文件存储</p>
-      </div>
-    </div>
-
-    <!-- 主卡片 -->
-    <Card
-      title="MinIO Console"
-      icon="Box"
-      class="animate-slide-in-up"
-    >
-      <template #header>
+      <div class="page-actions">
         <el-button type="primary" size="large" @click="openConsole">
           <el-icon><Link /></el-icon>打开控制台
         </el-button>
-      </template>
+      </div>
+    </div>
 
-      <div class="console-info">
+    <!-- MinIO Console -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><Box /></el-icon>
+          MinIO Console
+        </div>
+      </div>
+      <div class="content-card-body">
         <p class="console-desc">高性能对象存储服务</p>
-      </div>
 
-      <!-- 连接信息 -->
-      <div class="info-grid">
-        <div class="info-item">
-          <div class="info-label">
-            <el-icon><Monitor /></el-icon>
-            <span>控制台地址</span>
+        <!-- 连接信息 -->
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">
+              <el-icon><Monitor /></el-icon>
+              <span>控制台地址</span>
+            </div>
+            <div class="info-value">{{ consoleUrl }}</div>
           </div>
-          <div class="info-value">{{ consoleUrl }}</div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">
-            <el-icon><FolderOpened /></el-icon>
-            <span>存储桶</span>
+          <div class="info-item">
+            <div class="info-label">
+              <el-icon><FolderOpened /></el-icon>
+              <span>存储桶</span>
+            </div>
+            <div class="info-value">op-reports</div>
           </div>
-          <div class="info-value">op-reports</div>
         </div>
-      </div>
 
-      <!-- 凭证信息 -->
-      <div class="credentials-section">
-        <h4 class="credentials-title">
-          <el-icon><Key /></el-icon>
-          <span>访问凭证</span>
-        </h4>
-        <div class="credentials-grid">
-          <div class="credential-item">
-            <span class="credential-label">用户名</span>
-            <span class="credential-value">admin</span>
-          </div>
-          <div class="credential-item">
-            <span class="credential-label">密码</span>
-            <span class="credential-value">Zhang~~1</span>
+        <!-- 凭证信息 -->
+        <div class="credentials-section">
+          <h4 class="credentials-title">
+            <el-icon><Key /></el-icon>
+            <span>访问凭证</span>
+          </h4>
+          <div class="credentials-grid">
+            <div class="credential-item">
+              <span class="credential-label">用户名</span>
+              <span class="credential-value">admin</span>
+            </div>
+            <div class="credential-item">
+              <span class="credential-label">密码</span>
+              <span class="credential-value">Zhang~~1</span>
+            </div>
           </div>
         </div>
       </div>
-    </Card>
+    </div>
 
     <!-- 功能说明 -->
-    <Card
-      title="功能说明"
-      icon="InfoFilled"
-      class="animate-slide-in-up"
-    >
-      <div class="features-grid">
-        <div class="feature-item">
-          <div class="feature-icon blue">
-            <el-icon><Document /></el-icon>
-          </div>
-          <div class="feature-content">
-            <div class="feature-title">报告存储</div>
-            <div class="feature-desc">自动存储分析报告HTML文件</div>
-          </div>
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><InfoFilled /></el-icon>
+          功能说明
         </div>
-        <div class="feature-item">
-          <div class="feature-icon green">
-            <el-icon><Download /></el-icon>
+      </div>
+      <div class="content-card-body">
+        <div class="features-grid">
+          <div class="feature-item">
+            <div class="feature-icon blue">
+              <el-icon><Document /></el-icon>
+            </div>
+            <div class="feature-content">
+              <div class="feature-title">报告存储</div>
+              <div class="feature-desc">自动存储分析报告HTML文件</div>
+            </div>
           </div>
-          <div class="feature-content">
-            <div class="feature-title">文件下载</div>
-            <div class="feature-desc">支持批量下载历史报告</div>
+          <div class="feature-item">
+            <div class="feature-icon green">
+              <el-icon><Download /></el-icon>
+            </div>
+            <div class="feature-content">
+              <div class="feature-title">文件下载</div>
+              <div class="feature-desc">支持批量下载历史报告</div>
+            </div>
           </div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon purple">
-            <el-icon><Setting /></el-icon>
-          </div>
-          <div class="feature-content">
-            <div class="feature-title">存储管理</div>
-            <div class="feature-desc">可视化管理存储桶和文件</div>
+          <div class="feature-item">
+            <div class="feature-icon purple">
+              <el-icon><Setting /></el-icon>
+            </div>
+            <div class="feature-content">
+              <div class="feature-title">存储管理</div>
+              <div class="feature-desc">可视化管理存储桶和文件</div>
+            </div>
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { Box, Link, Monitor, FolderOpened, Key, InfoFilled, Document, Download, Setting } from '@element-plus/icons-vue'
-import { Card } from '@/components/common'
 
 const consoleUrl = `${window.location.protocol}//${window.location.hostname}:8087`
 const openConsole = () => window.open(consoleUrl, '_blank')
 </script>
 
 <style scoped>
-.minio-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-  animation: slideInUp var(--duration-slow) var(--ease-out);
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-4);
-}
-
-.page-header-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-lg);
-  color: white;
-}
-
-.page-header-icon.minio {
-  background: linear-gradient(135deg, #f97316, #dc2626);
-}
-
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.page-subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--text-tertiary);
-  margin: var(--spacing-1) 0 0;
-}
-
-.console-info {
-  margin-bottom: var(--spacing-4);
+.minio-icon {
+  background: linear-gradient(135deg, #f97316, #dc2626) !important;
 }
 
 .console-desc {
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   color: var(--text-secondary);
-  margin: 0;
+  margin: 0 0 var(--space-4) 0;
 }
 
 .info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-4);
-  margin-bottom: var(--spacing-6);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
 .info-item {
-  background: var(--bg-elevated);
+  background: var(--bg-secondary);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-4);
+  padding: var(--space-4);
   border: 1px solid var(--border-color);
 }
 
 .info-label {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
-  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
-  margin-bottom: var(--spacing-2);
+  margin-bottom: var(--space-2);
 }
 
 .info-value {
   font-family: 'Monaco', 'Menlo', monospace;
-  font-size: var(--font-size-lg);
+  font-size: var(--text-lg);
   color: var(--text-primary);
   font-weight: 500;
 }
@@ -207,42 +162,42 @@ const openConsole = () => window.open(consoleUrl, '_blank')
   background: rgba(249, 115, 22, 0.1);
   border: 1px solid rgba(249, 115, 22, 0.3);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-5);
+  padding: var(--space-5);
 }
 
 .credentials-title {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
-  font-size: var(--font-size-base);
+  gap: var(--space-2);
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 var(--spacing-4) 0;
+  margin: 0 0 var(--space-4) 0;
 }
 
 .credentials-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-4);
+  gap: var(--space-4);
 }
 
 .credential-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-elevated);
+  background: var(--bg-secondary);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-3) var(--spacing-4);
+  padding: var(--space-3) var(--space-4);
 }
 
 .credential-label {
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
 }
 
 .credential-value {
   font-family: 'Monaco', 'Menlo', monospace;
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   color: var(--text-primary);
   font-weight: 500;
 }
@@ -250,13 +205,13 @@ const openConsole = () => window.open(consoleUrl, '_blank')
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-4);
+  gap: var(--space-4);
 }
 
 .feature-item {
   display: flex;
   align-items: flex-start;
-  gap: var(--spacing-3);
+  gap: var(--space-3);
 }
 
 .feature-icon {
@@ -271,12 +226,12 @@ const openConsole = () => window.open(consoleUrl, '_blank')
 }
 
 .feature-icon.blue {
-  background: rgba(59, 130, 246, 0.2);
-  color: var(--color-primary);
+  background: rgba(26, 115, 232, 0.2);
+  color: var(--primary);
 }
 
 .feature-icon.green {
-  background: rgba(34, 197, 94, 0.2);
+  background: rgba(30, 142, 62, 0.2);
   color: var(--color-success);
 }
 
@@ -290,24 +245,21 @@ const openConsole = () => window.open(consoleUrl, '_blank')
 }
 
 .feature-title {
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   font-weight: 500;
   color: var(--text-primary);
-  margin-bottom: var(--spacing-1);
+  margin-bottom: var(--space-1);
 }
 
 .feature-desc {
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   line-height: 1.5;
 }
 
 @media (max-width: 768px) {
   .info-grid,
-  .credentials-grid {
-    grid-template-columns: 1fr;
-  }
-  
+  .credentials-grid,
   .features-grid {
     grid-template-columns: 1fr;
   }

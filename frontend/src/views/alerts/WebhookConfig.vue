@@ -1,17 +1,27 @@
 <template>
-  <div class="webhook-config-container">
+  <div class="page-container">
     <div class="page-header">
-      <h1 class="page-title">Webhook配置管理</h1>
-      <p class="page-description">配置告警通知的Webhook地址</p>
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><Connection /></el-icon>
+          </div>
+          Webhook配置管理
+        </div>
+        <div class="page-subtitle">配置告警通知的Webhook地址</div>
+      </div>
     </div>
 
-    <el-card shadow="never">
-      <div class="toolbar">
-        <el-button type="primary" @click="handleAdd">
-          <el-icon><Plus /></el-icon>
-          添加Webhook
-        </el-button>
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-extra">
+          <el-button type="primary" @click="handleAdd">
+            <el-icon><Plus /></el-icon>
+            添加Webhook
+          </el-button>
+        </div>
       </div>
+      <div class="content-card-body">
 
       <el-table v-loading="loading" :data="webhookList" stripe>
         <el-table-column prop="id" label="ID" width="80" />
@@ -59,7 +69,8 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+      </div>
+    </div>
 
     <!-- 添加/编辑对话框 -->
     <el-dialog
@@ -120,7 +131,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Connection } from '@element-plus/icons-vue'
 import { getWebhooks, createWebhook, updateWebhook, deleteWebhook, testWebhook } from '@/api/webhooks'
 
 const loading = ref(false)
@@ -267,62 +278,23 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.webhook-config-container {
-  padding: 20px;
-}
-
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0 0 8px 0;
-}
-
-.page-description {
-  font-size: 14px;
-  color: #64748b;
-  margin: 0;
-}
-
-.toolbar {
-  margin-bottom: 16px;
-}
-
 .form-tip {
-  font-size: 12px;
-  color: #64748b;
-  margin-top: 4px;
-  padding: 4px 8px;
-  background-color: #f1f5f9;
-  border-radius: 4px;
-}
-
-/* 修复浅色模式下的样式 */
-[data-theme="light"] .page-title {
-  color: #1e293b !important;
-}
-
-[data-theme="light"] .page-description {
-  color: #64748b !important;
-}
-
-[data-theme="light"] .form-tip {
-  color: #64748b !important;
-  background-color: #f1f5f9 !important;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-sm);
 }
 
 /* 修复表单项间距，避免重叠 */
 :deep(.el-form-item) {
-  margin-bottom: 22px;
+  margin-bottom: var(--space-5);
 }
 
 :deep(.el-form-item__label) {
   line-height: 32px;
-  padding-bottom: 8px;
+  padding-bottom: var(--space-2);
 }
 
 :deep(.el-form-item__content) {
@@ -342,8 +314,8 @@ onMounted(() => {
 }
 
 :deep(.el-checkbox) {
-  margin-right: 20px;
-  margin-bottom: 8px;
+  margin-right: var(--space-5);
+  margin-bottom: var(--space-2);
 }
 
 /* 修复radio-group间距 */
@@ -352,6 +324,6 @@ onMounted(() => {
 }
 
 :deep(.el-radio) {
-  margin-right: 20px;
+  margin-right: var(--space-5);
 }
 </style>

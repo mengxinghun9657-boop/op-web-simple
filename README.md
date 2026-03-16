@@ -407,7 +407,7 @@ docker cp ./config.json cluster-backend:/app/config.json
 **故障手册导入** - `import_fault_manual.py`
 ```bash
 # 导入故障手册数据到数据库
-docker exec -it cluster-backend python3 scripts/import_fault_manual.py
+docker compose -f docker-compose.prod.yml exec -T backend bash -c "cd /app && python3 backend/scripts/import_fault_manual.py"
 ```
 - 功能：将故障手册数据批量导入到 `fault_manual` 表
 - 用途：初始化或更新硬件告警故障手册

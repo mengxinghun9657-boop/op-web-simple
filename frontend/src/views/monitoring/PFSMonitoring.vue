@@ -1,39 +1,41 @@
 <template>
-  <div class="pfs-monitoring-page">
-    <!-- 页面标题 -->
+  <div class="page-container">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <div class="header-content">
-        <div class="header-left">
-          <el-icon class="header-icon"><Folder /></el-icon>
-          <div>
-            <h1 class="page-title">PFS 监控分析</h1>
-            <p class="page-subtitle">并行文件系统容量、吞吐、QPS、延迟监控</p>
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><Folder /></el-icon>
           </div>
+          PFS 监控分析
         </div>
-        <div class="header-right">
-          <el-button type="primary" @click="handleRefresh" :loading="loading">
-            <el-icon><Refresh /></el-icon>
-            刷新
-          </el-button>
-          <el-button @click="handleExport" :disabled="!hasData">
-            <el-icon><Download /></el-icon>
-            导出
-          </el-button>
-        </div>
+        <div class="page-subtitle">并行文件系统容量、吞吐、QPS、延迟监控</div>
+      </div>
+      <div class="page-actions">
+        <el-button type="primary" @click="handleRefresh" :loading="loading">
+          <el-icon><Refresh /></el-icon>
+          刷新
+        </el-button>
+        <el-button @click="handleExport" :disabled="!hasData">
+          <el-icon><Download /></el-icon>
+          导出
+        </el-button>
       </div>
     </div>
 
     <!-- 查询面板 -->
-    <div class="query-panel">
-      <QueryPanel
-        v-model:metrics="selectedMetrics"
-        v-model:level="metricLevel"
-        v-model:instance-id="selectedInstanceId"
-        v-model:client-id="selectedClientId"
-        v-model:time-range="timeRange"
-        v-model:compare-mode="compareMode"
-        @query="handleQuery"
-      />
+    <div class="content-card">
+      <div class="content-card-body">
+        <QueryPanel
+          v-model:metrics="selectedMetrics"
+          v-model:level="metricLevel"
+          v-model:instance-id="selectedInstanceId"
+          v-model:client-id="selectedClientId"
+          v-model:time-range="timeRange"
+          v-model:compare-mode="compareMode"
+          @query="handleQuery"
+        />
+      </div>
     </div>
 
     <!-- 数据展示区域 -->
@@ -122,10 +124,8 @@ const loadPFSConfig = async () => {
         selectedInstanceId.value = pfsConfig.value.instance_ids[0]
       }
       
-      console.log('✅ PFS 配置加载成功:', pfsConfig.value)
     }
   } catch (error) {
-    console.error('❌ 加载 PFS 配置失败:', error)
     ElMessage.warning('加载配置失败，使用默认配置')
   }
 }
@@ -196,25 +196,14 @@ const handleQuery = async () => {
 
       const response = await pfsApi.queryMetrics(request)
       
-      // 🔍 调试日志：查看后端返回的数据结构
-      console.log('=== PFS 查询调试信息 ===')
-      console.log('1. 后端返回数据:', response)
-      console.log('2. 数据数组长度:', response.data?.length)
-      console.log('3. 第一个指标完整结构:', JSON.stringify(response.data?.[0], null, 2))
-      console.log('4. 第一个指标的 statistics:', response.data?.[0]?.statistics)
-      console.log('5. metricsData 赋值前:', metricsData.value.length)
-      
       if (response.success) {
         metricsData.value = response.data
-        console.log('6. metricsData 赋值后:', metricsData.value.length)
-        console.log('7. overviewMetrics 计算结果:', metricsData.value.length)
         ElMessage.success(`查询成功，共 ${response.data.length} 个指标`)
       } else {
         ElMessage.error(response.error || '查询失败')
       }
     }
   } catch (error) {
-    console.error('查询失败:', error)
     ElMessage.error('查询失败：' + (error.message || '未知错误'))
   } finally {
     loading.value = false
@@ -269,7 +258,6 @@ const handleExport = async () => {
         ({ status, progress, message }) => {
           exportProgress.value = progress
           exportMessage.value = message
-          console.log(`导出进度: ${progress}% - ${message}`)
         },
         // 成功回调
         (taskData) => {
@@ -289,7 +277,6 @@ const handleExport = async () => {
       ElMessage.error(response.error || '导出失败')
     }
   } catch (error) {
-    console.error('导出失败:', error)
     ElMessage.error('导出失败：' + (error.message || '未知错误'))
   }
 }
@@ -303,110 +290,22 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.pfs-monitoring-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-  padding: var(--spacing-6);
-  min-height: 100vh;
-  background: var(--bg-base);
-}
-
-/* 页面头部 */
-.page-header {
-  animation: slideInUp 0.3s ease-out;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-4);
-  padding: var(--spacing-4);
-  background: var(--bg-container);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-4);
-}
-
-.header-icon {
-  font-size: 36px;
-  color: var(--color-primary);
-  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
-}
-
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-  line-height: 1.2;
-}
-
-.page-subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  margin: var(--spacing-1) 0 0 0;
-  line-height: 1.5;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-}
-
-/* 查询面板 */
-.query-panel {
-  background: var(--bg-container);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-  padding: var(--spacing-6);
-}
-
 /* 数据展示区域 */
 .data-display {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
+  gap: var(--space-6);
 }
 
 /* 概览卡片 */
 .overview-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-4);
-}
-
-/* 动画 */
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  gap: var(--space-4);
 }
 
 /* 响应式 */
 @media (max-width: 768px) {
-  .pfs-monitoring-page {
-    padding: var(--spacing-4);
-  }
-
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .overview-cards {
     grid-template-columns: 1fr;
   }

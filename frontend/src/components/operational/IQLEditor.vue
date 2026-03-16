@@ -185,13 +185,4 @@ watch(() => props.modelValue, (newVal) => {
   background-color: var(--color-primary-50); /* 添加浅色背景 */
 }
 
-/* 深色模式下的按钮样式 */
-:deep(.dark) .editor-actions .el-button {
-  color: var(--color-primary-400);
-}
-
-:deep(.dark) .editor-actions .el-button:hover {
-  color: var(--color-primary-300);
-  background-color: rgba(64, 158, 255, 0.1);
-}
 </style>

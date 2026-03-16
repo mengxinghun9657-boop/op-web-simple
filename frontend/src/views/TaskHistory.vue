@@ -1,149 +1,155 @@
 <template>
-  <div class="task-history-page">
-    <!-- 页面标题 -->
+  <div class="page-container">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <div class="page-header-icon">
-        <el-icon :size="24"><Clock /></el-icon>
-      </div>
-      <div class="page-header-content">
-        <h2 class="page-title">历史任务</h2>
-        <p class="page-subtitle">查看和管理所有任务执行记录</p>
+      <div>
+        <div class="page-title">
+          <div class="page-title-icon">
+            <el-icon><Clock /></el-icon>
+          </div>
+          历史任务
+        </div>
+        <div class="page-subtitle">查看和管理所有任务执行记录</div>
       </div>
     </div>
 
     <!-- 筛选卡片 -->
-    <Card
-      title="筛选条件"
-      icon="Search"
-      class="animate-slide-in-up"
-    >
-      <el-form :inline="true" :model="filters" class="filter-form">
-        <el-form-item label="任务状态">
-          <el-select v-model="filters.status" placeholder="全部" clearable class="filter-select">
-            <el-option label="全部" value="" />
-            <el-option label="等待中" value="pending" />
-            <el-option label="进行中" value="processing" />
-            <el-option label="已完成" value="completed" />
-            <el-option label="失败" value="failed" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="任务类型">
-          <el-select v-model="filters.task_type" placeholder="全部" clearable class="filter-select">
-            <el-option label="全部" value="" />
-            <el-option
-              v-for="option in taskTypeOptions"
-              :key="option.value"
-              :label="option.label"
-              :value="option.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button @click="resetFilters">
-            <el-icon><RefreshLeft /></el-icon>重置
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </Card>
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><Search /></el-icon>
+          筛选条件
+        </div>
+      </div>
+      <div class="content-card-body">
+        <el-form :inline="true" :model="filters" class="filter-form">
+          <el-form-item label="任务状态">
+            <el-select v-model="filters.status" placeholder="全部" clearable class="filter-select">
+              <el-option label="全部" value="" />
+              <el-option label="等待中" value="pending" />
+              <el-option label="进行中" value="processing" />
+              <el-option label="已完成" value="completed" />
+              <el-option label="失败" value="failed" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="任务类型">
+            <el-select v-model="filters.task_type" placeholder="全部" clearable class="filter-select">
+              <el-option label="全部" value="" />
+              <el-option
+                v-for="option in taskTypeOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-button @click="resetFilters">
+              <el-icon><RefreshLeft /></el-icon>重置
+            </el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+    </div>
 
     <!-- 任务列表 -->
-    <Card
-      class="animate-slide-in-up"
-    >
-      <template #header>
-        <div class="card-header-content">
-          <span class="card-header-title">
-            <el-icon><List /></el-icon>
-            任务列表
-          </span>
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="content-card-title">
+          <el-icon><List /></el-icon>
+          任务列表
+        </div>
+        <div class="content-card-extra">
           <el-tag type="info">共 {{ total }} 条</el-tag>
         </div>
-      </template>
-
-      <el-table :data="tasks" v-loading="loading" class="modern-table">
-        <el-table-column prop="id" label="任务ID" width="200" fixed="left">
-          <template #default="{ row }">
-            <span class="task-id">{{ row.id }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="任务类型" width="140">
-          <template #default="{ row }">
-            <el-tag :type="taskTypeColors[row.task_type] || 'primary'">
-              {{ taskTypeLabels[row.task_type] || row.task_type }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="statusColors[row.status]">
-              {{ statusLabels[row.status] }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="进度" width="200">
-          <template #default="{ row }">
-            <el-progress
-              :percentage="row.progress"
-              :status="getProgressStatus(row.status)"
-              :stroke-width="8"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="进度详情" width="140" align="center">
-          <template #default="{ row }">
-            <span class="progress-detail">{{ getProgressText(row) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="message" label="消息" min-width="200">
-          <template #default="{ row }">
-            <span class="message-text">{{ row.message }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="username" label="创建者" width="100">
-          <template #default="{ row }">
-            <el-tag type="primary">{{ row.username || 'system' }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="创建时间" width="180">
-          <template #default="{ row }">
-            <span class="time-text">{{ formatTime(row.created_at) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="完成时间" width="180">
-          <template #default="{ row }">
-            <span class="time-text time-success">{{ row.completed_at ? formatTime(row.completed_at) : '-' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <div class="action-buttons">
-              <el-button size="small" @click="showDetail(row)">
-                <el-icon><View /></el-icon>详情
-              </el-button>
-              <el-button size="small" type="primary" :disabled="row.status !== 'completed'" @click="downloadResult(row)">
-                <el-icon><Download /></el-icon>下载
-              </el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="table-pagination">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          @current-change="fetchTasks"
-          @size-change="fetchTasks"
-          layout="total, sizes, prev, pager, next, jumper"
-        />
       </div>
-    </Card>
+      <div class="content-card-body">
+        <el-table :data="tasks" v-loading="loading" class="google-table">
+          <el-table-column prop="id" label="任务ID" width="200" fixed="left">
+            <template #default="{ row }">
+              <span class="task-id">{{ row.id }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="任务类型" width="140">
+            <template #default="{ row }">
+              <el-tag :type="taskTypeColors[row.task_type] || 'primary'">
+                {{ taskTypeLabels[row.task_type] || row.task_type }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="statusColors[row.status]">
+                {{ statusLabels[row.status] }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="进度" width="200">
+            <template #default="{ row }">
+              <el-progress
+                :percentage="row.progress"
+                :status="getProgressStatus(row.status)"
+                :stroke-width="8"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="进度详情" width="140" align="center">
+            <template #default="{ row }">
+              <span class="progress-detail">{{ getProgressText(row) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="message" label="消息" min-width="200">
+            <template #default="{ row }">
+              <span class="message-text">{{ row.message }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="username" label="创建者" width="100">
+            <template #default="{ row }">
+              <el-tag type="primary">{{ row.username || 'system' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建时间" width="180">
+            <template #default="{ row }">
+              <span class="time-text">{{ formatTime(row.created_at) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="完成时间" width="180">
+            <template #default="{ row }">
+              <span class="time-text time-success">{{ row.completed_at ? formatTime(row.completed_at) : '-' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="200" fixed="right">
+            <template #default="{ row }">
+              <div class="action-buttons">
+                <el-button size="small" @click="showDetail(row)" class="action-btn">
+                  <el-icon><View /></el-icon>详情
+                </el-button>
+                <el-button size="small" type="primary" :disabled="row.status !== 'completed'" @click="downloadResult(row)" class="action-btn">
+                  <el-icon><Download /></el-icon>下载
+                </el-button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="table-footer">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :total="total"
+            :page-sizes="[10, 20, 50, 100]"
+            @current-change="fetchTasks"
+            @size-change="fetchTasks"
+            layout="total, sizes, prev, pager, next, jumper"
+            class="google-pagination"
+          />
+        </div>
+      </div>
+    </div>
 
     <!-- 任务详情弹窗 -->
-    <el-dialog v-model="detailVisible" title="任务详情" width="700px" class="unified-dialog">
-      <el-descriptions :column="2" border v-if="currentTask" class="modern-descriptions">
+    <el-dialog v-model="detailVisible" title="任务详情" width="700px" class="google-dialog">
+      <el-descriptions :column="2" border v-if="currentTask">
         <el-descriptions-item label="任务ID" :span="2">
           <span class="task-id">{{ currentTask.id }}</span>
         </el-descriptions-item>
@@ -195,7 +201,6 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, RefreshLeft, View, Download, Clock, List } from '@element-plus/icons-vue'
 import axios from '@/utils/axios'
-import { Card } from '@/components/common'
 import { debounce } from 'lodash-es'
 
 const tasks = ref([])
@@ -374,105 +379,33 @@ onMounted(() => { fetchTasks() })
 
 
 <style scoped>
-.task-history-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-  animation: slideInUp var(--duration-slow) var(--ease-out);
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-4);
-}
-
-.page-header-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--color-primary-500), var(--color-secondary-500));
-  border-radius: var(--radius-lg);
-  color: white;
-}
-
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.page-subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--text-tertiary);
-  margin: var(--spacing-1) 0 0;
-}
-
 .filter-form {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-4);
+  gap: var(--space-4);
 }
 
 .filter-select {
   min-width: 180px;
 }
 
-.card-header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.card-header-title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.table-pagination {
-  display: flex;
-  justify-content: flex-end;
-  padding: var(--spacing-4) 0 0;
-  border-top: 1px solid var(--border-color);
-  margin-top: var(--spacing-4);
-}
-
 /* 任务ID样式 */
 .task-id {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
-  font-size: var(--font-size-sm);
-  color: var(--color-primary-500);
+  font-size: var(--text-sm);
+  color: var(--primary);
 }
 
 /* 进度详情 */
 .progress-detail {
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   font-weight: 600;
-  color: var(--color-primary-500);
+  color: var(--primary);
 }
 
 /* 消息文本 */
 .message-text {
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -482,7 +415,7 @@ onMounted(() => { fetchTasks() })
 
 /* 时间文本 */
 .time-text {
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
 }
 
@@ -490,93 +423,12 @@ onMounted(() => { fetchTasks() })
   color: var(--color-success);
 }
 
-/* 操作按钮 */
-.action-buttons {
-  display: flex;
-  gap: var(--spacing-2);
-}
-
 /* 错误信息 */
 .error-pre {
   margin: 0;
   white-space: pre-wrap;
   word-wrap: break-word;
-  font-size: var(--font-size-sm);
-}
-
-/* 现代表格样式 */
-.modern-table {
-  --el-table-bg-color: transparent;
-  --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: var(--bg-elevated);
-  --el-table-row-hover-bg-color: var(--bg-spotlight);
-  --el-table-border-color: var(--border-color);
-}
-
-.modern-table :deep(.el-table__inner-wrapper::before) {
-  background-color: var(--border-color);
-}
-
-.modern-table :deep(th.el-table__cell) {
-  background-color: var(--bg-elevated);
-  color: var(--text-primary);
-  font-weight: 600;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.modern-table :deep(td.el-table__cell) {
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-
-.modern-table :deep(.el-table__row) {
-  transition: background-color var(--transition-fast);
-}
-
-.modern-table :deep(.el-table__row:hover td.el-table__cell) {
-  background-color: var(--bg-spotlight);
-}
-
-/* 弹窗样式 - 使用统一弹窗系统 */
-.unified-dialog :deep(.el-dialog) {
-  background-color: var(--bg-container);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-}
-
-.unified-dialog :deep(.el-dialog__header) {
-  padding: var(--spacing-4) var(--spacing-5);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.unified-dialog :deep(.el-dialog__title) {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.unified-dialog :deep(.el-dialog__body) {
-  padding: var(--spacing-5);
-}
-
-.unified-dialog :deep(.el-dialog__footer) {
-  padding: var(--spacing-4) var(--spacing-5);
-  border-top: 1px solid var(--border-color);
-}
-
-/* 描述列表 */
-.modern-descriptions :deep(.el-descriptions__label) {
-  background-color: var(--bg-elevated);
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.modern-descriptions :deep(.el-descriptions__content) {
-  background-color: var(--bg-container);
-  color: var(--text-primary);
-}
-
-.modern-descriptions :deep(.el-descriptions__cell) {
-  border-color: var(--border-color);
+  font-size: var(--text-sm);
 }
 
 /* 响应式 */
@@ -585,7 +437,7 @@ onMounted(() => { fetchTasks() })
     flex-direction: column;
     width: 100%;
   }
-  
+
   .filter-form .el-form-item {
     margin-right: 0;
     width: 100%;

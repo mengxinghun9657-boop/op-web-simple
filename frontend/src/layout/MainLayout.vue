@@ -129,13 +129,6 @@
         </div>
 
         <div class="header-right">
-          <!-- 主题切换 -->
-          <el-tooltip :content="isDark ? '切换浅色主题' : '切换深色主题'" placement="bottom">
-            <div class="header-icon-btn" @click="toggleTheme">
-              <el-icon :size="18"><component :is="isDark ? 'Sunny' : 'Moon'" /></el-icon>
-            </div>
-          </el-tooltip>
-
           <!-- 通知按钮 -->
           <el-tooltip content="通知" placement="bottom">
             <div class="header-icon-btn">
@@ -189,18 +182,17 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { 
-  MagicStick, ArrowDown, SwitchButton, TopRight, FolderOpened, Bell,
-  DataAnalysis, Odometer, Grid, TrendCharts, Cpu, Monitor, Connection, 
-  Clock, User, Document, Link, Expand, Fold, Sunny, Moon, Setting,
-  ChatDotRound, Collection, DataLine, ArrowRight
+import {
+  ArrowDown, SwitchButton, TopRight, Bell,
+  DataAnalysis, Odometer, Grid, TrendCharts, Cpu, Monitor, Connection,
+  Clock, User, Document, Link, Expand, Fold, Setting,
+  DataLine, ArrowRight
 } from '@element-plus/icons-vue'
 import { API_DOCS_URL } from '@/utils/config'
 import { useUserStore } from '@/stores/user'
 import { themeManager } from '@/utils/themeManager'
 
 const isCollapsed = ref(false)
-const isDark = ref(true)
 const expandedGroups = ref(['硬件告警', '分析报告', '路由管理', '系统管理'])
 const route = useRoute()
 const router = useRouter()
@@ -229,11 +221,10 @@ const toggleGroup = (groupName) => {
 const allMenuItems = [
   { name: '仪表盘', path: '/', icon: 'Odometer' },
   { name: 'CMDB', path: '/cmdb', icon: 'Grid' },
-  { name: 'AI 智能查询', path: '/ai-query', icon: 'ChatDotRound' },
-  
+
   // 硬件告警管理组
-  { 
-    name: '硬件告警', 
+  {
+    name: '硬件告警',
     icon: 'Bell',
     children: [
       { name: '告警列表', path: '/alerts', icon: 'Bell' },
@@ -241,37 +232,23 @@ const allMenuItems = [
       { name: 'Webhook配置', path: '/alerts/webhooks', icon: 'Connection', roles: ['super_admin', 'admin'] },
     ]
   },
-  
+
   // 分析报告组
-  { 
-    name: '分析报告', 
+  {
+    name: '分析报告',
     icon: 'TrendCharts',
     children: [
       { name: '运营分析', path: '/operational', icon: 'TrendCharts' },
       { name: '资源分析', path: '/resource', icon: 'Cpu' },
       { name: '监控分析', path: '/monitoring', icon: 'Monitor' },
-      { name: '报告索引', path: '/report-browser', icon: 'FolderOpened' },
     ]
   },
-  
-  // 路由管理组
-  { 
-    name: '路由管理', 
-    icon: 'Connection',
-    roles: ['super_admin', 'admin', 'analyst'],
-    children: [
-      { name: '路由规则', path: '/routing/rules', icon: 'Connection', roles: ['super_admin', 'admin'] },
-      { name: '路由统计', path: '/routing/statistics', icon: 'DataLine', roles: ['super_admin', 'admin', 'analyst'] },
-      { name: '规则审核', path: '/routing/suggestions/review', icon: 'Document', roles: ['super_admin', 'admin'] },
-    ]
-  },
-  
-  { name: '知识库管理', path: '/knowledge-management', icon: 'Collection', roles: ['super_admin'] },
+
   { name: '历史任务', path: '/task-history', icon: 'Clock' },
-  
+
   // 系统管理组
-  { 
-    name: '系统管理', 
+  {
+    name: '系统管理',
     icon: 'Setting',
     roles: ['super_admin', 'admin'],
     children: [
@@ -281,7 +258,7 @@ const allMenuItems = [
       { name: 'MinIO', path: '/minio', icon: 'FolderOpened', roles: ['super_admin', 'admin'], external: false },
     ]
   },
-  
+
   { name: 'API 文档', path: API_DOCS_URL, icon: 'Link', external: true },
 ]
 
@@ -298,10 +275,10 @@ const menuItems = computed(() => {
   })
 })
 
-// 初始化主题
-onMounted(() => {
-  isDark.value = themeManager.getTheme() === 'dark'
-})
+// 初始化主题（已固定为浅色）
+// onMounted(() => {
+//   themeManager.init() 会在 main.js 中自动初始化为浅色主题
+// })
 
 const openExternal = (url) => window.open(url, '_blank')
 
@@ -309,18 +286,6 @@ const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
   // 保存侧边栏状态
   localStorage.setItem('sidebar-collapsed', isCollapsed.value)
-}
-
-const toggleTheme = () => {
-  const newTheme = isDark.value ? 'light' : 'dark'
-  themeManager.setTheme(newTheme)
-  isDark.value = newTheme === 'dark'
-  ElMessage({
-    message: isDark.value ? '已切换深色主题' : '已切换浅色主题',
-    type: 'success',
-    duration: 1500,
-    showClose: false
-  })
 }
 
 const handleCommand = (command) => {
@@ -346,7 +311,7 @@ onMounted(() => {
     try {
       expandedGroups.value = JSON.parse(savedGroups)
     } catch (e) {
-      console.error('恢复分组状态失败:', e)
+      // Silent error handling
     }
   }
 })
@@ -702,9 +667,44 @@ onMounted(() => {
   transform: rotate(180deg);
 }
 
-/* 下拉菜单样式 */
+/* 下拉菜单样式 - 确保正确的层级和位置 */
 .user-dropdown-menu {
   min-width: 160px;
+}
+
+/* 确保下拉菜单在最顶层 */
+:deep(.el-dropdown__popper) {
+  z-index: var(--z-dropdown, 2000) !important;
+}
+
+:deep(.el-dropdown-menu) {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: var(--spacing-2) 0 !important;
+}
+
+:deep(.el-dropdown-menu__item) {
+  padding: var(--spacing-3) var(--spacing-4) !important;
+  color: var(--text-primary) !important;
+  font-size: var(--font-size-sm) !important;
+  transition: background-color var(--duration-fast) var(--ease-standard) !important;
+}
+
+:deep(.el-dropdown-menu__item:hover) {
+  background: var(--bg-hover) !important;
+  color: var(--text-primary) !important;
+}
+
+:deep(.el-dropdown-menu__item.is-disabled) {
+  color: var(--text-disabled) !important;
+}
+
+:deep(.el-dropdown-menu__item--divided) {
+  border-top: 1px solid var(--divider) !important;
+  margin-top: var(--spacing-2) !important;
+  padding-top: calc(var(--spacing-3) + var(--spacing-2)) !important;
 }
 
 /* 内容区 */

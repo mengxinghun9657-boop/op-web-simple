@@ -179,7 +179,6 @@ watch(() => bosConfig.value.text, (newText) => {
 const loadConfig = async () => {
   try {
     const res = await configApi.loadConfig('monitoring')
-    console.log('监控配置API响应:', res) // 调试日志
     const config = res.data?.config || res.config // 兼容新旧格式
     if (config && Object.keys(config).length > 0) {
       // EIP配置
@@ -213,7 +212,7 @@ const loadConfig = async () => {
       }
     }
   } catch (error) {
-    console.error('加载监控配置失败:', error)
+    // Silent error handling - user sees empty config as indication of no saved settings
   }
 }
 

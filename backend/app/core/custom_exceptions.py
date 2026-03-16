@@ -370,36 +370,10 @@ class MinIOError(ExternalServiceError):
     """MinIO 访问失败"""
     error_code = "MINIO_ERROR"
     user_message = "文件存储服务访问失败"
-    
+
     def __init__(self, detail: Optional[str] = None):
         super().__init__(
             message="文件存储服务暂时不可用",
-            detail={"error_detail": detail} if detail else {},
-            suggestion="请稍后重试"
-        )
-
-
-class VectorDatabaseError(ExternalServiceError):
-    """向量数据库操作失败"""
-    error_code = "VECTOR_DATABASE_ERROR"
-    user_message = "向量数据库操作失败"
-    
-    def __init__(self, operation: str, detail: Optional[str] = None):
-        super().__init__(
-            message=f"向量数据库{operation}失败",
-            detail={"operation": operation, "error_detail": detail} if detail else {"operation": operation},
-            suggestion="请稍后重试"
-        )
-
-
-class EmbeddingError(ExternalServiceError):
-    """向量化失败"""
-    error_code = "EMBEDDING_ERROR"
-    user_message = "文本向量化失败"
-    
-    def __init__(self, detail: Optional[str] = None):
-        super().__init__(
-            message="文本向量化服务暂时不可用",
             detail={"error_detail": detail} if detail else {},
             suggestion="请稍后重试"
         )
@@ -444,24 +418,12 @@ class JSONParsingError(DataError):
     """JSON 解析失败"""
     error_code = "JSON_PARSING_ERROR"
     user_message = "JSON 格式错误"
-    
+
     def __init__(self, detail: Optional[str] = None):
         super().__init__(
             message="JSON 数据解析失败",
             detail={"error_detail": detail} if detail else {},
             suggestion="请检查数据格式"
-        )
-
-
-class VectorStoreCorruptedError(DataError):
-    """向量数据库文件损坏"""
-    error_code = "VECTOR_STORE_CORRUPTED"
-    user_message = "向量数据库文件损坏"
-    
-    def __init__(self):
-        super().__init__(
-            message="向量数据库文件损坏，需要重建",
-            suggestion="请联系管理员重建向量索引"
         )
 
 

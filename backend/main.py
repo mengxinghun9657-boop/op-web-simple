@@ -118,45 +118,6 @@ async def lifespan(app: FastAPI):
                 logger.error(f"❌ 数据库初始化失败（已重试 {max_db_retries} 次）: {e}")
                 logger.error("⚠️ 应用将继续启动，但数据库功能可能不可用")
     
-    # 初始化 AI 服务（向量数据库等）- 使用后台任务避免阻塞启动
-    ai_init_task = None
-    try:
-        from app.services.ai.init import initialize_ai_services, shutdown_ai_services
-        import asyncio
-        
-        # 创建后台任务，不阻塞 lifespan
-        ai_init_task = asyncio.create_task(initialize_ai_services())
-        logger.info("✅ AI 服务初始化任务已启动（后台执行）")
-    except Exception as e:
-        logger.warning(f"⚠️ AI 服务初始化任务启动失败: {e}")
-        logger.warning("AI 智能查询功能将不可用")
-    
-    # 启动后台报告向量化任务
-    vectorization_task = None
-    try:
-        from app.services.ai.report_vectorization_service import background_vectorization_task
-        import asyncio
-        
-        # 创建后台任务（每 5 分钟扫描一次）
-        vectorization_task = asyncio.create_task(background_vectorization_task(interval_seconds=300))
-        logger.info("✅ 后台报告向量化任务已启动（扫描间隔: 5 分钟）")
-    except Exception as e:
-        logger.warning(f"⚠️ 后台向量化任务启动失败: {e}")
-    
-    # 启动定时清理任务
-    cleanup_scheduler = None
-    try:
-        from app.services.ai.cleanup_scheduler import start_cleanup_scheduler, get_cleanup_scheduler
-        import asyncio
-        
-        # 启动清理调度器（每周执行一次，清理软删除超过 30 天的条目）
-        # 使用后台任务，不阻塞启动流程
-        asyncio.create_task(start_cleanup_scheduler())
-        cleanup_scheduler = get_cleanup_scheduler()
-        logger.info("✅ 定时清理任务已启动（执行间隔: 7 天，清理阈值: 30 天）")
-    except Exception as e:
-        logger.warning(f"⚠️ 定时清理任务启动失败: {e}")
-    
     # 启动CMDB定时同步调度器
     try:
         from app.core.scheduler import init_scheduler
@@ -233,18 +194,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"{settings.APP_NAME} v{settings.APP_VERSION} 应用启动成功")
     yield
     logger.info("应用关闭中...")
-    
-    # 停止 AI 初始化任务（如果还在运行）
-    if ai_init_task and not ai_init_task.done():
-        try:
-            ai_init_task.cancel()
-            try:
-                await ai_init_task
-            except asyncio.CancelledError:
-                logger.info("✅ AI 初始化任务已取消")
-        except Exception as e:
-            logger.warning(f"⚠️ 取消 AI 初始化任务失败: {e}")
-    
+
     # 停止文件监控服务
     if file_watcher:
         try:
@@ -252,15 +202,7 @@ async def lifespan(app: FastAPI):
             logger.info("✅ 文件监控服务已停止")
         except Exception as e:
             logger.warning(f"⚠️ 停止文件监控服务失败: {e}")
-    
-    # 停止定时清理任务
-    if cleanup_scheduler:
-        try:
-            await cleanup_scheduler.stop()
-            logger.info("✅ 定时清理任务已停止")
-        except Exception as e:
-            logger.warning(f"⚠️ 停止定时清理任务失败: {e}")
-    
+
     # 停止CMDB定时同步调度器
     try:
         from app.core.scheduler import shutdown_scheduler
@@ -268,24 +210,6 @@ async def lifespan(app: FastAPI):
         logger.info("✅ CMDB定时同步调度器已停止")
     except Exception as e:
         logger.warning(f"⚠️ 停止CMDB定时同步调度器失败: {e}")
-    
-    # 停止后台向量化任务
-    if vectorization_task:
-        try:
-            vectorization_task.cancel()
-            try:
-                await vectorization_task
-            except asyncio.CancelledError:
-                logger.info("✅ 后台向量化任务已停止")
-        except Exception as e:
-            logger.warning(f"⚠️ 停止后台向量化任务失败: {e}")
-    
-    # 关闭 AI 服务
-    try:
-        from app.services.ai.init import shutdown_ai_services
-        shutdown_ai_services()
-    except Exception as e:
-        logger.warning(f"⚠️ AI 服务关闭失败: {e}")
     
     await close_db()
 
@@ -334,18 +258,6 @@ app.include_router(cmdb.router, prefix=f"{settings.API_V1_PREFIX}/cmdb", tags=["
 from app.api.v1 import ai_chat
 app.include_router(ai_chat.router, prefix=f"{settings.API_V1_PREFIX}/ai", tags=["AI 对话助手"])
 
-# AI 智能查询路由
-from app.api.v1 import ai_intelligent_query
-app.include_router(ai_intelligent_query.router, prefix=f"{settings.API_V1_PREFIX}/ai", tags=["AI 智能查询"])
-
-# 知识库管理认证路由
-from app.api.v1 import knowledge_auth
-app.include_router(knowledge_auth.router, prefix=f"{settings.API_V1_PREFIX}/knowledge/auth", tags=["知识库管理认证"])
-
-# 知识库管理接口路由
-from app.api.v1 import knowledge_entries
-app.include_router(knowledge_entries.router, prefix=f"{settings.API_V1_PREFIX}/knowledge", tags=["知识库管理"])
-
 # HAS 硬件告警 Webhook 路由
 from app.api.v1 import has_webhook
 app.include_router(has_webhook.router, prefix=settings.API_V1_PREFIX, tags=["HAS 硬件告警"])
@@ -357,10 +269,6 @@ app.include_router(instance_config.router, prefix=settings.API_V1_PREFIX, tags=[
 # 系统配置管理路由
 from app.api.v1 import config
 app.include_router(config.router, prefix=settings.API_V1_PREFIX, tags=["系统配置管理"])
-
-# 路由规则管理路由
-from app.api.v1 import routing
-app.include_router(routing.router, prefix=f"{settings.API_V1_PREFIX}/routing", tags=["路由规则管理"])
 
 # PFS 监控路由
 from app.api.v1 import pfs

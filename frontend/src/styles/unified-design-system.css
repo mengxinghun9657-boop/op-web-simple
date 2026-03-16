@@ -412,6 +412,15 @@
   --glass-blur: 12px;
   --glass-blur-strong: 20px;
 
+  /* 卡片变量（语义化） */
+  --card-bg: var(--bg-primary);
+  --card-border: var(--border-secondary);
+  --card-shadow: var(--shadow-sm);
+  --card-shadow-hover: var(--shadow-md);
+
+  /* 主色背景（用于标签、徽章等） */
+  --primary-bg: var(--color-primary-50);
+
   /* Element Plus 覆盖 */
   --el-color-primary: var(--color-primary-600);
   --el-color-primary-light-3: var(--color-primary-500);

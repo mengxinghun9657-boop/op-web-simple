@@ -104,14 +104,15 @@
   border-radius: var(--radius-xl);
   padding: var(--space-5);
   box-shadow: var(--shadow-sm);
-  transition: all var(--duration-normal) var(--ease-standard);
+  transition: box-shadow var(--duration-normal) var(--ease-standard),
+              border-color var(--duration-normal) var(--ease-standard);
   cursor: pointer;
 }
 
 .stat-card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
   border-color: var(--primary);
+  /* 不使用 transform，避免 z-index 问题 */
 }
 
 .stat-card-header {
@@ -534,6 +535,70 @@
   margin-top: var(--space-4);
   color: var(--text-tertiary);
   font-size: var(--text-sm);
+}
+
+/* Skeleton 骨架屏加载 - Linear/Notion 风格 */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 25%,
+    var(--bg-secondary) 37%,
+    var(--bg-tertiary) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-text {
+  height: 14px;
+  margin-bottom: var(--space-2);
+}
+
+.skeleton-text.sm { height: 12px; }
+.skeleton-text.lg { height: 18px; }
+.skeleton-text.xl { height: 24px; }
+
+.skeleton-circle {
+  border-radius: var(--radius-full);
+}
+
+.skeleton-card {
+  padding: var(--space-5);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* 渐入动画 */
+.fade-in {
+  animation: fadeIn var(--duration-normal) var(--ease-standard);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 向上滑入动画 */
+.slide-up {
+  animation: slideUp var(--duration-normal) var(--ease-standard);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ==================== 操作按钮组 ==================== */

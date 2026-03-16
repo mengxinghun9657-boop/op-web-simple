@@ -305,32 +305,54 @@
 }
 
 /* ==================== 表格组件 ==================== */
+/*
+ * 表格设计参考 Stripe Dashboard
+ * - 简洁的水平分割线
+ * - 行 hover 只变背景色
+ * - 表头使用更轻的背景
+ */
 .el-table {
   background: transparent !important;
   border-radius: var(--radius-lg) !important;
   overflow: hidden !important;
-  font-family: var(--font-google) !important;
+  font-family: var(--font-family-sans) !important;
+  --el-table-border-color: var(--border-secondary) !important;
 }
 
 .el-table th.el-table__cell {
-  background: var(--table-header-bg) !important;
-  color: var(--text-primary) !important;
-  font-weight: var(--font-semibold) !important;
-  font-size: var(--text-sm) !important;
-  border-bottom: 1px solid var(--table-border) !important;
+  background: var(--bg-secondary) !important;
+  color: var(--text-secondary) !important;
+  font-weight: var(--font-medium) !important;
+  font-size: var(--text-xs) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  border-bottom: 1px solid var(--border-secondary) !important;
+  padding: var(--space-3) var(--space-4) !important;
 }
 
 .el-table td.el-table__cell {
-  border-bottom: 1px solid var(--table-border) !important;
+  border-bottom: 1px solid var(--border-secondary) !important;
   color: var(--text-primary) !important;
+  font-size: var(--text-sm) !important;
+  padding: var(--space-3) var(--space-4) !important;
 }
 
 .el-table__row:hover > td {
-  background: var(--table-row-hover) !important;
+  background: var(--bg-hover) !important;
 }
 
 .el-table__row.current-row > td {
-  background: var(--table-row-selected) !important;
+  background: var(--bg-selected) !important;
+}
+
+/* 表格空状态 */
+.el-table__empty-block {
+  min-height: 200px !important;
+}
+
+.el-table__empty-text {
+  color: var(--text-tertiary) !important;
+  font-size: var(--text-sm) !important;
 }
 
 /* ==================== 对话框组件 ==================== */

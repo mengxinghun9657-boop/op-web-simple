@@ -1,60 +1,63 @@
 /**
- * MainLayout Google Blue 风格样式覆盖
- * 采用 Google Material Design 设计语言
+ * MainLayout 样式增强
+ * 参考 Linear、Notion 的极简侧边栏设计
+ *
+ * 设计原则：
+ * 1. 扁平化 - 移除玻璃拟态和渐变
+ * 2. 克制 - hover 只变背景色（1 种变化）
+ * 3. 紧凑 - 更小的间距和图标
  */
 
-/* ==================== 侧边栏 - Google 风格 ==================== */
+/* ==================== 侧边栏 ==================== */
 .sidebar {
-  background: var(--nav-bg) !important;
-  border-right: 1px solid var(--nav-border) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  background: var(--bg-primary) !important;
+  border-right: 1px solid var(--border-secondary) !important;
 }
 
-/* Logo 图标 - Google Blue 渐变 */
+/* Logo 图标 - 纯色 */
 .logo-icon {
-  background: linear-gradient(135deg, var(--google-blue-600), var(--google-blue-500)) !important;
-  box-shadow: var(--shadow-sm) !important;
+  background: var(--primary) !important;
+  box-shadow: none !important;
 }
 
-/* 导航项 */
+/* 导航项 - Linear 风格 */
 .nav-item {
   border-radius: var(--radius-md) !important;
-  transition: all var(--duration-normal) var(--ease-standard) !important;
+  transition: background-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard) !important;
 }
 
 .nav-item:hover {
-  background: var(--nav-item-hover) !important;
+  background: var(--bg-hover) !important;
 }
 
 .nav-item.active {
-  background: var(--button-primary-bg) !important;
-  box-shadow: var(--shadow-sm) !important;
+  background: var(--bg-selected) !important;
+  color: var(--primary) !important;
+  box-shadow: none !important;
 }
 
-/* 导航项图标 */
+/* 导航项图标 - 简化 */
 .nav-item-icon {
   background: transparent !important;
-  border-radius: var(--radius-sm) !important;
 }
 
 .nav-item:hover .nav-item-icon {
   background: transparent !important;
-  transform: scale(1.1);
+  /* 不使用 transform */
 }
 
 .nav-item.active .nav-item-icon {
   background: transparent !important;
-  color: #ffffff !important;
+  color: var(--primary) !important;
 }
 
 /* 子菜单项 */
 .nav-item-child {
-  padding-left: var(--space-12) !important;
-  margin-left: 0 !important;
+  padding-left: var(--space-10) !important;
 }
 
-/* 菜单分组标题 */
+/* 菜单分组标题 - 更轻的样式 */
 .nav-group-title {
   border-radius: var(--radius-md) !important;
   color: var(--text-tertiary) !important;
@@ -69,9 +72,9 @@
   color: var(--text-secondary) !important;
 }
 
-/* 展开图标旋转 */
+/* 展开图标 */
 .expand-icon {
-  transition: transform var(--duration-normal) var(--ease-standard) !important;
+  transition: transform var(--duration-fast) var(--ease-standard) !important;
 }
 
 .expand-icon.expanded {
@@ -80,86 +83,55 @@
 
 /* 侧边栏底部 */
 .sidebar-footer {
-  height: 48px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-top: 1px solid var(--divider) !important;
-  cursor: pointer !important;
-  color: var(--text-secondary) !important;
-  transition: all var(--duration-normal) var(--ease-standard) !important;
-  background: transparent !important;
+  height: 44px !important;
+  border-top: 1px solid var(--border-secondary) !important;
+  color: var(--text-tertiary) !important;
+  transition: background-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard) !important;
 }
 
 .sidebar-footer:hover {
   background: var(--bg-hover) !important;
-  color: var(--primary) !important;
+  color: var(--text-primary) !important;
 }
 
-/* ==================== 顶部栏 - Google 风格 ==================== */
+/* ==================== 顶部栏 ==================== */
 .header-bar {
-  background: var(--bg-elevated) !important;
-  border-bottom: 1px solid var(--divider) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-
-.glass-header {
-  padding: 0 var(--space-6) !important;
+  background: var(--bg-primary) !important;
+  border-bottom: 1px solid var(--border-secondary) !important;
+  box-shadow: none !important;
 }
 
 /* 头部图标按钮 */
 .header-icon-btn {
-  width: 40px !important;
-  height: 40px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
   border-radius: var(--radius-full) !important;
-  cursor: pointer !important;
-  transition: all var(--duration-normal) var(--ease-standard) !important;
   color: var(--text-secondary) !important;
+  transition: background-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard) !important;
 }
 
 .header-icon-btn:hover {
   background: var(--bg-hover) !important;
-  color: var(--primary) !important;
-}
-
-.header-icon-btn:active {
-  background: var(--bg-active) !important;
-  transform: scale(0.95) !important;
-}
-
-/* 用户信息卡片 */
-.user-info {
-  padding: var(--space-2) var(--space-3) !important;
-  border-radius: var(--radius-full) !important;
-  background: var(--bg-secondary) !important;
-  border: 1px solid var(--border-primary) !important;
-  cursor: pointer !important;
-  transition: all var(--duration-normal) var(--ease-standard) !important;
-}
-
-.user-info:hover {
-  background: var(--bg-tertiary) !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-
-.user-avatar {
-  background: linear-gradient(135deg, var(--google-blue-600), var(--google-blue-500)) !important;
-}
-
-.user-name {
-  font-size: var(--text-sm) !important;
-  font-weight: var(--font-semibold) !important;
   color: var(--text-primary) !important;
 }
 
-.user-role {
-  font-size: var(--text-xs) !important;
-  color: var(--text-tertiary) !important;
+/* 用户信息 */
+.user-info {
+  padding: var(--space-1) var(--space-2) !important;
+  border-radius: var(--radius-full) !important;
+  background: transparent !important;
+  border: none !important;
+  transition: background-color var(--duration-fast) var(--ease-standard) !important;
+}
+
+.user-info:hover {
+  background: var(--bg-hover) !important;
+}
+
+.user-avatar {
+  background: var(--primary) !important;
 }
 
 /* ==================== 面包屑 ==================== */
@@ -178,14 +150,46 @@
 
 /* ==================== 内容区 ==================== */
 .main-content {
-  background: var(--bg-primary) !important;
+  background: var(--bg-secondary) !important;
   padding: var(--space-6) !important;
+}
+
+/* ==================== 下拉菜单 ==================== */
+.el-dropdown__popper,
+.el-popper {
+  z-index: var(--z-dropdown) !important;
+}
+
+.user-dropdown-menu {
+  margin-top: var(--space-2) !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-secondary) !important;
+  box-shadow: var(--shadow-lg) !important;
+  overflow: hidden !important;
+}
+
+.el-dropdown-menu__item {
+  padding: var(--space-2) var(--space-4) !important;
+  font-size: var(--text-sm) !important;
+  color: var(--text-primary) !important;
+  transition: background-color var(--duration-fast) var(--ease-standard) !important;
+}
+
+.el-dropdown-menu__item:hover {
+  background: var(--bg-hover) !important;
+}
+
+.el-dropdown-menu__item .el-icon {
+  margin-right: var(--space-2) !important;
+  color: var(--text-tertiary) !important;
 }
 
 /* ==================== 页面过渡动画 ==================== */
 .page-fade-enter-active,
 .page-fade-leave-active {
-  transition: all var(--duration-normal) var(--ease-standard) !important;
+  transition: opacity var(--duration-normal) var(--ease-standard),
+              transform var(--duration-normal) var(--ease-standard) !important;
 }
 
 .page-fade-enter-from {
@@ -200,7 +204,7 @@
 /* ==================== 文本过渡 ==================== */
 .fade-text-enter-active,
 .fade-text-leave-active {
-  transition: opacity var(--duration-normal) var(--ease-standard) !important;
+  transition: opacity var(--duration-fast) var(--ease-standard) !important;
 }
 
 .fade-text-enter-from,
@@ -211,7 +215,9 @@
 /* ==================== 滑动过渡 ==================== */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-  transition: all var(--duration-normal) var(--ease-standard) !important;
+  transition: opacity var(--duration-normal) var(--ease-standard),
+              transform var(--duration-normal) var(--ease-standard),
+              height var(--duration-normal) var(--ease-standard) !important;
 }
 
 .slide-fade-enter-from {
@@ -221,42 +227,9 @@
 
 .slide-fade-leave-to {
   opacity: 0 !important;
-  height: 0 !important;
 }
 
-/* ==================== 下拉菜单 ==================== */
-/* 确保下拉菜单弹出层在最顶层 */
-.el-dropdown__popper,
-.el-popper {
-  z-index: var(--z-dropdown, 2000) !important;
-}
-
-.user-dropdown-menu {
-  margin-top: var(--space-2) !important;
-  border-radius: var(--radius-lg) !important;
-  background: var(--bg-elevated) !important;
-  border: 1px solid var(--border-primary) !important;
-  box-shadow: var(--shadow-lg) !important;
-  overflow: hidden !important;
-}
-
-.el-dropdown-menu__item {
-  padding: var(--space-3) var(--space-4) !important;
-  font-size: var(--text-sm) !important;
-  color: var(--text-primary) !important;
-  transition: all var(--duration-fast) var(--ease-standard) !important;
-}
-
-.el-dropdown-menu__item:hover {
-  background: var(--bg-hover) !important;
-}
-
-.el-dropdown-menu__item .el-icon {
-  margin-right: var(--space-2) !important;
-  color: var(--text-tertiary) !important;
-}
-
-/* ==================== 响应式适配 ==================== */
+/* ==================== 响应式 ==================== */
 @media (max-width: 768px) {
   .sidebar {
     position: fixed !important;
@@ -273,25 +246,4 @@
   .main-content {
     padding: var(--space-4) !important;
   }
-}
-
-/* ==================== 浅色主题适配 ==================== */
-[data-theme="light"] .sidebar {
-  background: var(--bg-primary) !important;
-  border-right-color: var(--border-primary) !important;
-}
-
-[data-theme="light"] .header-bar {
-  background: var(--bg-primary) !important;
-  border-bottom-color: var(--border-primary) !important;
-}
-
-[data-theme="light"] .user-info {
-  background: var(--bg-secondary) !important;
-  border-color: var(--border-primary) !important;
-}
-
-[data-theme="light"] .nav-item.active {
-  background: var(--button-primary-bg) !important;
-  color: #ffffff !important;
 }

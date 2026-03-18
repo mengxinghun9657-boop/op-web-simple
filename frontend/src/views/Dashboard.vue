@@ -70,40 +70,23 @@
         </div>
       </div>
       <div class="content-card-body">
-        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-          <div class="stat-card">
-            <div class="stat-card-label">物理服务器</div>
-            <div class="stat-card-value">{{ cmdbStats.servers }}</div>
+        <div class="cmdb-charts-grid">
+          <!-- 左：服务器与实例数量柱状图 -->
+          <div class="cmdb-chart-item">
+            <div class="cmdb-chart-title">资源数量</div>
+            <ChartView :options="cmdbBarOptions" height="200px" />
           </div>
-          <div class="stat-card">
-            <div class="stat-card-label">虚拟实例</div>
-            <div class="stat-card-value">{{ cmdbStats.instances }}</div>
+          <!-- 中：vCPU 仪表盘 -->
+          <div class="cmdb-chart-item">
+            <div class="cmdb-chart-title">vCPU 使用率</div>
+            <ChartView :options="cmdbVcpuGaugeOptions" height="200px" />
+            <div class="cmdb-chart-label">{{ cmdbStats.vcpus_used }} / {{ cmdbStats.vcpus_total }}</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-card-label">运行中实例</div>
-            <div class="stat-card-value">{{ cmdbStats.active_instances }}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-label">vCPU 使用</div>
-            <div class="stat-card-value">{{ cmdbStats.vcpus_used }}/{{ cmdbStats.vcpus_total }}</div>
-            <el-progress
-              :percentage="cmdbStats.vcpu_usage"
-              :stroke-width="6"
-              :show-text="false"
-              :color="getProgressColor(cmdbStats.vcpu_usage)"
-              style="margin-top: 8px;"
-            />
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-label">内存使用</div>
-            <div class="stat-card-value">{{ cmdbStats.memory_used_gb }}/{{ cmdbStats.memory_total_gb }} GB</div>
-            <el-progress
-              :percentage="cmdbStats.memory_usage"
-              :stroke-width="6"
-              :show-text="false"
-              :color="getProgressColor(cmdbStats.memory_usage)"
-              style="margin-top: 8px;"
-            />
+          <!-- 右：内存仪表盘 -->
+          <div class="cmdb-chart-item">
+            <div class="cmdb-chart-title">内存使用率</div>
+            <ChartView :options="cmdbMemGaugeOptions" height="200px" />
+            <div class="cmdb-chart-label">{{ cmdbStats.memory_used_gb }} / {{ cmdbStats.memory_total_gb }} GB</div>
           </div>
         </div>
       </div>
@@ -316,7 +299,96 @@ const systemHealthOptions = computed(() => {
   }
 })
 
-const getStatusClass = (status) => ({ 
+// CMDB 柱状图：物理服务器 / 虚拟实例 / 运行中实例
+const cmdbBarOptions = computed(() => {
+  if (!cmdbStats.value) return {}
+  const s = cmdbStats.value
+  return {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(255,255,255,0.95)',
+      borderColor: '#e5e7eb',
+      borderWidth: 1,
+      textStyle: { color: '#374151', fontSize: 12 }
+    },
+    grid: { top: 16, right: 16, bottom: 32, left: 52 },
+    xAxis: {
+      type: 'category',
+      data: ['物理服务器', '虚拟实例', '运行中实例'],
+      axisLine: { lineStyle: { color: '#e5e7eb' } },
+      axisLabel: { color: '#6b7280', fontSize: 11 }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: '#6b7280', fontSize: 11 },
+      splitLine: { lineStyle: { color: '#f3f4f6', type: 'dashed' } }
+    },
+    series: [{
+      type: 'bar',
+      data: [
+        { value: s.servers, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#3b82f6' }, { offset: 1, color: '#93c5fd' }] } } },
+        { value: s.instances, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#06b6d4' }, { offset: 1, color: '#67e8f9' }] } } },
+        { value: s.active_instances, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#22c55e' }, { offset: 1, color: '#86efac' }] } } }
+      ],
+      barWidth: '40%',
+      borderRadius: [4, 4, 0, 0],
+      label: { show: true, position: 'top', color: '#6b7280', fontSize: 11 }
+    }]
+  }
+})
+
+// 通用 gauge 图生成函数
+const makeGaugeOptions = (percentage, color, label) => ({
+  series: [{
+    type: 'gauge',
+    startAngle: 210,
+    endAngle: -30,
+    min: 0,
+    max: 100,
+    splitNumber: 5,
+    radius: '85%',
+    center: ['50%', '60%'],
+    axisLine: {
+      lineStyle: {
+        width: 14,
+        color: [
+          [percentage / 100, color],
+          [1, '#f3f4f6']
+        ]
+      }
+    },
+    pointer: { show: false },
+    axisTick: { show: false },
+    splitLine: { show: false },
+    axisLabel: { show: false },
+    detail: {
+      valueAnimation: true,
+      formatter: '{value}%',
+      color: '#374151',
+      fontSize: 20,
+      fontWeight: 700,
+      offsetCenter: [0, '10%']
+    },
+    data: [{ value: percentage, name: label }],
+    title: { show: false }
+  }]
+})
+
+const cmdbVcpuGaugeOptions = computed(() => {
+  if (!cmdbStats.value) return {}
+  const pct = cmdbStats.value.vcpu_usage || 0
+  const color = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#3b82f6'
+  return makeGaugeOptions(pct, color, 'vCPU')
+})
+
+const cmdbMemGaugeOptions = computed(() => {
+  if (!cmdbStats.value) return {}
+  const pct = cmdbStats.value.memory_usage || 0
+  const color = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#06b6d4'
+  return makeGaugeOptions(pct, color, '内存')
+})
+
+const getStatusClass = (status) => ({
   completed: 'success', 
   processing: 'primary', 
   pending: 'warning', 
@@ -405,16 +477,56 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* CMDB 图表网格：左柱状图宽，右两个 gauge 各占一列 */
+.cmdb-charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.cmdb-chart-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cmdb-chart-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+  align-self: flex-start;
+}
+
+.cmdb-chart-label {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin-top: -8px;
+}
+
 /* 网格布局自适应 */
 @media (max-width: 1200px) {
   .stats-grid {
     grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .cmdb-charts-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cmdb-charts-grid .cmdb-chart-item:first-child {
+    grid-column: span 2;
   }
 }
 
 @media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .cmdb-charts-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cmdb-charts-grid .cmdb-chart-item:first-child {
+    grid-column: span 2;
   }
 
   div[style*="grid-template-columns: 2fr 1fr"] {
@@ -425,6 +537,12 @@ onUnmounted(() => {
 @media (max-width: 480px) {
   .stats-grid {
     grid-template-columns: 1fr !important;
+  }
+  .cmdb-charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .cmdb-charts-grid .cmdb-chart-item:first-child {
+    grid-column: span 1;
   }
 }
 </style>

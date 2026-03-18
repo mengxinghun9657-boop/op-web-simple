@@ -312,10 +312,12 @@ const renderDistributionChart = (data) => {
     },
     legend: {
       orient: 'vertical',
-      right: '5%',
-      top: 'center',
+      right: '2%',
+      top: 'middle',
       type: 'scroll',
-      itemGap: 12,
+      itemGap: 10,
+      itemWidth: 12,
+      itemHeight: 12,
       textStyle: {
         fontSize: 12
       }
@@ -323,32 +325,33 @@ const renderDistributionChart = (data) => {
     series: [
       {
         type: 'pie',
-        radius: ['40%', '70%'],
+        radius: ['38%', '65%'],
+        center: ['38%', '50%'],
         avoidLabelOverlap: true,
         itemStyle: {
-          borderRadius: 10,
+          borderRadius: 8,
           borderColor: '#fff',
           borderWidth: 2
         },
         label: {
           show: true,
           position: 'outside',
-          formatter: '{b}: {d}%',
-          fontSize: 12,
-          overflow: 'break',
-          distanceToLabelLine: 5
+          formatter: '{b}\n{d}%',
+          fontSize: 11,
+          lineHeight: 16,
+          distanceToLabelLine: 3
         },
         emphasis: {
           label: {
             show: true,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 'bold'
           }
         },
         labelLine: {
           show: true,
-          length: 15,
-          length2: 10,
+          length: 10,
+          length2: 8,
           smooth: true
         },
         data: chartData

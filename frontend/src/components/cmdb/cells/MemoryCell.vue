@@ -24,3 +24,9 @@ const formattedMemory = computed(() => {
   return `${mb} MB`
 })
 </script>
+
+<style scoped>
+span {
+  white-space: nowrap;
+}
+</style>

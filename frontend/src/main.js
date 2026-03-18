@@ -14,6 +14,7 @@ import permissionDirective from './directives/permission'
 // 1. 统一设计系统（必须最先导入，定义所有基础变量）
 import './styles/unified-design-system.css'
 // 2. 组件样式（基于统一设计系统）
+import './styles/glassmorphism.css'       // 玻璃态标签/进度条等基础样式
 import './styles/google-components.css'   // Google Blue 通用组件样式
 import './styles/google-pages.css'        // Google Blue 页面统一样式
 import './styles/bento-grid.css'          // Bento 卡片布局样式

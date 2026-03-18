@@ -46,5 +46,9 @@ const displayValue = computed(() => {
 <style scoped>
 .default-cell {
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 }
 </style>

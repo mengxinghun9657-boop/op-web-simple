@@ -32,3 +32,9 @@ const formattedDate = computed(() => {
   }
 })
 </script>
+
+<style scoped>
+span {
+  white-space: nowrap;
+}
+</style>

@@ -53,5 +53,8 @@ const statusClass = computed(() => {
 </script>
 
 <style scoped>
-/* 状态标签样式已在全局样式中定义 */
+/* 状态标签不换行 */
+.glass-tag {
+  white-space: nowrap;
+}
 </style>

@@ -737,6 +737,20 @@ onMounted(() => {
 /* 所有样式已由 google-pages.css 统一提供 */
 /* 只保留页面特定的特殊样式 */
 
+/* 单元格容器需要撑满列宽，否则 el-progress 宽度为 0 */
+.cell-wrapper {
+  width: 100%;
+  overflow: hidden;
+}
+
+/* 详情页描述列表内容不换行（加黑说明等长文本除外） */
+.modern-descriptions :deep(.el-descriptions__content) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
 /* 搜索框宽度 */
 .search-box :deep(.el-input) {
   width: 350px;

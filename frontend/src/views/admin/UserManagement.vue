@@ -27,11 +27,8 @@
             </el-select>
           </div>
           <div class="filter-buttons">
-            <el-button :type="glowEnabled ? 'success' : 'info'" @click="toggleGlow">
-              <el-icon><MagicStick /></el-icon>
-              {{ glowEnabled ? '关闭光效' : '开启光效' }}
-            </el-button>
-            <el-button type="primary" icon="Plus" @click="handleCreate">
+            <el-button type="primary" @click="handleCreate">
+              <el-icon><Plus /></el-icon>
               新建用户
             </el-button>
           </div>
@@ -67,14 +64,14 @@
             </template>
           </el-table-column>
           <el-table-column prop="last_login" label="最后登录" width="180" />
-          <el-table-column label="操作" width="220" fixed="right">
+          <el-table-column label="操作" width="240" fixed="right">
             <template #default="{ row }">
               <div class="action-buttons">
-                <el-button link type="primary" @click="handleEdit(row)" class="action-btn">编辑</el-button>
-                <el-button link type="warning" @click="handleResetPwd(row)" class="action-btn">重置密码</el-button>
+                <el-button size="small" type="primary" @click="handleEdit(row)">编辑</el-button>
+                <el-button size="small" type="warning" @click="handleResetPwd(row)">重置密码</el-button>
                 <el-popconfirm title="确认删除该用户?" @confirm="handleDelete(row)">
                   <template #reference>
-                    <el-button link type="danger" class="action-btn">删除</el-button>
+                    <el-button size="small" type="danger">删除</el-button>
                   </template>
                 </el-popconfirm>
               </div>
@@ -144,15 +141,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Search, MagicStick, User } from '@element-plus/icons-vue'
+import { Plus, Search, User } from '@element-plus/icons-vue'
 import axios from '@/utils/axios'
-import glowEffectManager from '@/utils/glowEffectManager'
-
-// 光效状态
-const glowEnabled = ref(!document.body.classList.contains('glow-disabled'))
-const toggleGlow = () => {
-  glowEnabled.value = glowEffectManager.toggle()
-}
 
 // 数据状态
 const users = ref([])
@@ -397,6 +387,17 @@ onMounted(() => {
 .user-avatar {
   background: var(--primary);
   color: white;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.action-buttons .el-button {
+  padding: 6px 12px !important;
+  font-size: var(--text-xs) !important;
 }
 
 @media (max-width: 768px) {

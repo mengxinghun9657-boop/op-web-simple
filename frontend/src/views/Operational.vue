@@ -719,11 +719,12 @@ onUnmounted(() => {
 }
 
 .result-actions .el-button {
-  transition: all var(--transition-fast);
+  transition: background-color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard);
 }
 
 .result-actions .el-button:hover {
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 /* 报告预览 */

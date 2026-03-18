@@ -6,6 +6,9 @@ CMDB同步服务
 """
 import requests
 import json
+import ssl
+import http.client
+import urllib.parse
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
@@ -95,55 +98,86 @@ class CMDBSyncService:
                 config = json.loads(config_record.config_value)
                 cookie = config.get('api_cookie')
                 if cookie:
-                    return cookie
+                    return self._sanitize_cookie(cookie)
         except Exception as e:
             logger.warning(f"从 system_config 读取 Cookie 失败: {e}")
-        
+
         # 兼容旧的 cmdb_config 表
         cookie = self.get_config("amis_cookie")
         if not cookie:
             logger.warning("AMIS Cookie未配置")
-        return cookie
+        return self._sanitize_cookie(cookie) if cookie else cookie
+
+    @staticmethod
+    def _sanitize_cookie(cookie: str) -> str:
+        """清洗 Cookie 字符串，移除换行符和首尾空白"""
+        import re
+        cookie = re.sub(r'[\r\n]+', '; ', cookie)
+        cookie = re.sub(r';\s*;', ';', cookie)
+        return cookie.strip()
+
+    @staticmethod
+    def _http_get(url: str, params: dict, headers: dict, timeout: int = 30) -> dict:
+        """
+        使用标准库 http.client + ssl 发送 HTTPS GET 请求。
+        绕过 urllib3 连接池，解决内网 TLS 握手兼容性问题。
+        返回 {'status': int, 'headers': dict, 'body': str}
+        """
+        parsed = urllib.parse.urlparse(url)
+        query = urllib.parse.urlencode(params)
+        path = f"{parsed.path}?{query}" if query else parsed.path
+
+        ctx = ssl.create_default_context()
+        conn = http.client.HTTPSConnection(parsed.hostname, parsed.port or 443,
+                                           context=ctx, timeout=timeout)
+        try:
+            conn.request("GET", path, headers=headers)
+            resp = conn.getresponse()
+            body = resp.read().decode("utf-8", errors="replace")
+            return {"status": resp.status, "headers": dict(resp.getheaders()), "body": body}
+        finally:
+            conn.close()
     
     def test_cookie(self, cookie: str) -> bool:
         """测试Cookie是否有效"""
         try:
+            cookie = self._sanitize_cookie(cookie)
             headers = {
                 "Cookie": cookie,
                 "Referer": "https://amis.baidu.com/group/iaasops/bcc/hypervisor_vm_cross",
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                "Host": "amis.baidu.com",
             }
-            
-            response = requests.get(
+
+            resp = self._http_get(
                 self.api_url,
                 params={"page": 1, "perPage": 1, "nova_host_azone": "AZONE-cdhmlcc001"},
                 headers=headers,
                 timeout=10
             )
-            
-            # 检查响应状态码
-            if response.status_code != 200:
-                logger.error(f"API返回错误状态码: {response.status_code}")
+
+            # 302 跳转到登录页说明 cookie 无效
+            if resp["status"] == 302:
+                logger.error("Cookie无效，API重定向到登录页")
                 return False
-            
-            # 检查响应内容类型
-            content_type = response.headers.get('Content-Type', '')
-            if 'application/json' not in content_type:
+
+            if resp["status"] != 200:
+                logger.error(f"API返回错误状态码: {resp['status']}")
+                return False
+
+            content_type = resp["headers"].get("Content-Type", resp["headers"].get("content-type", ""))
+            if "application/json" not in content_type:
                 logger.error(f"API返回非JSON响应，Content-Type: {content_type}")
-                logger.error(f"响应内容前200字符: {response.text[:200]}")
+                logger.error(f"响应内容前200字符: {resp['body'][:200]}")
                 return False
-            
-            # 尝试解析JSON
+
             try:
-                data = response.json()
+                data = json.loads(resp["body"])
             except ValueError as json_err:
                 logger.error(f"JSON解析失败: {json_err}")
-                logger.error(f"响应内容前200字符: {response.text[:200]}")
                 return False
-            
-            # 检查API返回的状态
+
             if data.get("status") == 0:
-                # 进一步检查是否有数据返回（确认真的认证成功）
                 if "data" in data:
                     logger.info("Cookie测试成功，API认证有效")
                     return True
@@ -153,19 +187,12 @@ class CMDBSyncService:
             else:
                 error_msg = data.get('message', data.get('msg', 'N/A'))
                 logger.error(f"API返回错误状态: {data.get('status')}, 消息: {error_msg}")
-                # 检查是否是认证相关错误
                 if any(keyword in str(error_msg).lower() for keyword in ['login', 'auth', '登录', '认证', '权限']):
                     logger.error("检测到认证失败，Cookie可能已过期")
                 return False
-            
-        except requests.exceptions.Timeout:
-            logger.error("请求超时，请检查网络连接")
-            return False
-        except requests.exceptions.RequestException as req_err:
-            logger.error(f"请求失败: {req_err}")
-            return False
+
         except Exception as e:
-            logger.error(f"测试Cookie失败: {e}")
+            logger.error(f"请求失败: {e}")
             return False
     
     def sync_from_api(self, azone: str, page: int = 1, per_page: int = 2000,
@@ -201,10 +228,16 @@ class CMDBSyncService:
                 "nova_host_azone": azone,
                 "perPage": per_page
             }
-            
+
             logger.info(f"开始从API同步CMDB数据: {azone}, page={page}, perPage={per_page}")
-            response = requests.get(self.api_url, params=params, headers=headers, timeout=60)
-            data = response.json()
+            resp = self._http_get(self.api_url, params=params, headers=headers, timeout=60)
+
+            if resp["status"] == 302:
+                raise Exception("Cookie无效或已过期，API重定向到登录页")
+            if resp["status"] != 200:
+                raise Exception(f"API返回错误状态码: {resp['status']}")
+
+            data = json.loads(resp["body"])
             
             if data.get("status") != 0:
                 raise Exception(f"API返回错误: {data.get('msg', '未知错误')}")

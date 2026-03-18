@@ -167,6 +167,7 @@
   border: 1px solid var(--border-secondary) !important;
   box-shadow: var(--shadow-lg) !important;
   overflow: hidden !important;
+  padding: var(--space-2) 0 !important;
 }
 
 .el-dropdown-menu__item {
@@ -174,6 +175,10 @@
   font-size: var(--text-sm) !important;
   color: var(--text-primary) !important;
   transition: background-color var(--duration-fast) var(--ease-standard) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-2) !important;
+  line-height: 1.5 !important;
 }
 
 .el-dropdown-menu__item:hover {
@@ -181,8 +186,27 @@
 }
 
 .el-dropdown-menu__item .el-icon {
-  margin-right: var(--space-2) !important;
+  margin-right: 0 !important;
   color: var(--text-tertiary) !important;
+  flex-shrink: 0 !important;
+}
+
+/* 禁用状态的菜单项 */
+.el-dropdown-menu__item.is-disabled {
+  color: var(--text-disabled) !important;
+  cursor: not-allowed !important;
+  background: transparent !important;
+}
+
+.el-dropdown-menu__item.is-disabled:hover {
+  background: transparent !important;
+}
+
+/* 分隔线样式 */
+.el-dropdown-menu__item--divided {
+  border-top: 1px solid var(--border-secondary) !important;
+  margin-top: var(--space-2) !important;
+  padding-top: var(--space-3) !important;
 }
 
 /* ==================== 页面过渡动画 ==================== */

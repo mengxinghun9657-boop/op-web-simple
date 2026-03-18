@@ -666,41 +666,6 @@ onMounted(() => {
   min-width: 160px;
 }
 
-/* 确保下拉菜单在最顶层 */
-:deep(.el-dropdown__popper) {
-  z-index: var(--z-dropdown, 2000) !important;
-}
-
-:deep(.el-dropdown-menu) {
-  background: var(--bg-elevated) !important;
-  border: 1px solid var(--border-primary) !important;
-  border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-lg) !important;
-  padding: var(--spacing-2) 0 !important;
-}
-
-:deep(.el-dropdown-menu__item) {
-  padding: var(--spacing-3) var(--spacing-4) !important;
-  color: var(--text-primary) !important;
-  font-size: var(--font-size-sm) !important;
-  transition: background-color var(--duration-fast) var(--ease-standard) !important;
-}
-
-:deep(.el-dropdown-menu__item:hover) {
-  background: var(--bg-hover) !important;
-  color: var(--text-primary) !important;
-}
-
-:deep(.el-dropdown-menu__item.is-disabled) {
-  color: var(--text-disabled) !important;
-}
-
-:deep(.el-dropdown-menu__item--divided) {
-  border-top: 1px solid var(--divider) !important;
-  margin-top: var(--spacing-2) !important;
-  padding-top: calc(var(--spacing-3) + var(--spacing-2)) !important;
-}
-
 /* 内容区 */
 .main-content {
   flex: 1;
@@ -722,24 +687,21 @@ onMounted(() => {
   opacity: 0;
 }
 
-/* 页面切换动画 */
+/* 页面切换动画 - 优化性能 */
 .page-fade-enter-active {
-  transition: all var(--duration-normal) var(--ease-out);
+  transition: opacity 150ms ease-out;
 }
 
 .page-fade-leave-active {
-  transition: all var(--duration-fast) var(--ease-in);
+  transition: opacity 100ms ease-in;
 }
 
-.page-fade-enter-from {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
+.page-fade-enter-from,
 .page-fade-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
 }
+
+/* 移除 transform 动画以提升性能 */
 
 /* ==================== 滚动条 ==================== */
 .sidebar-nav::-webkit-scrollbar,

@@ -16,6 +16,7 @@ import './styles/unified-design-system.css'
 // 2. 组件样式（基于统一设计系统）
 import './styles/google-components.css'   // Google Blue 通用组件样式
 import './styles/google-pages.css'        // Google Blue 页面统一样式
+import './styles/bento-grid.css'          // Bento 卡片布局样式
 import './styles/monitoring-pages.css'    // 监控页面样式
 import './styles/dialog-system.css'       // 统一弹窗设计系统
 import './styles/main-layout-google.css'  // MainLayout Google 风格

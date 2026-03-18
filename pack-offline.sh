@@ -396,27 +396,19 @@ import_fault_manual() {
     echo "📚 导入故障手册（${file_name}）..."
     
     # 确保容器内目录存在
-    docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /app/knowledge 2>/dev/null || true
-    docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /app/backend/scripts 2>/dev/null || true
-    
-    # 获取后端容器 ID
-    BACKEND_CONTAINER=$(docker compose -f docker-compose.prod.yml ps -q backend)
-    if [ -z "$BACKEND_CONTAINER" ]; then
-        echo "❌ 无法获取后端容器 ID"
-        return 1
-    fi
-    
+    docker exec cluster-backend mkdir -p /app/knowledge /app/backend/scripts 2>/dev/null || true
+
     # 复制故障手册文件到容器内
-    if docker cp "$file_path" "${BACKEND_CONTAINER}:/app/knowledge/${file_name}"; then
+    if docker cp "$file_path" "cluster-backend:/app/knowledge/${file_name}"; then
         echo "✓ 故障手册文件已复制到容器"
     else
         echo "❌ 故障手册文件复制失败"
         return 1
     fi
-    
+
     # 复制导入脚本到容器内
     if [ -f "backend-scripts/import_fault_manual.py" ]; then
-        if docker cp "backend-scripts/import_fault_manual.py" "${BACKEND_CONTAINER}:/app/backend/scripts/import_fault_manual.py"; then
+        if docker cp "backend-scripts/import_fault_manual.py" "cluster-backend:/app/backend/scripts/import_fault_manual.py"; then
             echo "✓ 导入脚本已复制到容器"
         else
             echo "❌ 导入脚本复制失败"
@@ -616,18 +608,11 @@ if [ -f "init_system_configs.py" ]; then
     sleep 10  # 给 MySQL 额外时间恢复，避免与故障手册导入冲突
 
     # 先复制配置文件到容器
-    BACKEND_CONTAINER=\$(docker compose -f docker-compose.prod.yml ps -q backend)
-    if [ -z "\$BACKEND_CONTAINER" ]; then
-        echo "❌ 错误: Backend容器未运行"
-        echo "   请检查容器状态: docker compose -f docker-compose.prod.yml ps"
-        exit 1
-    fi
-
     echo "📋 复制配置文件到容器..."
 
     # 复制 default_instance_ids.json
     if [ -f "backend-config/default_instance_ids.json" ]; then
-        if docker cp backend-config/default_instance_ids.json "\${BACKEND_CONTAINER}:/app/config/default_instance_ids.json"; then
+        if docker cp backend-config/default_instance_ids.json "cluster-backend:/app/config/default_instance_ids.json"; then
             echo "✓ default_instance_ids.json 复制成功"
 
             # 验证文件是否存在
@@ -649,7 +634,7 @@ if [ -f "init_system_configs.py" ]; then
 
     # 复制 prometheus_config.json（包含 Cookie）
     if [ -f "backend-config/prometheus_config.json" ]; then
-        if docker cp backend-config/prometheus_config.json "\${BACKEND_CONTAINER}:/app/config/prometheus_config.json"; then
+        if docker cp backend-config/prometheus_config.json "cluster-backend:/app/config/prometheus_config.json"; then
             echo "✓ prometheus_config.json 复制成功（包含 Prometheus Cookie）"
         else
             echo "⚠️  警告: prometheus_config.json 复制失败，Prometheus 查询将使用空 Cookie"

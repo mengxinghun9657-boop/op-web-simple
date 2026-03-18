@@ -184,27 +184,34 @@ onMounted(() => {
 .config-menu :deep(.el-menu-item:hover) {
   background: rgba(26, 115, 232, 0.1) !important;
   color: var(--primary) !important;
-  transform: translateX(4px);
 }
 
 .config-menu :deep(.el-menu-item:hover .el-icon) {
   color: var(--primary) !important;
 }
 
-.config-menu :deep(.el-menu-item.is-active) {
+.config-menu :deep(.el-menu-item.is-active),
+.config-menu :deep(.el-menu-item.is-active:hover),
+.config-menu :deep(.el-menu-item.is-active:focus) {
   background: linear-gradient(135deg, var(--primary), #1557c0) !important;
-  color: white !important;
+  color: #ffffff !important;
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(26, 115, 232, 0.25);
-  transform: translateX(4px);
 }
 
-.config-menu :deep(.el-menu-item.is-active .el-icon) {
-  color: white !important;
+.config-menu :deep(.el-menu-item.is-active .el-icon),
+.config-menu :deep(.el-menu-item.is-active:hover .el-icon) {
+  color: #ffffff !important;
 }
 
-.config-menu :deep(.el-menu-item.is-active span) {
-  color: white !important;
+.config-menu :deep(.el-menu-item.is-active span),
+.config-menu :deep(.el-menu-item.is-active:hover span) {
+  color: #ffffff !important;
+}
+
+/* 确保激活状态下所有文字都是白色 */
+.config-menu :deep(.el-menu-item.is-active *) {
+  color: #ffffff !important;
 }
 
 /* 右侧内容区 */
@@ -258,7 +265,7 @@ onMounted(() => {
 
   .config-menu :deep(.el-menu-item:hover),
   .config-menu :deep(.el-menu-item.is-active) {
-    transform: translateX(0) translateY(-2px);
+    /* 移动端不使用 transform */
   }
 
   .config-content {

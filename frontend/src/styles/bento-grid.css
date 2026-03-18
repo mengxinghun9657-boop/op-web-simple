@@ -167,6 +167,7 @@
   padding: var(--component-padding-lg);
   transition: var(--transition-all);
   cursor: default;
+  overflow: hidden;
 }
 
 .bento-card:hover {
@@ -211,7 +212,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   width: 32px;
+  min-width: 32px;
   height: 32px;
   border-radius: var(--radius-lg);
   background: var(--color-primary-500);

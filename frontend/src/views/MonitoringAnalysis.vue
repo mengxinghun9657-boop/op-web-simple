@@ -87,22 +87,22 @@ const navigateTo = (path) => router.push(path)
 
 .module-card {
   cursor: pointer;
-  transition: all var(--transition-normal);
+  transition: box-shadow var(--duration-normal) var(--ease-standard),
+              border-color var(--duration-normal) var(--ease-standard);
 }
 
 .module-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(26, 115, 232, 0.15);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
 }
 
 .arrow-icon {
   color: var(--text-tertiary);
-  transition: all var(--transition-fast);
+  transition: color var(--duration-fast) var(--ease-standard);
 }
 
 .module-card:hover .arrow-icon {
   color: var(--primary);
-  transform: translateX(4px);
 }
 
 .module-desc {

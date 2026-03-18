@@ -111,23 +111,28 @@
               <el-icon><Setting /></el-icon>
               字段配置
             </el-button>
-            <!-- 导入数据按钮 - 修复对齐问题 -->
+            <!-- 导入数据按钮 -->
             <div class="import-button-group">
               <el-upload :show-file-list="false" :before-upload="handleImport" accept=".xlsx,.xls" class="import-upload">
-                <el-dropdown split-button type="primary" class="import-dropdown">
+                <el-button type="primary" class="import-main-btn">
                   <el-icon><Upload /></el-icon>导入数据
-                  <template #dropdown>
-                    <el-dropdown-menu>
-                      <el-dropdown-item @click="importMode = 'update'">
-                        <el-icon><Refresh /></el-icon>更新模式（推荐）
-                      </el-dropdown-item>
-                      <el-dropdown-item @click="importMode = 'replace'">
-                        <el-icon><Delete /></el-icon>覆盖模式
-                      </el-dropdown-item>
-                    </el-dropdown-menu>
-                  </template>
-                </el-dropdown>
+                </el-button>
               </el-upload>
+              <el-dropdown trigger="click" @command="(cmd) => importMode = cmd" placement="bottom-end">
+                <el-button type="primary" class="import-mode-btn">
+                  <el-icon><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="update" :class="{ 'is-active': importMode === 'update' }">
+                      <el-icon><Refresh /></el-icon>更新模式（推荐）
+                    </el-dropdown-item>
+                    <el-dropdown-item command="replace" :class="{ 'is-active': importMode === 'replace' }">
+                      <el-icon><Delete /></el-icon>覆盖模式
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </div>
           </div>
         </div>
@@ -190,8 +195,8 @@
               </div>
               <div class="empty-state-title">暂无服务器数据</div>
               <div class="empty-state-description">请导入 Excel 文件或前往系统配置页面同步数据</div>
-              <div style="display: flex; gap: var(--space-2); margin-top: var(--space-4);">
-                <el-upload :show-file-list="false" :before-upload="handleImport" accept=".xlsx,.xls">
+              <div style="display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-4);">
+                <el-upload :show-file-list="false" :before-upload="handleImport" accept=".xlsx,.xls" style="display: flex;">
                   <el-button type="primary">
                     <el-icon><Upload /></el-icon>
                     导入 Excel
@@ -246,8 +251,8 @@
               </div>
               <div class="empty-state-title">暂无实例数据</div>
               <div class="empty-state-description">请导入 Excel 文件或前往系统配置页面同步数据</div>
-              <div style="display: flex; gap: var(--space-2); margin-top: var(--space-4);">
-                <el-upload :show-file-list="false" :before-upload="handleImport" accept=".xlsx,.xls">
+              <div style="display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-4);">
+                <el-upload :show-file-list="false" :before-upload="handleImport" accept=".xlsx,.xls" style="display: flex;">
                   <el-button type="primary">
                     <el-icon><Upload /></el-icon>
                     导入 Excel
@@ -373,7 +378,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElLoading } from 'element-plus'
-import { Monitor, Cpu, Odometer, Coin, Search, Upload, Refresh, Delete, Grid, DocumentCopy, Setting, Tools, FolderOpened } from '@element-plus/icons-vue'
+import { Monitor, Cpu, Odometer, Coin, Search, Upload, Refresh, Delete, Grid, DocumentCopy, Setting, Tools, FolderOpened, ArrowDown } from '@element-plus/icons-vue'
 import FieldConfigDialog from '@/components/cmdb/FieldConfigDialog.vue'
 import { getAllFields, getDefaultVisibleFields } from '@/config/cmdbFields'
 import { useUserStore } from '@/stores/user'
@@ -737,24 +742,31 @@ onMounted(() => {
   width: 350px;
 }
 
-/* 导入按钮组 - 修复对齐问题 */
+/* 导入按钮组 */
 .import-button-group {
   display: inline-flex;
-  align-items: center;
+  align-items: stretch;
 }
 
 .import-upload {
-  display: inline-block;
-  line-height: normal;
+  display: flex;
 }
 
 .import-upload :deep(.el-upload) {
-  display: inline-block;
-  line-height: normal;
+  display: flex;
 }
 
-.import-dropdown {
-  vertical-align: middle;
+.import-main-btn {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right-color: rgba(255,255,255,0.3) !important;
+}
+
+.import-mode-btn {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  padding: 0 10px;
+  border-left: none !important;
 }
 
 /* 可复制单元格样式 */

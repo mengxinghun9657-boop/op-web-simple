@@ -32,6 +32,7 @@
 .el-button--primary:active {
   background: var(--button-primary-bg-active) !important;
   box-shadow: none !important;
+  transform: scale(0.98) !important;
 }
 
 .el-button--primary:focus-visible {
@@ -58,6 +59,11 @@
   color: var(--primary) !important;
 }
 
+.el-button--default:active {
+  background: var(--button-secondary-bg-active) !important;
+  transform: scale(0.98) !important;
+}
+
 /* 文本按钮 */
 .el-button--text,
 .el-button.is-text {
@@ -71,6 +77,12 @@
 .el-button--text:hover,
 .el-button.is-text:hover {
   background: var(--button-ghost-bg-hover) !important;
+}
+
+.el-button--text:active,
+.el-button.is-text:active {
+  background: var(--bg-active) !important;
+  transform: scale(0.98) !important;
 }
 
 /* 成功按钮 */
@@ -87,6 +99,11 @@
   box-shadow: var(--shadow-sm) !important;
 }
 
+.el-button--success:active {
+  background: #16a34a !important;
+  transform: scale(0.98) !important;
+}
+
 /* 警告按钮 */
 .el-button--warning {
   background: var(--color-warning) !important;
@@ -99,6 +116,11 @@
 .el-button--warning:hover {
   background: var(--color-warning-light) !important;
   box-shadow: var(--shadow-sm) !important;
+}
+
+.el-button--warning:active {
+  background: #d97706 !important;
+  transform: scale(0.98) !important;
 }
 
 /* 危险按钮 */
@@ -115,6 +137,11 @@
   box-shadow: var(--shadow-sm) !important;
 }
 
+.el-button--danger:active {
+  background: #b91c1c !important;
+  transform: scale(0.98) !important;
+}
+
 /* 信息按钮 */
 .el-button--info {
   background: var(--color-info) !important;
@@ -127,6 +154,11 @@
 .el-button--info:hover {
   background: var(--color-info-light) !important;
   box-shadow: var(--shadow-sm) !important;
+}
+
+.el-button--info:active {
+  background: #1d4ed8 !important;
+  transform: scale(0.98) !important;
 }
 
 /* 按钮组 */
@@ -208,6 +240,16 @@
   border: 1px solid var(--input-border) !important;
   border-radius: var(--radius-md) !important;
   box-shadow: none !important;
+  transition: all var(--duration-normal) var(--ease-standard) !important;
+}
+
+.el-select__wrapper:hover {
+  border-color: var(--input-border-hover) !important;
+}
+
+.el-select__wrapper.is-focused {
+  border-color: var(--input-border-focus) !important;
+  box-shadow: 0 0 0 3px var(--primary-bg) !important;
 }
 
 .el-select-dropdown {
@@ -233,6 +275,51 @@
   background: var(--bg-selected) !important;
   color: var(--primary) !important;
   font-weight: var(--font-medium) !important;
+}
+
+/* ==================== 下拉菜单组件 ==================== */
+.el-dropdown-menu {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: var(--space-2) 0 !important;
+  min-width: 140px !important;
+}
+
+.el-dropdown-menu__item {
+  padding: var(--space-2) var(--space-4) !important;
+  font-size: var(--text-sm) !important;
+  color: var(--text-primary) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-2) !important;
+  line-height: 1.5 !important;
+  transition: background-color var(--duration-fast) var(--ease-standard) !important;
+}
+
+.el-dropdown-menu__item:hover:not(.is-disabled) {
+  background: var(--bg-hover) !important;
+  color: var(--text-primary) !important;
+}
+
+.el-dropdown-menu__item .el-icon {
+  color: var(--text-tertiary) !important;
+  flex-shrink: 0 !important;
+}
+
+.el-dropdown-menu__item:hover:not(.is-disabled) .el-icon {
+  color: var(--primary) !important;
+}
+
+.el-dropdown-menu__item.is-disabled {
+  color: var(--text-disabled) !important;
+  cursor: not-allowed !important;
+}
+
+.el-dropdown-menu__item--divided {
+  border-top: 1px solid var(--border-secondary) !important;
+  margin-top: var(--space-2) !important;
 }
 
 /* ==================== 卡片组件 ==================== */
@@ -532,6 +619,91 @@
   border: 1px solid var(--border-primary) !important;
   border-radius: var(--radius-lg) !important;
   box-shadow: var(--shadow-lg) !important;
+}
+
+/* ==================== Popper 全局修复 ==================== */
+/* 修复所有弹出层重叠问题 */
+.el-popper,
+.el-dropdown__popper,
+.el-select__popper,
+.el-tooltip__popper,
+.el-popover.el-popper,
+.el-popconfirm {
+  z-index: 2050 !important;
+}
+
+/* 确保弹出层不被其他元素遮挡 */
+.el-popper.is-pure,
+.el-popper.is-light {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-secondary) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Popconfirm 确认框样式 */
+.el-popconfirm {
+  padding: var(--space-4) !important;
+}
+
+.el-popconfirm__main {
+  margin-bottom: var(--space-3) !important;
+}
+
+.el-popconfirm__action {
+  display: flex !important;
+  gap: var(--space-2) !important;
+  justify-content: flex-end !important;
+}
+
+/* ==================== Tabs 标签页 ==================== */
+.el-tabs__header {
+  margin-bottom: var(--space-4) !important;
+}
+
+.el-tabs__nav-wrap::after {
+  height: 1px !important;
+  background-color: var(--border-secondary) !important;
+}
+
+.el-tabs__item {
+  color: var(--text-secondary) !important;
+  font-weight: var(--font-medium) !important;
+  font-size: var(--text-sm) !important;
+  transition: color var(--duration-fast) var(--ease-standard) !important;
+  padding: 0 var(--space-4) !important;
+  height: 40px !important;
+  line-height: 40px !important;
+}
+
+.el-tabs__item:hover {
+  color: var(--primary) !important;
+}
+
+.el-tabs__item.is-active {
+  color: var(--primary) !important;
+  font-weight: var(--font-semibold) !important;
+}
+
+.el-tabs__active-bar {
+  background-color: var(--primary) !important;
+  height: 2px !important;
+}
+
+/* 卡片风格标签页 */
+.el-tabs--card > .el-tabs__header .el-tabs__nav-wrap::after {
+  display: none !important;
+}
+
+.el-tabs--card > .el-tabs__header .el-tabs__item {
+  border: 1px solid var(--border-secondary) !important;
+  border-bottom: none !important;
+  border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
+  background: var(--bg-secondary) !important;
+}
+
+.el-tabs--card > .el-tabs__header .el-tabs__item.is-active {
+  background: var(--bg-primary) !important;
+  border-bottom-color: var(--bg-primary) !important;
 }
 
 /* ==================== Loading 加载 ==================== */

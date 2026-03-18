@@ -38,9 +38,15 @@ class MinIOClient:
             if not self.client.bucket_exists(self.bucket):
                 self.client.make_bucket(self.bucket)
                 logger.info(f"✅ 创建MinIO bucket: {self.bucket}")
+            else:
+                logger.debug(f"MinIO bucket已存在: {self.bucket}")
         except S3Error as e:
-            logger.error(f"❌ MinIO bucket检查失败: {e}")
-            raise
+            # 忽略 BucketAlreadyOwnedByYou 错误（并发创建时可能发生）
+            if 'BucketAlreadyOwnedByYou' in str(e.code) or 'BucketAlreadyExists' in str(e.code):
+                logger.debug(f"MinIO bucket已存在（并发创建）: {self.bucket}")
+            else:
+                logger.error(f"❌ MinIO bucket检查失败: {e}")
+                raise
 
     def upload_file(self, file_path: str, object_name: str, content_type: str = 'application/octet-stream') -> str:
         """
@@ -177,5 +183,12 @@ def get_minio_client() -> MinIOClient:
         _minio_client = MinIOClient()
     return _minio_client
 
-# 兼容旧导入方式
-minio_client = get_minio_client()
+
+# 延迟初始化 - 不在模块导入时创建实例
+# 使用 get_minio_client() 获取实例
+class _LazyMinIOClient:
+    """延迟初始化的MinIO客户端代理"""
+    def __getattr__(self, name):
+        return getattr(get_minio_client(), name)
+
+minio_client = _LazyMinIOClient()

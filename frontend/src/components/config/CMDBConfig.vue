@@ -670,55 +670,36 @@ onMounted(() => {
 
 .config-tabs :deep(.el-tabs__header) {
   margin-bottom: var(--spacing-6);
-  padding: 0 var(--spacing-2);
-}
-
-.config-tabs :deep(.el-tabs__nav-wrap) {
-  padding: var(--spacing-1);
-  background: var(--bg-elevated);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border-color);
 }
 
 .config-tabs :deep(.el-tabs__nav-wrap::after) {
-  display: none;
-}
-
-.config-tabs :deep(.el-tabs__nav) {
-  border: none;
+  background-color: var(--border-color);
+  height: 1px;
 }
 
 .config-tabs :deep(.el-tabs__item) {
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: var(--font-size-base);
-  padding: 0 var(--spacing-6) !important;
-  border-radius: var(--radius-lg);
-  transition: var(--transition-all);
-  border: none;
-  opacity: 0.6;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  padding: 0 var(--spacing-5) !important;
   height: 44px !important;
   line-height: 44px !important;
-  vertical-align: middle !important;
+  transition: color 0.2s ease;
 }
 
 .config-tabs :deep(.el-tabs__item:hover) {
-  opacity: 0.85;
-  background: var(--bg-hover);
+  color: var(--color-primary);
 }
 
 .config-tabs :deep(.el-tabs__item.is-active) {
-  color: white;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-  opacity: 1;
+  color: var(--color-primary) !important;
+  font-weight: 700;
 }
 
 .config-tabs :deep(.el-tabs__active-bar) {
-  display: none;
+  background-color: var(--color-primary);
+  height: 2px;
+  border-radius: 1px;
 }
 
 /* 标签页内容 */

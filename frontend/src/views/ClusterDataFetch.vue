@@ -237,6 +237,7 @@ const testConnection = async () => {
       title="Cookie 配置"
       width="560px"
       class="google-dialog"
+      append-to-body
     >
       <el-form label-position="top" class="google-form">
         <el-form-item label="Cookie 值">

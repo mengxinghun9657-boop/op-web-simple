@@ -5,6 +5,7 @@
     width="900px"
     :close-on-click-modal="false"
     class="field-config-dialog"
+    append-to-body
   >
     <div class="dialog-content">
       <!-- 搜索和操作栏 -->

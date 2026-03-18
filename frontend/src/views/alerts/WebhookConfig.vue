@@ -78,6 +78,7 @@
       :title="dialogTitle"
       width="600px"
       @close="handleDialogClose"
+      append-to-body
     >
       <el-form :model="formData" :rules="rules" ref="formRef" label-width="120px">
         <el-form-item label="名称" prop="name">

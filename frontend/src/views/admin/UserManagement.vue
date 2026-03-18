@@ -95,7 +95,7 @@
     </div>
 
     <!-- 用户表单对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" class="google-dialog">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" class="google-dialog" append-to-body>
       <el-form :model="form" label-width="80px" class="google-form">
         <el-form-item label="用户名">
           <el-input v-model="form.username" :disabled="isEdit" />
@@ -104,7 +104,7 @@
           <el-input v-model="form.email" />
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="form.role" style="width: 100%">
+          <el-select v-model="form.role" style="width: 100%" teleported popper-class="dialog-select-popper">
             <el-option label="管理员 (Admin)" value="admin" />
             <el-option label="分析师 (Analyst)" value="analyst" />
             <el-option label="只读用户 (Viewer)" value="viewer" />

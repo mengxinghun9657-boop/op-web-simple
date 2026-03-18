@@ -4,7 +4,6 @@
 .el-message {
   --el-message-bg-color: var(--glass-bg-strong);
   --el-message-border-color: var(--glass-border);
-  backdrop-filter: blur(12px);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }
@@ -37,7 +36,6 @@
   align-items: center;
   justify-content: center;
   background: var(--glass-bg-strong);
-  backdrop-filter: blur(8px);
   z-index: 9999;
 }
 
@@ -300,7 +298,6 @@
 .el-tooltip__popper {
   --el-tooltip-bg-color: var(--glass-bg-strong);
   --el-tooltip-border-color: var(--glass-border);
-  backdrop-filter: blur(12px);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }

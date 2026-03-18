@@ -11,8 +11,6 @@
 
 .unified-dialog :deep(.el-dialog) {
   background: var(--glass-bg-strong);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-2xl);

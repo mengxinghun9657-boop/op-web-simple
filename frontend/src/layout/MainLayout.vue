@@ -139,7 +139,7 @@
           </el-tooltip>
 
           <!-- 用户信息 -->
-          <el-dropdown @command="handleCommand" trigger="click">
+          <el-dropdown @command="handleCommand" trigger="click" teleported popper-class="user-dropdown-popper">
             <div class="user-info glass-card-light">
               <el-avatar :size="32" class="user-avatar">
                 <el-icon :size="16"><User /></el-icon>
@@ -559,7 +559,8 @@ onMounted(() => {
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-secondary);
   flex-shrink: 0;
-  z-index: var(--z-sticky);
+  position: relative;
+  z-index: 100;
 }
 
 .header-left {
@@ -620,6 +621,9 @@ onMounted(() => {
   transition: background-color var(--duration-fast) var(--ease-standard);
   background: transparent;
   border: 1px solid transparent;
+  /* 必须禁用 backdrop-filter，否则会创建 stacking context 导致 dropdown 层级错乱 */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .user-info:hover {

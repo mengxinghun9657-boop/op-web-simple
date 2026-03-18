@@ -237,27 +237,19 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="操作" width="380" fixed="right">
+          <el-table-column label="操作" width="220" fixed="right">
             <template #default="{ row }">
-              <div class="action-buttons">
-                <button class="action-btn" @click.stop="handleViewDetail(row.id)" aria-label="查看告警详情">
-                  查看详情
-                </button>
-                <button class="action-btn" @click.stop="handleChangeStatus(row)" aria-label="修改状态">
-                  修改状态
-                </button>
-                <button class="action-btn" @click.stop="handleEditAlert(row)" aria-label="编辑告警字段">
-                  编辑字段
-                </button>
-                <button class="action-btn" @click.stop="handleAddNote(row)" aria-label="添加备注">
-                  添加备注
-                </button>
-                <button class="action-btn" @click.stop="handleDiagnose(row.id)" :disabled="diagnosingIds.includes(row.id)" aria-label="重新诊断告警">
-                  {{ diagnosingIds.includes(row.id) ? '诊断中...' : '重新诊断' }}
-                </button>
-                <button class="action-btn" @click.stop="handleCreateICafeCard(row)" aria-label="创建iCafe卡片">
-                  创建卡片
-                </button>
+              <div class="action-grid">
+                <div class="action-row action-row-primary">
+                  <button class="action-btn btn-primary" @click.stop="handleViewDetail(row.id)">查看详情</button>
+                  <button class="action-btn btn-primary" @click.stop="handleChangeStatus(row)">修改状态</button>
+                  <button class="action-btn btn-primary" @click.stop="handleEditAlert(row)">编辑字段</button>
+                </div>
+                <div class="action-row action-row-secondary">
+                  <button class="action-btn btn-secondary" @click.stop="handleAddNote(row)">添加备注</button>
+                  <button class="action-btn btn-secondary" @click.stop="handleDiagnose(row.id)" :disabled="diagnosingIds.includes(row.id)">{{ diagnosingIds.includes(row.id) ? '诊断中' : '重新诊断' }}</button>
+                  <button class="action-btn btn-secondary" @click.stop="handleCreateICafeCard(row)">创建卡片</button>
+                </div>
               </div>
             </template>
           </el-table-column>
@@ -319,6 +311,7 @@
       width="600px"
       :close-on-click-modal="false"
       class="google-dialog"
+      append-to-body
     >
       <el-form
         ref="editFormRef"
@@ -342,7 +335,7 @@
         </el-form-item>
         
         <el-form-item label="组件类型" prop="component">
-          <el-select v-model="editForm.component" placeholder="请选择组件类型" style="width: 100%">
+          <el-select v-model="editForm.component" placeholder="请选择组件类型" style="width: 100%" teleported popper-class="dialog-select-popper">
             <el-option label="GPU" value="GPU" />
             <el-option label="Memory" value="Memory" />
             <el-option label="CPU" value="CPU" />
@@ -355,7 +348,7 @@
         </el-form-item>
         
         <el-form-item label="严重程度" prop="severity">
-          <el-select v-model="editForm.severity" placeholder="请选择严重程度" style="width: 100%">
+          <el-select v-model="editForm.severity" placeholder="请选择严重程度" style="width: 100%" teleported popper-class="dialog-select-popper">
             <el-option label="严重" value="ERROR" />
             <el-option label="警告" value="WARN" />
             <el-option label="失败" value="FAIL" />
@@ -413,6 +406,7 @@
       width="500px"
       :close-on-click-modal="false"
       class="google-dialog"
+      append-to-body
     >
       <el-form
         ref="statusFormRef"
@@ -433,7 +427,7 @@
         </el-form-item>
 
         <el-form-item label="新状态" required>
-          <el-select v-model="statusForm.newStatus" style="width: 100%">
+          <el-select v-model="statusForm.newStatus" style="width: 100%" teleported popper-class="dialog-select-popper">
             <el-option label="待处理" value="pending" />
             <el-option label="处理中" value="processing" />
             <el-option label="已诊断" value="diagnosed" />
@@ -459,6 +453,7 @@
       width="600px"
       :close-on-click-modal="false"
       class="google-dialog"
+      append-to-body
     >
       <el-form
         ref="noteFormRef"
@@ -498,6 +493,7 @@
       width="700px"
       :close-on-click-modal="false"
       class="google-dialog"
+      append-to-body
     >
       <el-form
         ref="icafeFormRef"
@@ -557,7 +553,7 @@
 
         <!-- 下拉选择字段 -->
         <el-form-item label="所属计划" prop="plan" required>
-          <el-select v-model="icafeForm.plan" placeholder="请选择所属计划" style="width: 100%">
+          <el-select v-model="icafeForm.plan" placeholder="请选择所属计划" style="width: 100%" teleported popper-class="dialog-select-popper">
             <el-option label="2026/2026Q1" value="2026/2026Q1" />
             <el-option label="2026/2026Q2" value="2026/2026Q2" />
             <el-option label="2026/2026Q3" value="2026/2026Q3" />

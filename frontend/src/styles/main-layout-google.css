@@ -155,17 +155,14 @@
 }
 
 /* ==================== 下拉菜单 ==================== */
-.el-dropdown__popper,
-.el-popper {
-  z-index: var(--z-dropdown) !important;
-}
+/* z-index 由 Element Plus PopupManager 自动管理，不手动设置 */
 
 .user-dropdown-menu {
-  margin-top: var(--space-2) !important;
+  margin-top: 4px !important;
   border-radius: var(--radius-lg) !important;
   background: var(--bg-primary) !important;
-  border: 1px solid var(--border-secondary) !important;
-  box-shadow: var(--shadow-lg) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-secondary) !important;
   overflow: hidden !important;
   padding: var(--space-2) 0 !important;
 }

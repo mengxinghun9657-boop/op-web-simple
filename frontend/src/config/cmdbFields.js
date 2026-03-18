@@ -9,7 +9,7 @@ export const serverFieldDefinitions = [
   {
     group: '基本信息',
     fields: [
-      { key: 'bns_hostname', label: '主机名', width: 280, defaultVisible: true, sortable: false, copyable: true },
+      { key: 'bns_hostname', label: '主机名', minWidth: 200, defaultVisible: true, sortable: false, copyable: true },
       { key: 'rms_sn', label: 'SN', width: 130, defaultVisible: true, sortable: false, copyable: true },
       { key: 'rms_manufacturer', label: '品牌', width: 80, defaultVisible: true, sortable: false },
       { key: 'rms_type', label: '类型', width: 120, defaultVisible: true, sortable: false },
@@ -44,7 +44,7 @@ export const serverFieldDefinitions = [
   {
     group: '状态信息',
     fields: [
-      { key: 'status', label: '状态', width: 80, defaultVisible: true, sortable: false, type: 'status' },
+      { key: 'status', label: '状态', minWidth: 80, defaultVisible: true, sortable: false, type: 'status' },
       { key: 'nova_host_node_state', label: '节点状态', width: 100, defaultVisible: false, sortable: false },
       { key: 'nova_host_blacklisted_reason', label: '加黑原因', width: 150, defaultVisible: false, sortable: false },
       { key: 'nova_host_blacklisted_description', label: '加黑说明', width: 200, defaultVisible: false, sortable: false },
@@ -231,8 +231,8 @@ export const instanceFieldDefinitions = [
   {
     group: '基本信息',
     fields: [
-      { key: 'nova_vm_instance_uuid', label: '实例UUID', width: 320, defaultVisible: true, sortable: false, copyable: true },
-      { key: 'bns_hostname', label: '所属主机', width: 280, defaultVisible: true, sortable: false, copyable: true },
+      { key: 'nova_vm_instance_uuid', label: '实例UUID', minWidth: 220, defaultVisible: true, sortable: false, copyable: true },
+      { key: 'bns_hostname', label: '所属主机', minWidth: 180, defaultVisible: true, sortable: false, copyable: true },
       { key: 'nova_vm_fixed_ips', label: 'IP地址', width: 150, defaultVisible: true, sortable: false, copyable: true },
       { key: 'nova_vm_metadata_source', label: '实例类型', width: 100, defaultVisible: true, sortable: false },
       { key: 'nova_vm_display_name', label: '显示名称', width: 200, defaultVisible: false, sortable: false },
@@ -257,7 +257,7 @@ export const instanceFieldDefinitions = [
   {
     group: '状态信息',
     fields: [
-      { key: 'nova_vm_vm_state', label: '状态', width: 90, defaultVisible: true, sortable: false, type: 'status' },
+      { key: 'nova_vm_vm_state', label: '状态', minWidth: 90, defaultVisible: true, sortable: false, type: 'status' },
       { key: 'nova_vm_power_state', label: '电源状态', width: 100, defaultVisible: false, sortable: false },
       { key: 'nova_vm_task_state', label: '任务状态', width: 100, defaultVisible: false, sortable: false },
     ]

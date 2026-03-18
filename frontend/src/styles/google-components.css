@@ -85,6 +85,17 @@
   transform: scale(0.98) !important;
 }
 
+/* text + primary 组合：无背景，蓝色文字，hover 时轻背景 */
+.el-button.is-text.el-button--primary {
+  background: transparent !important;
+  color: var(--primary) !important;
+}
+
+.el-button.is-text.el-button--primary:hover {
+  background: var(--button-ghost-bg-hover) !important;
+  color: var(--primary) !important;
+}
+
 /* 成功按钮 */
 .el-button--success {
   background: var(--color-success) !important;
@@ -254,17 +265,35 @@
 
 .el-select-dropdown {
   background: var(--bg-elevated) !important;
-  border: 1px solid var(--border-primary) !important;
+  border: none !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-lg) !important;
-  margin-top: var(--space-1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-primary) !important;
+  overflow: hidden !important;
+}
+
+/* select 聚焦时去掉 box-shadow 光晕，只保留边框颜色变化 */
+.el-select__wrapper.is-focused {
+  border-color: var(--input-border-focus) !important;
+  box-shadow: none !important;
+}
+
+.el-select__popper {
 }
 
 .el-select-dropdown__item {
   color: var(--text-primary) !important;
   font-family: var(--font-google) !important;
-  padding: var(--space-3) var(--space-4) !important;
+  padding: 0 var(--space-4) !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
   transition: all var(--duration-fast) var(--ease-standard) !important;
+}
+
+.el-select-dropdown__item span {
+  line-height: 36px !important;
+  display: block !important;
 }
 
 .el-select-dropdown__item:hover {
@@ -280,9 +309,9 @@
 /* ==================== 下拉菜单组件 ==================== */
 .el-dropdown-menu {
   background: var(--bg-elevated) !important;
-  border: 1px solid var(--border-primary) !important;
+  border: none !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-lg) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-primary) !important;
   padding: var(--space-2) 0 !important;
   min-width: 140px !important;
 }
@@ -440,6 +469,28 @@
 .el-table__empty-text {
   color: var(--text-tertiary) !important;
   font-size: var(--text-sm) !important;
+}
+
+/* 固定列必须有实色背景，否则滚动时透出左侧内容 */
+.el-table__fixed-right .el-table__cell,
+.el-table__fixed .el-table__cell,
+.el-table td.el-table__cell.el-table-fixed-column--right,
+.el-table td.el-table__cell.el-table-fixed-column--left {
+  background: var(--card-bg) !important;
+}
+
+.el-table__row:hover .el-table__fixed-right .el-table__cell,
+.el-table__row:hover .el-table__fixed .el-table__cell,
+.el-table__row:hover td.el-table__cell.el-table-fixed-column--right,
+.el-table__row:hover td.el-table__cell.el-table-fixed-column--left,
+.el-table__fixed-right-patch {
+  background: var(--bg-tertiary) !important;
+}
+
+.el-table th.el-table__cell.is-leaf.el-table__fixed-right-last-column,
+.el-table th.el-table__cell.el-table-fixed-column--right,
+.el-table th.el-table__cell.el-table-fixed-column--left {
+  background: var(--bg-secondary) !important;
 }
 
 /* ==================== 对话框组件 ==================== */
@@ -622,22 +673,29 @@
 }
 
 /* ==================== Popper 全局修复 ==================== */
-/* 修复所有弹出层重叠问题 */
+/* 只覆盖样式，不覆盖 z-index，让 Element Plus PopupManager 自动管理层级 */
 .el-popper,
 .el-dropdown__popper,
 .el-select__popper,
 .el-tooltip__popper,
 .el-popover.el-popper,
 .el-popconfirm {
-  z-index: 2050 !important;
 }
 
 /* 确保弹出层不被其他元素遮挡 */
 .el-popper.is-pure,
 .el-popper.is-light {
   background: var(--bg-elevated) !important;
-  border: 1px solid var(--border-secondary) !important;
-  box-shadow: var(--shadow-lg) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-primary) !important;
+}
+
+/* 用户下拉菜单 */
+.user-dropdown-popper {
+}
+
+/* Dialog 内 select 下拉 */
+.dialog-select-popper {
 }
 
 /* Popconfirm 确认框样式 */

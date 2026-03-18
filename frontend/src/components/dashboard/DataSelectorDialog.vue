@@ -5,6 +5,7 @@
     width="600px"
     :close-on-click-modal="false"
     class="unified-dialog"
+    append-to-body
   >
     <div class="selector-content">
       <!-- 表选择 -->
@@ -15,6 +16,7 @@
           placeholder="请选择数据表"
           filterable
           style="width: 100%"
+          teleported popper-class="dialog-select-popper"
         >
           <el-option
             v-for="table in tables"

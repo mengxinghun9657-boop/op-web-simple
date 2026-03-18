@@ -148,7 +148,7 @@
     </div>
 
     <!-- 任务详情弹窗 -->
-    <el-dialog v-model="detailVisible" title="任务详情" width="700px" class="google-dialog">
+    <el-dialog v-model="detailVisible" title="任务详情" width="700px" class="google-dialog" append-to-body>
       <el-descriptions :column="2" border v-if="currentTask">
         <el-descriptions-item label="任务ID" :span="2">
           <span class="task-id">{{ currentTask.id }}</span>

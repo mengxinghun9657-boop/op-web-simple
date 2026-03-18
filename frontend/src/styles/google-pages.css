@@ -320,6 +320,7 @@
   font-size: var(--text-xs);
   font-weight: var(--font-medium);
   font-family: var(--font-google);
+  white-space: nowrap;
 }
 
 .status-badge.primary {
@@ -604,23 +605,68 @@
 /* ==================== 操作按钮组 ==================== */
 .action-buttons {
   display: flex;
-  gap: var(--space-2);
+  flex-wrap: nowrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+/* 两行网格布局 */
+.action-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 0;
+}
+
+.action-row {
+  display: flex;
+  gap: 3px;
+  flex-wrap: nowrap;
 }
 
 .action-btn {
-  padding: 4px 8px;
+  padding: 3px 7px;
   border-radius: var(--radius-sm);
-  font-size: var(--text-xs);
+  font-size: 11px;
   font-weight: var(--font-medium);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-standard);
   border: none;
-  background: transparent;
+  white-space: nowrap;
+  flex: 1;
+  text-align: center;
+}
+
+/* 第一行：主操作 - 蓝色调 */
+.btn-primary {
+  background: var(--primary-bg);
   color: var(--primary);
 }
 
-.action-btn:hover {
-  background: var(--primary-bg);
+.btn-primary:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 第二行：次操作 - 灰色调 */
+.btn-secondary {
+  background: var(--bg-secondary, #f5f5f5);
+  color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+  background: var(--border-color, #e0e0e0);
+  color: var(--text-primary);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .action-btn.danger {

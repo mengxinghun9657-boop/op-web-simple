@@ -172,7 +172,7 @@
     </div>
 
     <!-- Cookie配置对话框 -->
-    <el-dialog v-model="showCookieDialog" title="Cookie配置" width="600px" class="google-dialog">
+    <el-dialog v-model="showCookieDialog" title="Cookie配置" width="600px" class="google-dialog" append-to-body>
       <el-form class="google-form">
         <el-form-item label="Cookie值" label-width="80px">
           <el-input v-model="cookieValue" type="textarea" :rows="6" placeholder="粘贴从浏览器复制的Cookie值" />

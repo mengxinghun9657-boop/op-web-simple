@@ -67,6 +67,7 @@
       title="保存查询模板"
       width="500px"
       class="unified-dialog"
+      append-to-body
     >
       <el-form :model="newTemplate" label-width="80px">
         <el-form-item label="模板名称" required>

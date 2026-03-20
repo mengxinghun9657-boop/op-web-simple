@@ -811,7 +811,15 @@ async def get_bce_stats(
 ):
     """查询本地库中 BCE 数据的统计信息（记录数、最新采集日期）"""
     from app.services.bce_sync_service import BCESyncService
-    return BCESyncService(db).get_table_stats()
+    stats = BCESyncService(db).get_table_stats()
+
+    # 转换为前端期望的格式
+    return {
+        'bcc_count': stats.get('bcc', {}).get('count', 0),
+        'bcc_latest_date': stats.get('bcc', {}).get('latest_date'),
+        'cce_count': stats.get('cce', {}).get('count', 0),
+        'cce_latest_date': stats.get('cce', {}).get('latest_date')
+    }
 
 
 @router.post("/bce/test-connection", response_model=APIResponse, summary="测试 BCE 连接")

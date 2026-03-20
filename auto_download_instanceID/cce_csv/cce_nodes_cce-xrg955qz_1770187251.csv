@@ -1,0 +1,297 @@
+节点名称,实例名称/ID,状态,支付方式,可用区,IP地址,配置/类型,加速芯片类型,加速芯片（已使用/总卡数）,空闲加速芯片卡数,资源申请 | 限制,容器组（已分配/总额度）,节点组,超节点,Kubelet版本/Runtime版本/OS版本,创建时间
+10.90.0.225,cce-uk1zi507-v5jybhyj / i-mqvcM10x,可用,后付费,可用区C,10.90.0.225,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2026-02-02 17:14:21
+10.90.0.245,cce-uk1zi507-yhqat7rz / i-A3p7AEBl,创建失败,后付费,可用区C,10.90.0.245,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2026-01-27 15:25:05
+10.90.0.120,cce-ig-kriq8lhi-rc0aftjl-ucjp8ccr-1 / i-rb2TpgX2,可用,后付费,可用区C,10.90.0.120,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,,,-,2026-01-26 18:15:07
+10.90.0.70,CCE-BBC-ai-platform-H20-wvvd9i61-lfrfvmqn-2 / i-kaAZgh21,不可用,后付费,可用区C,10.90.0.70,208核/2048GB/100GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20-new（cce-ig-vi94i33t）,,-,2026-01-20 17:26:51
+10.90.0.109,cce-ig-gx14sgw9-ny7ouk3t / i-FHu0nBL4,可用,后付费,可用区C,10.90.0.109,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2026-01-12 18:20:22
+10.90.0.101,cce-ig-kriq8lhi-9qts69zj-pfdrwhmq / i-7BTa6RPi,可用,后付费,可用区C,10.90.0.101,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-12-29 11:30:28
+10.90.0.54,cce-pog0r4mg-kbwpwqoz / i-XUNLK5Bv,可用,后付费,可用区C,10.90.0.54,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-12-04 17:04:13
+10.90.0.53,cce-pog0r4mg-3j8io3wr / i-wOsIj5f3,可用,后付费,可用区C,10.90.0.53,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-12-02 18:07:21
+10.90.0.12,cce-ig-4oau3gwh-ofd9c7u2-vq2n6gkd-2 / i-AZLhwJJ8,可用,后付费,可用区C,10.90.0.12,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-12-02 18:07:21
+10.90.0.39,cce-ig-4oau3gwh-ofd9c7u2-vq2n6gkd-1 / i-VnRRkNbm,可用,后付费,可用区C,10.90.0.39,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-12-02 18:07:21
+10.90.0.166,cce-uk1zi507-oiwhlp4g / i-r42zgDvv,可用,后付费,可用区C,10.90.0.166,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-11-05 18:28:56
+10.90.0.242,cce-uk1zi507-ooqk90i1 / i-DH1JLIBe,可用,后付费,可用区C,10.90.0.242,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-09-30 10:14:35
+10.90.0.207,cce-uk1zi507-qm5e40or / i-Q1gCzscZ,可用,后付费,可用区C,10.90.0.207,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-09-03 13:55:51
+10.90.0.130,cce-ig-j4u7826n-cdbbamx2-aq7g9xne / i-yPvrAvV6,可用,后付费,可用区C,10.90.0.130,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-L20（cce-ig-j4u7826n）,,-,2025-09-01 23:05:57
+10.90.0.241,cce-uk1zi507-0mcgzljq / i-aUMILSCu,可用,后付费,可用区C,10.90.0.241,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-28 16:05:28
+10.90.0.202,cce-uk1zi507-28qunyi8 / i-82ndeV9w,可用,后付费,可用区C,10.90.0.202,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-28 16:05:28
+10.90.0.243,cce-uk1zi507-35vsynf6 / i-oXeaJ0Pz,可用,后付费,可用区C,10.90.0.243,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-22 14:58:55
+10.90.0.246,cce-uk1zi507-qdf88jh5 / i-qYlqPJNw,可用,后付费,可用区C,10.90.0.246,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-22 14:58:55
+10.90.0.233,cce-uk1zi507-b0ub9zxb / i-n8M5AT9G,可用,后付费,可用区C,10.90.0.233,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-18 11:07:00
+10.90.0.40,cce-ig-kriq8lhi-lui7j4qq-ucjp8ccr / i-s2qPNc87,可用,后付费,可用区C,10.90.0.40,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-08-15 17:43:30
+10.90.0.247,cce-uk1zi507-5w9knlyq / i-t46HN3Yq,可用,后付费,可用区C,10.90.0.247,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-11 18:14:32
+10.90.0.229,cce-uk1zi507-c97ya8io / i-cLO2xVig,可用,后付费,可用区C,10.90.0.229,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-11 18:14:32
+10.90.0.210,cce-uk1zi507-wxzgm668 / i-THJvox5D,可用,后付费,可用区C,10.90.0.210,208核/1952GB/200GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-11 18:14:32
+10.90.0.214,cce-uk1zi507-6daq3yiy / i-FPNjLbrr,可用,后付费,可用区C,10.90.0.214,208核/1952GB/200GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-11 18:14:32
+10.90.0.32,cce-ig-gx14sgw9-v7f3wzzh-hy6r7mja / i-8rvYD0VN,可用,后付费,可用区C,10.90.0.32,208核/1952GB/200GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-08 11:11:43
+10.90.0.236,cce-uk1zi507-55kizhve / i-3TxsxM2M,可用,后付费,可用区C,10.90.0.236,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-07 13:41:23
+10.90.0.240,cce-uk1zi507-rkbu3i7w / i-XlEtzJuC,可用,后付费,可用区C,10.90.0.240,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-07 13:41:23
+10.90.0.249,cce-uk1zi507-t3msw3l5 / i-thpp5Ort,可用,后付费,可用区C,10.90.0.249,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-06 09:15:14
+10.90.0.239,cce-uk1zi507-w76vytug / i-Nmb3vRPs,可用,后付费,可用区C,10.90.0.239,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-06 09:15:14
+10.90.0.227,cce-uk1zi507-omh3qnn8 / i-mStR3K0S,可用,后付费,可用区C,10.90.0.227,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-06 09:15:14
+10.90.0.206,cce-uk1zi507-zo7m6dnk / i-9lalS3UL,可用,后付费,可用区C,10.90.0.206,208核/1952GB/200GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-06 09:15:14
+10.90.0.196,cce-uk1zi507-x1q35u3t / i-aQaIEoc5,可用,后付费,可用区C,10.90.0.196,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-06 09:15:14
+10.90.0.235,cce-uk1zi507-biom0j69 / i-XSAvCKhJ,not_ready_scheduling_disabled,后付费,可用区C,10.90.0.235,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-04 18:08:33
+10.90.0.217,cce-uk1zi507-sa9kfg6o / i-2DFyva2m,可用,后付费,可用区C,10.90.0.217,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-04 18:08:33
+10.90.0.248,cce-uk1zi507-q3aemm3c / i-9s5nm4fe,可用,后付费,可用区C,10.90.0.248,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-04 18:08:33
+10.90.0.117,cce-ig-kriq8lhi-dt6rcj95-ucjp8ccr-4 / i-fsCB4yQ0,可用,后付费,可用区C,10.90.0.117,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-01 16:09:26
+10.90.0.230,cce-uk1zi507-iqkrarr8 / i-syUMp1Pz,可用,后付费,可用区C,10.90.0.230,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-01 16:09:26
+10.90.0.201,cce-uk1zi507-nwd5q0im / i-Y0aT3ih7,可用,后付费,可用区C,10.90.0.201,208核/1952GB/200GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-01 15:37:10
+10.90.0.226,cce-uk1zi507-lf5z2hn1 / i-3PFJSlak,可用,后付费,可用区C,10.90.0.226,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-01 11:32:32
+10.90.0.219,cce-uk1zi507-byf4op0d / i-UIgLw0uw,可用,后付费,可用区C,10.90.0.219,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-01 11:31:05
+10.90.0.199,cce-uk1zi507-bnl89kpa / i-pI6QvxWg,可用,后付费,可用区C,10.90.0.199,208核/1952GB/200GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-08-01 11:24:19
+10.90.0.197,cce-uk1zi507-n594ud90 / i-yMyOJmJ1,可用,后付费,可用区C,10.90.0.197,208核/1952GB/200GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-07-31 10:38:44
+10.90.0.118,cce-ig-kriq8lhi-rc0aftjl-ucjp8ccr-2 / i-jLm8icvq,可用,后付费,可用区C,10.90.0.118,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-07-31 10:38:44
+10.90.0.203,cce-uk1zi507-v3pgoisc / i-D14ck6Lb,可用,后付费,可用区C,10.90.0.203,208核/1952GB/200GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-07-31 10:38:44
+10.90.0.211,cce-uk1zi507-nzo5b6im / i-iOdx7XVZ,可用,后付费,可用区C,10.90.0.211,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-07-31 09:34:07
+10.90.0.116,cce-ig-kriq8lhi-dt6rcj95-ucjp8ccr-1 / i-Lyn5xTDh,可用,后付费,可用区C,10.90.0.116,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-07-31 09:34:07
+10.90.0.213,cce-uk1zi507-78g1lv83 / i-UT6IZaXl,可用,后付费,可用区C,10.90.0.213,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-07-31 09:34:07
+10.90.0.195,cce-uk1zi507-silpoktf / i-efdaAfnp,可用,后付费,可用区C,10.90.0.195,208核/1952GB/200GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-07-30 18:50:43
+10.90.0.237,cce-uk1zi507-s52zhu6j / i-1pbwvTYD,可用,后付费,可用区C,10.90.0.237,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-07-30 18:50:43
+10.90.0.204,cce-uk1zi507-n6im68q4 / i-hYv3bOTq,可用,后付费,可用区C,10.90.0.204,208核/1952GB/200GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-07-30 18:50:43
+10.90.0.13,cce-ig-kriq8lhi-rf3ih8y4-ucjp8ccr / i-MjE3gfCa,可用,后付费,可用区C,10.90.0.13,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool-new（cce-ig-gx14sgw9）,,-,2025-07-30 18:50:43
+10.90.1.41,cce-xrg955qz-3q2b8a1w / i-gAbSU26d,可用,后付费,可用区C,10.90.1.41,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-24 22:04:47
+10.90.1.33,cce-xrg955qz-k2vi1g8h / i-3NtBJyAH,可用,后付费,可用区C,10.90.1.33,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-24 22:04:47
+10.90.1.34,cce-xrg955qz-yzfhepge / i-SlaQd9GI,可用,后付费,可用区C,10.90.1.34,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-24 22:04:47
+10.90.1.47,cce-uk1zi507-jdm2l9ou / i-O6FoqogN,可用,后付费,可用区C,10.90.1.47,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 19:34:50
+10.90.1.44,cce-uk1zi507-8k9bgmct / i-48JEKs5M,可用,后付费,可用区C,10.90.1.44,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 19:34:49
+10.90.1.32,cce-uk1zi507-1dpcvptw / i-upiojqft,可用,后付费,可用区C,10.90.1.32,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 19:16:03
+10.90.1.26,cce-uk1zi507-00ydkxrd / i-jNaR9j0D,可用,后付费,可用区C,10.90.1.26,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:53:57
+10.90.1.28,cce-uk1zi507-aw4bnqf7 / i-oS2hibOH,可用,后付费,可用区C,10.90.1.28,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:53:57
+10.90.1.30,cce-uk1zi507-g2p1801l / i-U7zSwtz7,可用,后付费,可用区C,10.90.1.30,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:53:57
+10.90.1.31,cce-uk1zi507-h83yojk5 / i-czwe9jrz,可用,后付费,可用区C,10.90.1.31,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:53:57
+10.90.1.25,cce-uk1zi507-yl7cybn9 / i-ux8rKR5a,可用,后付费,可用区C,10.90.1.25,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:53:57
+10.90.1.15,cce-uk1zi507-auaektim / i-FvDaH6ju,可用,后付费,可用区C,10.90.1.15,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:08:13
+10.90.1.16,cce-uk1zi507-euij4oh6 / i-DwwVdj3z,可用,后付费,可用区C,10.90.1.16,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:08:13
+10.90.1.22,cce-uk1zi507-ja5mr8tg / i-FAQV7nqj,可用,后付费,可用区C,10.90.1.22,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:08:13
+10.90.1.20,cce-uk1zi507-jxoe90wm / i-oFV4jozC,可用,后付费,可用区C,10.90.1.20,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:08:13
+10.90.1.18,cce-uk1zi507-kra5owzh / i-qyUFRlOh,可用,后付费,可用区C,10.90.1.18,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:08:13
+10.90.1.19,cce-uk1zi507-pha86rpj / i-jZoTXXFk,可用,后付费,可用区C,10.90.1.19,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:08:13
+10.90.1.17,cce-uk1zi507-xdqlk2lv / i-2FPXaPhb,可用,后付费,可用区C,10.90.1.17,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 18:08:13
+10.90.1.13,cce-uk1zi507-45tlb9w9 / i-ClvCskBL,可用,后付费,可用区C,10.90.1.13,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:57:30
+10.90.1.5,cce-uk1zi507-awqyqos2 / i-aSSgAaoY,可用,后付费,可用区C,10.90.1.5,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:57:30
+10.90.1.14,cce-uk1zi507-fnhmf00t / i-RH6P6IMX,可用,后付费,可用区C,10.90.1.14,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:57:30
+10.90.1.7,cce-uk1zi507-qfrzzofx / i-BTnqMfd3,可用,后付费,可用区C,10.90.1.7,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:57:30
+10.90.1.10,cce-uk1zi507-wznbf7nf / i-M49GFkp1,可用,后付费,可用区C,10.90.1.10,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:57:30
+10.90.1.0,cce-uk1zi507-5hw6eqhr / i-j7mvHgQS,可用,后付费,可用区C,10.90.1.0,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:36:15
+10.90.1.1,cce-uk1zi507-7po3tg1o / i-KDJeaBWF,可用,后付费,可用区C,10.90.1.1,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:36:15
+10.90.1.4,cce-uk1zi507-05tberpr / i-BFAwMlLR,可用,后付费,可用区C,10.90.1.4,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:36:15
+10.90.1.2,cce-uk1zi507-ip9lkhry / i-r0GiVfkM,可用,后付费,可用区C,10.90.1.2,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:36:15
+10.90.0.254,cce-uk1zi507-nx8sjgnv / i-wkaqM3JJ,可用,后付费,可用区C,10.90.0.254,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:36:15
+10.90.0.252,cce-uk1zi507-s8fe34gv / i-oQ8LSod2,可用,后付费,可用区C,10.90.0.252,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:36:15
+10.90.1.3,cce-uk1zi507-uw02s67s / i-j4bpyUdB,可用,后付费,可用区C,10.90.1.3,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:36:15
+10.90.0.253,cce-uk1zi507-ycw41w1o / i-tyjcoGlC,可用,后付费,可用区C,10.90.0.253,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:36:15
+10.90.0.251,cce-uk1zi507-f1zgrrgr / i-DQUVeB3H,可用,后付费,可用区C,10.90.0.251,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-23 17:36:15
+10.90.0.234,cce-uk1zi507-tlfdq3l9 / i-juX0tWKx,可用,后付费,可用区C,10.90.0.234,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 21:32:36
+10.90.0.205,cce-uk1zi507-u3z4tmfk / i-exczRK1A,可用,后付费,可用区C,10.90.0.205,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 21:32:36
+10.90.0.244,cce-uk1zi507-zwmfo9s9 / i-Zjzhuz9L,可用,后付费,可用区C,10.90.0.244,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 21:32:36
+10.90.0.216,cce-uk1zi507-qe617zvv / i-fuwvvG8G,可用,后付费,可用区C,10.90.0.216,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:37
+10.90.0.232,cce-uk1zi507-qwh78vz0 / i-oDfBVuAq,可用,后付费,可用区C,10.90.0.232,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:37
+10.90.0.228,cce-uk1zi507-8gh87lhp / i-9ShGKoQX,可用,后付费,可用区C,10.90.0.228,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:36
+10.90.0.221,cce-uk1zi507-b1wzp5k6 / i-q5jqCxzw,可用,后付费,可用区C,10.90.0.221,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:36
+10.90.0.220,cce-uk1zi507-cu8frfrg / i-NnCh8zdX,可用,后付费,可用区C,10.90.0.220,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:36
+10.90.0.224,cce-uk1zi507-dow6ttn9 / i-YEswimyF,可用,后付费,可用区C,10.90.0.224,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:36
+10.90.0.238,cce-uk1zi507-k6th1abq / i-BvPz36Aa,可用,后付费,可用区C,10.90.0.238,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:36
+10.90.0.200,cce-uk1zi507-klq1p3xp / i-7ioiuPop,可用,后付费,可用区C,10.90.0.200,208核/1952GB/100GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:36
+10.90.0.212,cce-uk1zi507-la2wfjbw / i-Jfb2Muya,可用,后付费,可用区C,10.90.0.212,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:36
+10.90.0.209,cce-uk1zi507-12btr41f / i-6lFUTwNp,可用,后付费,可用区C,10.90.0.209,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:35
+10.90.0.215,cce-uk1zi507-19pzizgq / i-oZj8mD44,可用,后付费,可用区C,10.90.0.215,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:35
+10.90.0.208,cce-uk1zi507-1f91p1od / i-3IMvEVfn,可用,后付费,可用区C,10.90.0.208,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:35
+10.90.0.223,cce-uk1zi507-3b6y7rer / i-x3KydKNN,可用,后付费,可用区C,10.90.0.223,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:35
+10.90.0.250,cce-uk1zi507-3yrfxvrt / i-dTXRhlyN,可用,后付费,可用区C,10.90.0.250,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:35
+10.90.0.222,cce-uk1zi507-5up8cy3s / i-jTay08bD,可用,后付费,可用区C,10.90.0.222,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-17 20:59:35
+10.90.0.181,cce-uk1zi507-5ll82kji / i-xdmhfogx,可用,后付费,可用区C,10.90.0.181,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:03
+10.90.0.184,cce-uk1zi507-i59fhatv / i-HQyZFJDA,可用,后付费,可用区C,10.90.0.184,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:03
+10.90.0.167,cce-uk1zi507-j42h0xad / i-7iZb5m54,可用,后付费,可用区C,10.90.0.167,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:03
+10.90.0.178,cce-uk1zi507-8a10rd1d / i-bcfp7Eh2,可用,后付费,可用区C,10.90.0.178,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:03
+10.90.0.192,cce-uk1zi507-2z3prdz7 / i-bMmsrtpX,可用,后付费,可用区C,10.90.0.192,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:03
+10.90.0.164,cce-uk1zi507-ril6zxv6 / i-gWIMHxr6,可用,后付费,可用区C,10.90.0.164,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:03
+10.90.0.191,cce-uk1zi507-hcpdpm1s / i-lriwT11G,可用,后付费,可用区C,10.90.0.191,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:03
+10.90.0.190,cce-uk1zi507-j53nwqax / i-OJSUn8xr,可用,后付费,可用区C,10.90.0.190,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:03
+10.90.0.185,cce-uk1zi507-gkflam2l / i-qrtuoqd2,可用,后付费,可用区C,10.90.0.185,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:03
+10.90.0.175,cce-uk1zi507-hf2ng6hw / i-Ur6BtlF9,可用,后付费,可用区C,10.90.0.175,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:03
+10.90.0.186,cce-uk1zi507-4qnap4t3 / i-ZKcySbk7,可用,后付费,可用区C,10.90.0.186,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.163,cce-uk1zi507-ia0jxgb4 / i-GHD2sZQq,可用,后付费,可用区C,10.90.0.163,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.187,cce-uk1zi507-6btrb7pw / i-LMs93Geo,可用,后付费,可用区C,10.90.0.187,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.194,cce-uk1zi507-kcxxi855 / i-r68htIU1,可用,后付费,可用区C,10.90.0.194,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.177,cce-uk1zi507-0dowxsei / i-LuoUMQrM,可用,后付费,可用区C,10.90.0.177,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.180,cce-uk1zi507-sft5a2y3 / i-FgWCRLpI,可用,后付费,可用区C,10.90.0.180,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.188,cce-uk1zi507-x625o7ti / i-kw2nnKMM,可用,后付费,可用区C,10.90.0.188,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.189,cce-uk1zi507-8yf4bgau / i-SVps65XD,可用,后付费,可用区C,10.90.0.189,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.182,cce-uk1zi507-dqpmid8l / i-fOxWegi7,可用,后付费,可用区C,10.90.0.182,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.172,cce-uk1zi507-ghy9yll6 / i-B6cAWYJy,可用,后付费,可用区C,10.90.0.172,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.183,cce-uk1zi507-i8ecj7he / i-IYKovn07,可用,后付费,可用区C,10.90.0.183,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.162,cce-uk1zi507-4iatg243 / i-DBlbIBIG,可用,后付费,可用区C,10.90.0.162,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.176,cce-uk1zi507-3hkjvndw / i-BSsNt9W9,可用,后付费,可用区C,10.90.0.176,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.169,cce-uk1zi507-6nrw1o0j / i-sFJNg6EM,可用,后付费,可用区C,10.90.0.169,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 18:47:02
+10.90.0.160,cce-uk1zi507-3ij5azez / i-FYQZWeOo,可用,后付费,可用区C,10.90.0.160,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 17:04:30
+10.90.0.161,cce-uk1zi507-78p8y95q / i-qryFRspO,可用,后付费,可用区C,10.90.0.161,208核/2048GB/1000GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 17:04:30
+10.90.0.152,cce-uk1zi507-cdiphy9g / i-efFyfUcX,可用,后付费,可用区C,10.90.0.152,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 17:04:30
+10.90.0.156,cce-uk1zi507-hw7w3qkt / i-SBBTH95A,可用,后付费,可用区C,10.90.0.156,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 17:04:30
+10.90.0.159,cce-uk1zi507-k4581mds / i-xRTpVbz6,可用,后付费,可用区C,10.90.0.159,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 17:04:30
+10.90.0.145,cce-uk1zi507-vr4dgtjp / i-PlatWTUa,可用,后付费,可用区C,10.90.0.145,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 16:43:25
+10.90.0.150,cce-uk1zi507-10yb5o77 / i-RCj43ukx,可用,后付费,可用区C,10.90.0.150,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 16:43:24
+10.90.0.144,cce-uk1zi507-2ku4ur8r / i-2irnMHGb,可用,后付费,可用区C,10.90.0.144,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 16:43:24
+10.90.0.146,cce-uk1zi507-4gn9vn5g / i-MmQHFOHK,可用,后付费,可用区C,10.90.0.146,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 16:43:24
+10.90.0.148,cce-uk1zi507-87x1mscp / i-vxpH0NtA,可用,后付费,可用区C,10.90.0.148,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 16:43:24
+10.90.0.141,cce-uk1zi507-f8ilgyak / i-oZuvRkQT,可用,后付费,可用区C,10.90.0.141,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-17 16:43:24
+10.90.0.127,CCE-BBC-ai-platform-H20-zu2tdnrw-lfrfvmqn-1 / i-JPEt1kLv,可用,后付费,可用区C,10.90.0.127,208核/2048GB/100GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-09 20:06:08
+10.90.0.126,CCE-BBC-ai-platform-H20-zu2tdnrw-lfrfvmqn-3 / i-3argGDaz,可用,后付费,可用区C,10.90.0.126,208核/2048GB/100GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-09 20:06:08
+10.90.0.125,CCE-BBC-ai-platform-H20-zu2tdnrw-lfrfvmqn-2 / i-z69C8Q8W,可用,后付费,可用区C,10.90.0.125,208核/2048GB/100GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-09 20:06:08
+10.90.0.123,CCE-BBC-ai-platform-H20-oad7s7wt-lfrfvmqn-3 / i-srADPbi2,可用,后付费,可用区C,10.90.0.123,208核/2048GB/100GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-09 19:13:12
+10.90.0.124,CCE-BBC-ai-platform-H20-oad7s7wt-lfrfvmqn-4 / i-k1oYMI7n,可用,后付费,可用区C,10.90.0.124,208核/2048GB/100GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-H20（cce-ig-r4lv4v2p）,,-,2025-06-09 19:13:12
+10.90.0.114,cce-ig-kriq8lhi-dt6rcj95-ucjp8ccr-3 / i-POhqLyxJ,可用,后付费,可用区C,10.90.0.114,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-09 18:33:46
+10.90.0.113,cce-ig-kriq8lhi-3pq77zf8-ucjp8ccr / i-xlu1fiex,可用,后付费,可用区C,10.90.0.113,208核/1952GB/500GB/lgn6tcefc,H800,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H800-nodepool（cce-ig-kriq8lhi）,,-,2025-06-09 18:18:23
+10.90.0.43,cce-ig-eodnnd14-747rw18v-2o618oqn-2 / i-onQXXEbh,可用,后付费,可用区C,10.90.0.43,4核/8GB/100GB/c4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,ingress（cce-ig-eodnnd14）,,-,2025-04-28 12:21:46
+10.90.0.44,cce-ig-eodnnd14-747rw18v-2o618oqn-1 / i-RrFpWKxh,可用,后付费,可用区C,10.90.0.44,4核/8GB/100GB/c4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,ingress（cce-ig-eodnnd14）,,-,2025-04-28 12:21:46
+10.90.0.61,CCE-BBC-ai-platform-cpu-oata6vz9-hpn3mher-1 / i-gZycsBhO,可用,后付费,可用区C,10.90.0.61,64核/128GB/100GB/c4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-cpu-64C128G（cce-ig-a9otniyc）,,-,2025-04-17 09:29:05
+10.90.0.60,CCE-BBC-ai-platform-cpu-oata6vz9-hpn3mher-2 / i-EBVrgeZu,可用,后付费,可用区C,10.90.0.60,64核/128GB/100GB/c4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-cpu-64C128G（cce-ig-a9otniyc）,,-,2025-04-17 09:29:05
+10.90.0.58,CCE-BBC-ai-platform-cpu-i22detin-hpn3mher / i-iOLTK9rt,可用,后付费,可用区C,10.90.0.58,64核/128GB/100GB/c4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-AI平台-训练任务-cpu-64C128G（cce-ig-a9otniyc）,,-,2025-04-17 09:22:33

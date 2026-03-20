@@ -76,7 +76,7 @@
             <li>iCafe 是百度内部的项目管理平台，用于创建和跟踪任务卡片</li>
             <li>配置完成后，可在告警列表中为每个告警快速创建对应的 iCafe 卡片</li>
             <li>卡片会自动填充告警信息、诊断结果等内容</li>
-            <li>虚拟账户申请：<a href="#" target="_blank">申请专用(虚拟)账户</a></li>
+            <li>虚拟账户申请：<a href="https://ku.baidu-int.com/knowledge/HFVrC7hq1Q/_SKPgSwp2G/NbX2gitgSF/KtfcNN4FUlpsxj" target="_blank">申请专用(虚拟)账户</a></li>
           </ul>
         </el-alert>
       </div>

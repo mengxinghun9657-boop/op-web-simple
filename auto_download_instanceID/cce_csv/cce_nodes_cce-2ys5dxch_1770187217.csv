@@ -1,0 +1,317 @@
+节点名称,实例名称/ID,状态,支付方式,可用区,IP地址,配置/类型,加速芯片类型,加速芯片（已使用/总卡数）,空闲加速芯片卡数,资源申请 | 限制,容器组（已分配/总额度）,节点组,超节点,Kubelet版本/Runtime版本/OS版本,创建时间
+10.89.0.83,cce-ig-n2n53rim-bwyjvanj-caep2nx6-1 / i-V1U7nQMi,可用,后付费,可用区C,10.89.0.83,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-30 11:32:19
+10.89.0.84,cce-ig-n2n53rim-bwyjvanj-caep2nx6-2 / i-Ybh1GAIt,可用,后付费,可用区C,10.89.0.84,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-30 11:32:19
+10.89.0.81,cce-ig-n2n53rim-bwyjvanj-caep2nx6-3 / i-QPM9Ki3A,可用,后付费,可用区C,10.89.0.81,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-30 11:32:19
+10.89.0.78,cce-ig-n2n53rim-64a3csmd-caep2nx6-2 / i-B6VKkWk0,可用,后付费,可用区C,10.89.0.78,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-16 16:04:20
+10.89.0.79,cce-ig-n2n53rim-64a3csmd-caep2nx6-3 / i-2MCQ2ayR,可用,后付费,可用区C,10.89.0.79,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-16 16:04:20
+10.89.0.80,cce-ig-n2n53rim-64a3csmd-caep2nx6-1 / i-nH47NivO,可用,后付费,可用区C,10.89.0.80,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-16 16:04:20
+10.89.0.45,cce-ig-n2n53rim-iqievscp-caep2nx6-2 / i-GpUDDpDJ,可用,后付费,可用区C,10.89.0.45,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-16 14:16:27
+10.89.0.77,cce-ig-n2n53rim-iqievscp-caep2nx6-1 / i-UUK1S3QX,可用,后付费,可用区C,10.89.0.77,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-16 14:16:26
+10.89.0.74,cce-ig-n2n53rim-iqievscp-caep2nx6-3 / i-4CQsvD5o,可用,后付费,可用区C,10.89.0.74,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-16 14:16:26
+10.89.0.50,cce-ig-n2n53rim-iqievscp-caep2nx6-5 / i-8gzRsho9,可用,后付费,可用区C,10.89.0.50,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-16 14:16:26
+10.89.0.75,cce-ig-n2n53rim-iqievscp-caep2nx6-4 / i-j1NUcCEP,可用,后付费,可用区C,10.89.0.75,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-16 14:16:26
+10.89.0.76,cce-ig-n2n53rim-iqievscp-caep2nx6-6 / i-5Wm65oRE,可用,后付费,可用区C,10.89.0.76,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-16 14:16:26
+10.89.0.73,cce-ig-n2n53rim-iqievscp-caep2nx6-7 / i-TZbqgXmf,可用,后付费,可用区C,10.89.0.73,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-16 14:16:26
+10.90.128.47,L20-dev / i-Qdox90Xf,可用,后付费,可用区C,10.90.128.47,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2026-01-14 17:43:09
+10.90.128.15,CCE-EBC-triton-server-L20-tianshu-llm-l91vcjqd-sxfht1bl-6 / i-NYDYGYz6,可用,后付费,可用区C,10.90.128.15,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2026-01-08 18:09:41
+10.90.128.44,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-18 / i-hhzsQ4hL,可用,后付费,可用区C,10.90.128.44,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2026-01-07 18:48:56
+10.89.0.39,cce-ig-n2n53rim-uhvp9dqm-caep2nx6-3 / i-Ji1K1hIj,可用,后付费,可用区C,10.89.0.39,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2026-01-07 12:26:19
+10.90.128.73,cce-ig-ld7crc5z-0cu9gwth-jjpo3wr5 / i-9MJxVpvj,可用,后付费,可用区C,10.90.128.73,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-12-17 15:11:13
+10.90.128.75,cce-ig-ld7crc5z-m9fx8xog-jjpo3wr5-3 / i-h6QGD4Et,可用,后付费,可用区C,10.90.128.75,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-12-17 15:11:13
+10.89.0.42,cce-ig-49zcib7u-o9pbm89z-92wz24nr / i-a2nexgF6,可用,后付费,可用区C,10.89.0.42,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-12-17 11:35:35
+10.90.128.72,cce-ig-ld7crc5z-hc7bbvns-jjpo3wr5-1 / i-ipFCn59t,可用,后付费,可用区C,10.90.128.72,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-12-16 18:42:46
+10.90.128.74,cce-ig-ld7crc5z-m9fx8xog-jjpo3wr5-2 / i-p4E77J6C,可用,后付费,可用区C,10.90.128.74,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-12-16 18:42:46
+10.89.0.41,cce-ig-n2n53rim-kptv5g1b-caep2nx6-1 / i-Gj0MO9So,可用,后付费,可用区C,10.89.0.41,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-12-16 09:09:20
+10.89.0.40,cce-ig-n2n53rim-kptv5g1b-caep2nx6-2 / i-vPuKKZyj,可用,后付费,可用区C,10.89.0.40,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-12-16 09:09:20
+10.90.128.123,CCE-EBC-triton-server-L20-fucabr7m-u5esp1do-1 / i-f287DZ8n,可用,后付费,可用区C,10.90.128.123,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-12-02 10:57:00
+10.90.128.117,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-16 / i-vJZyYmDx,可用,后付费,可用区C,10.90.128.117,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-12-02 10:57:00
+10.90.128.120,CCE-EBC-triton-server-L20-6wn0n0uh-u5esp1do / i-9dbYoh29,可用,后付费,可用区C,10.90.128.120,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-12-02 10:57:00
+10.90.128.115,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-06 / i-jugwOn8r,可用,后付费,可用区C,10.90.128.115,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-11-27 14:03:57
+10.90.128.113,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-08 / i-go6CzUJD,可用,后付费,可用区C,10.90.128.113,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-11-27 14:03:57
+10.90.128.112,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-10 / i-JWl79Cd6,可用,后付费,可用区C,10.90.128.112,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-11-27 14:03:57
+10.90.128.118,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-12 / i-Vv64hyWq,可用,后付费,可用区C,10.90.128.118,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-11-27 14:03:57
+10.90.128.114,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-13 / i-LzG79Q9S,可用,后付费,可用区C,10.90.128.114,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-11-27 14:03:57
+10.90.128.119,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-28 / i-EedTWv4D,可用,后付费,可用区C,10.90.128.119,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-11-27 14:03:57
+10.90.128.116,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-30 / i-q6H55I7p,可用,后付费,可用区C,10.90.128.116,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-11-27 14:03:57
+10.90.128.121,CCE-EBC-triton-server-L20-fucabr7m-u5esp1do-2 / i-k5jt1qp8,可用,后付费,可用区C,10.90.128.121,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-11-27 14:03:57
+10.90.128.122,CCE-EBC-triton-server-L20-fucabr7m-u5esp1do-3 / i-A8XwvWpE,可用,后付费,可用区C,10.90.128.122,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-11-27 14:03:57
+10.89.0.22,cce-ig-n2n53rim-ligindqy-caep2nx6-19 / i-9y8FAQj1,可用,后付费,可用区C,10.89.0.22,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-11-13 14:54:31
+10.89.0.16,cce-ig-n2n53rim-ligindqy-caep2nx6-18 / i-w8aUebU9,可用,后付费,可用区C,10.89.0.16,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,,,-,2025-11-01 11:06:30
+10.89.0.37,cce-ig-n2n53rim-uhvp9dqm-caep2nx6-4 / i-GA7HbqbZ,可用,后付费,可用区C,10.89.0.37,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-10-31 16:27:39
+10.89.0.35,cce-ig-n2n53rim-uhvp9dqm-caep2nx6-5 / i-we3TVyYm,可用,后付费,可用区C,10.89.0.35,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-10-31 16:27:39
+10.89.0.36,cce-ig-n2n53rim-uhvp9dqm-caep2nx6-2 / i-7y076BZb,可用,后付费,可用区C,10.89.0.36,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-10-31 16:27:39
+10.89.0.38,cce-ig-n2n53rim-uhvp9dqm-caep2nx6-1 / i-3YyVduYB,可用,后付费,可用区C,10.89.0.38,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-10-31 16:27:39
+10.89.0.30,cce-ig-n2n53rim-n6mb24hf-caep2nx6 / i-MjxWiih9,可用,后付费,可用区C,10.89.0.30,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-10-22 13:58:17
+10.89.0.29,cce-ig-n2n53rim-cavyj3c6-caep2nx6 / i-XA0YpbtF,可用,后付费,可用区C,10.89.0.29,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-10-22 13:51:53
+10.89.0.4,cce-ig-n2n53rim-kqpad9ix-caep2nx6-4 / i-MKls2FDI,可用,后付费,可用区C,10.89.0.4,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-10-22 13:47:50
+10.89.0.7,cce-ig-n2n53rim-kqpad9ix-caep2nx6-1 / i-5ItoHM8o,可用,后付费,可用区C,10.89.0.7,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-10-22 13:47:50
+10.89.0.3,cce-ig-n2n53rim-kqpad9ix-caep2nx6-2 / i-kOQUgI3t,可用,后付费,可用区C,10.89.0.3,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-10-22 13:47:50
+10.89.64.226,cce-ig-9ccs9cyw-y1u6u9fh-qjftb09j / i-QYr2SKP2,可用,后付费,可用区C,10.89.64.226,4核/8GB/200GB/c4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-4c8g（cce-ig-9ccs9cyw）,,-,2025-09-18 14:18:07
+10.90.128.109,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-29 / i-6OFJWRyW,可用,后付费,可用区C,10.90.128.109,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-09-17 15:53:38
+10.90.128.11,CCE-EBC-triton-server-L20-bgbm5onz-5uuvqlpf-3 / i-sCe9iAaa,可用,后付费,可用区C,10.90.128.11,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-09-17 15:53:38
+10.90.128.110,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-18 / i-nY5Z55PJ,可用,后付费,可用区C,10.90.128.110,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-09-17 15:53:38
+10.90.128.111,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-24 / i-aTgVn9wL,可用,后付费,可用区C,10.90.128.111,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-09-17 15:53:38
+10.90.128.100,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-25 / i-8qrDkXYm,可用,后付费,可用区C,10.90.128.100,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-09-17 15:53:37
+10.90.128.106,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-19 / i-X0mDu8TL,可用,后付费,可用区C,10.90.128.106,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-09-17 15:53:37
+10.89.0.49,cce-ig-49zcib7u-x855t3lz-92wz24nr-2 / i-MDlI6zsh,可用,后付费,可用区C,10.89.0.49,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-08-29 14:49:34
+10.89.0.163,cce-ig-49zcib7u-x855t3lz-92wz24nr-4 / i-UhB4Cwuq,可用,后付费,可用区C,10.89.0.163,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-08-29 14:49:34
+10.89.0.164,cce-ig-49zcib7u-x855t3lz-92wz24nr-1 / i-B7juRwVb,可用,后付费,可用区C,10.89.0.164,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-08-29 14:49:34
+10.89.0.82,CCE-EBC-triton-server-L20-vkbfmdgl-u5esp1do-04 / i-Y0ZE1t7D,可用,后付费,可用区C,10.89.0.82,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-08-07 14:29:52
+10.90.1.49,cce-uk1zi507-dvl609wz / i-duyb4NJr,可用,后付费,可用区C,10.90.1.49,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-31 17:53:19
+10.90.1.38,cce-uk1zi507-hkfp8sid / i-07Hwmtp1,可用,后付费,可用区C,10.90.1.38,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-31 17:53:19
+10.90.1.48,cce-uk1zi507-ijv23p52 / i-BjgeNjCQ,可用,后付费,可用区C,10.90.1.48,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-31 17:53:19
+10.90.1.39,cce-uk1zi507-innkuz0o / i-2mSuWvQ9,可用,后付费,可用区C,10.90.1.39,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-31 17:53:19
+10.90.1.43,cce-uk1zi507-vlot5lex / i-6IPzBCC0,可用,后付费,可用区C,10.90.1.43,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-31 17:53:19
+10.90.1.6,cce-uk1zi507-xxhkeyrn / i-bYqJ72Oj,可用,后付费,可用区C,10.90.1.6,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-31 17:53:19
+10.90.1.46,cce-uk1zi507-yn3031lt / i-RUlLsYJx,可用,后付费,可用区C,10.90.1.46,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-31 17:53:19
+10.90.1.40,cce-uk1zi507-byagmiqp / i-0fxUjMGw,可用,后付费,可用区C,10.90.1.40,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-31 17:53:18
+10.90.1.37,cce-uk1zi507-fow43esw / i-vmTDmoI4,可用,后付费,可用区C,10.90.1.37,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-31 17:53:18
+10.90.0.31,cce-ig-5od2q7kk-il0r7wcw-lrhgtnl6 / i-FALjKYpe,可用,后付费,可用区C,10.90.0.31,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-31 16:46:48
+10.89.0.160,cce-ig-n2n53rim-czuor0rz-caep2nx6-2 / i-WPCOoGYo,可用,后付费,可用区C,10.89.0.160,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-24 10:56:50
+10.89.0.161,cce-ig-n2n53rim-czuor0rz-caep2nx6-1 / i-kOfhcsIr,可用,后付费,可用区C,10.89.0.161,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-24 10:56:50
+10.89.0.159,cce-ig-n2n53rim-ye82wh61-caep2nx6-2 / i-49WIvflo,可用,后付费,可用区C,10.89.0.159,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-23 19:10:18
+10.89.0.157,cce-ig-n2n53rim-ye82wh61-caep2nx6-1 / i-H7guLKi6,可用,后付费,可用区C,10.89.0.157,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-23 19:10:17
+10.89.0.158,cce-ig-n2n53rim-ye82wh61-caep2nx6-3 / i-9KoHhmUG,可用,后付费,可用区C,10.89.0.158,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-23 19:10:17
+10.89.0.156,cce-ig-n2n53rim-288fvci1-caep2nx6-3 / i-4LminCVJ,可用,后付费,可用区C,10.89.0.156,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-23 19:02:10
+10.89.0.154,cce-ig-n2n53rim-288fvci1-caep2nx6-1 / i-iWUvMZw5,可用,后付费,可用区C,10.89.0.154,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-23 19:02:10
+10.89.0.153,cce-ig-n2n53rim-db9ccgs0-caep2nx6 / i-kdZBfBiN,可用,后付费,可用区C,10.89.0.153,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-23 18:46:38
+10.90.0.122,CCE-BBC-ai-platform-H20-oad7s7wt-lfrfvmqn-2 / i-pU3YCIGk,可用,后付费,可用区C,10.90.0.122,208核/2048GB/100GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-21 11:06:21
+10.89.0.150,cce-ig-n2n53rim-4refftga-caep2nx6-3 / i-WtUZqTXB,可用,后付费,可用区C,10.89.0.150,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 22:01:59
+10.89.0.151,cce-ig-n2n53rim-4refftga-caep2nx6-4 / i-CoNfcdAz,可用,后付费,可用区C,10.89.0.151,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 22:01:59
+10.89.0.149,cce-ig-n2n53rim-4refftga-caep2nx6-2 / i-fu7dgASM,可用,后付费,可用区C,10.89.0.149,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 22:01:59
+10.89.0.152,cce-ig-n2n53rim-4refftga-caep2nx6-5 / i-DnAxJ2AF,可用,后付费,可用区C,10.89.0.152,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 22:01:59
+10.89.0.148,cce-ig-n2n53rim-4refftga-caep2nx6-1 / i-A2dclisy,可用,后付费,可用区C,10.89.0.148,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 22:01:59
+10.89.0.147,cce-ig-n2n53rim-9y6snqjg-caep2nx6-2 / i-WQZRb0Hc,可用,后付费,可用区C,10.89.0.147,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 21:32:05
+10.89.0.146,cce-ig-n2n53rim-9y6snqjg-caep2nx6-1 / i-TleaWcyK,可用,后付费,可用区C,10.89.0.146,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 21:32:05
+10.89.0.145,cce-ig-n2n53rim-3lzoq3qo-caep2nx6 / i-pMyhbk4Z,ready_scheduling_disabled,后付费,可用区C,10.89.0.145,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 21:14:04
+10.89.0.143,cce-ig-n2n53rim-3r8stcjf-caep2nx6-2 / i-h7ssaX3R,可用,后付费,可用区C,10.89.0.143,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 19:01:48
+10.89.0.142,cce-ig-n2n53rim-3r8stcjf-caep2nx6-1 / i-ZildVl9Z,可用,后付费,可用区C,10.89.0.142,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 19:01:47
+10.89.0.140,cce-ig-n2n53rim-usw5jxw4-caep2nx6-1 / i-oDWzPhU0,可用,后付费,可用区C,10.89.0.140,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 18:42:10
+10.89.0.141,cce-ig-n2n53rim-usw5jxw4-caep2nx6-2 / i-bwwM3RNJ,可用,后付费,可用区C,10.89.0.141,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 18:42:10
+10.89.0.139,cce-ig-n2n53rim-mwci1djb-caep2nx6-2 / i-pCcRAWve,可用,后付费,可用区C,10.89.0.139,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 18:12:48
+10.89.0.138,cce-ig-n2n53rim-mwci1djb-caep2nx6-1 / i-GNpNh3NT,可用,后付费,可用区C,10.89.0.138,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 18:12:48
+10.90.0.121,CCE-BBC-ai-platform-H20-oad7s7wt-lfrfvmqn-1 / i-JX0CBivt,可用,后付费,可用区C,10.90.0.121,208核/2048GB/100GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-07-18 18:00:57
+10.89.0.136,cce-ig-n2n53rim-l04qdafb-caep2nx6-1 / i-uHofNcF7,可用,后付费,可用区C,10.89.0.136,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 18:00:19
+10.89.0.137,cce-ig-n2n53rim-l04qdafb-caep2nx6-2 / i-JBpYNCOq,可用,后付费,可用区C,10.89.0.137,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 18:00:19
+10.89.0.134,cce-ig-n2n53rim-sxk95eja-caep2nx6-1 / i-davjnudF,可用,后付费,可用区C,10.89.0.134,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 17:50:58
+10.89.0.135,cce-ig-n2n53rim-sxk95eja-caep2nx6-2 / i-ghiI8Kt4,可用,后付费,可用区C,10.89.0.135,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 17:50:58
+10.89.0.133,cce-ig-n2n53rim-3p5y7izd-caep2nx6 / i-odCPXU1M,可用,后付费,可用区C,10.89.0.133,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 17:40:09
+10.89.0.132,cce-ig-n2n53rim-d5pkbl0t-caep2nx6 / i-2N9QYLED,可用,后付费,可用区C,10.89.0.132,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-18 17:29:05
+10.89.0.72,cce-ig-n2n53rim-fiit5pxr-caep2nx6-17 / i-P1bqIRQ2,可用,后付费,可用区C,10.89.0.72,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-10 09:05:51
+10.89.0.69,cce-ig-n2n53rim-fiit5pxr-caep2nx6-02 / i-WPnUUfbV,可用,后付费,可用区C,10.89.0.69,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-10 09:05:51
+10.89.0.71,cce-ig-n2n53rim-fiit5pxr-caep2nx6-07 / i-6mlTUE6j,可用,后付费,可用区C,10.89.0.71,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-10 09:05:51
+10.89.0.70,cce-ig-n2n53rim-fiit5pxr-caep2nx6-19 / i-GM0ohRfE,可用,后付费,可用区C,10.89.0.70,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-07-10 09:05:51
+10.89.0.65,cce-ig-49zcib7u-5q3xx5mk-92wz24nr-1 / i-IadiXCst,可用,后付费,可用区C,10.89.0.65,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-06-20 19:55:01
+10.89.0.67,cce-ig-49zcib7u-fugmmvli-92wz24nr-1 / i-MZxGOAVw,可用,后付费,可用区C,10.89.0.67,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-06-20 19:55:01
+10.89.0.125,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-30 / i-Z8d0YAqX,可用,后付费,可用区C,10.89.0.125,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:25
+10.89.0.113,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-07 / i-xoDnPBX6,可用,后付费,可用区C,10.89.0.113,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:25
+10.89.0.108,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-18 / i-7wFUDudL,可用,后付费,可用区C,10.89.0.108,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:25
+10.89.0.103,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-22 / i-RprCnoEX,可用,后付费,可用区C,10.89.0.103,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:25
+10.89.0.110,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-23 / i-z3i9u4eJ,可用,后付费,可用区C,10.89.0.110,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:25
+10.89.0.107,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-04 / i-wEdQrr4s,可用,后付费,可用区C,10.89.0.107,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:25
+10.89.0.105,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-27 / i-yRFKoWEe,可用,后付费,可用区C,10.89.0.105,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:25
+10.89.0.101,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-03 / i-xBBe6ZJh,可用,后付费,可用区C,10.89.0.101,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:25
+10.89.0.117,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-25 / i-t5uobY4c,可用,后付费,可用区C,10.89.0.117,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.106,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-05 / i-tL9phktE,可用,后付费,可用区C,10.89.0.106,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.115,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-17 / i-YGHNhoSw,可用,后付费,可用区C,10.89.0.115,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.111,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-13 / i-EI32EDvn,可用,后付费,可用区C,10.89.0.111,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.126,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-14 / i-uue4dS6D,可用,后付费,可用区C,10.89.0.126,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.128,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-28 / i-Wh8Wzu68,可用,后付费,可用区C,10.89.0.128,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.109,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-08 / i-DwAgur53,可用,后付费,可用区C,10.89.0.109,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.104,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-11 / i-tQwgZvcN,可用,后付费,可用区C,10.89.0.104,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.102,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-21 / i-ZqarfS2d,可用,后付费,可用区C,10.89.0.102,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.127,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-01 / i-rQWjhdYG,可用,后付费,可用区C,10.89.0.127,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.124,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-10 / i-Z0wqbmYA,可用,后付费,可用区C,10.89.0.124,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.123,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-24 / i-Ok4Rko1n,可用,后付费,可用区C,10.89.0.123,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:23
+10.89.0.122,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-20 / i-9EOfLaWh,可用,后付费,可用区C,10.89.0.122,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:22
+10.89.0.112,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-06 / i-q0t0T5LP,可用,后付费,可用区C,10.89.0.112,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:22
+10.89.0.121,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-19 / i-yzgRokmM,可用,后付费,可用区C,10.89.0.121,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:22
+10.89.0.118,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-16 / i-pY2dnuwt,可用,后付费,可用区C,10.89.0.118,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:22
+10.89.0.120,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-15 / i-hMMCOimy,可用,后付费,可用区C,10.89.0.120,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:22
+10.89.0.114,cce-ig-n2n53rim-c8ruz2pf-caep2nx6-02 / i-hSIkmVRe,可用,后付费,可用区C,10.89.0.114,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-06-20 19:25:22
+10.89.0.66,cce-ig-49zcib7u-fugmmvli-92wz24nr-2 / i-TyUxQmDo,可用,后付费,可用区C,10.89.0.66,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-06-17 09:22:22
+10.89.0.64,cce-ig-49zcib7u-5q3xx5mk-92wz24nr-2 / i-8dFODme6,可用,后付费,可用区C,10.89.0.64,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-06-17 00:43:34
+10.90.0.139,cce-uk1zi507-2zmzy7iw / i-FK5EaHCb,可用,后付费,可用区C,10.90.0.139,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,H20-nodepool（cce-ig-5od2q7kk）,,-,2025-06-16 17:42:03
+10.89.0.63,cce-ig-49zcib7u-hns7rbip-92wz24nr-1 / i-gfje7Esj,可用,后付费,可用区C,10.89.0.63,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-06-16 14:02:24
+10.89.0.61,cce-ig-49zcib7u-zwawhk54-92wz24nr-1 / i-EMHccB1h,可用,后付费,可用区C,10.89.0.61,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-06-10 17:59:31
+10.89.0.62,cce-ig-49zcib7u-zwawhk54-92wz24nr-2 / i-b05R9UkX,可用,后付费,可用区C,10.89.0.62,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-06-10 17:59:31
+10.89.0.60,cce-ig-49zcib7u-h4vv81de-92wz24nr / i-Jq7I5yMt,可用,后付费,可用区C,10.89.0.60,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-06-03 18:52:38
+10.89.0.59,cce-ig-49zcib7u-maz0x4oy-92wz24nr-1 / i-wJLqnCzs,可用,后付费,可用区C,10.89.0.59,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: - | - 
+内存: - | -",- / -,L20-nodepool（cce-ig-49zcib7u）,,-,2025-06-03 17:57:23
+10.89.0.44,cce-ig-n2n53rim-xj29nuxg-caep2nx6-13 / i-VT48d9yk,可用,后付费,可用区C,10.89.0.44,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 14:03:23
+10.89.0.52,cce-ig-n2n53rim-xj29nuxg-caep2nx6-16 / i-OiAI7fCM,可用,后付费,可用区C,10.89.0.52,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 14:03:21
+10.89.0.43,cce-ig-n2n53rim-xj29nuxg-caep2nx6-04 / i-Y5bWmDK8,可用,后付费,可用区C,10.89.0.43,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 14:03:21
+10.89.0.47,cce-ig-n2n53rim-xj29nuxg-caep2nx6-10 / i-QemJWJVP,可用,后付费,可用区C,10.89.0.47,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 14:03:21
+10.89.0.48,cce-ig-n2n53rim-xj29nuxg-caep2nx6-11 / i-gpVP7De6,可用,后付费,可用区C,10.89.0.48,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 14:03:21
+10.89.0.51,cce-ig-n2n53rim-xj29nuxg-caep2nx6-20 / i-RORdgSWz,可用,后付费,可用区C,10.89.0.51,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 14:03:21
+10.89.0.9,cce-ig-n2n53rim-ligindqy-caep2nx6-09 / i-Tl96JiEI,可用,后付费,可用区C,10.89.0.9,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:56
+10.89.0.10,cce-ig-n2n53rim-ligindqy-caep2nx6-07 / i-hTQyax2K,可用,后付费,可用区C,10.89.0.10,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:54
+10.89.0.13,cce-ig-n2n53rim-ligindqy-caep2nx6-23 / i-wpkYjlpj,可用,后付费,可用区C,10.89.0.13,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:54
+10.89.0.14,cce-ig-n2n53rim-ligindqy-caep2nx6-03 / i-sSyvuN4b,可用,后付费,可用区C,10.89.0.14,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:54
+10.89.0.11,cce-ig-n2n53rim-ligindqy-caep2nx6-13 / i-LWXujutH,可用,后付费,可用区C,10.89.0.11,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:54
+10.89.0.18,cce-ig-n2n53rim-ligindqy-caep2nx6-25 / i-A9gykn0i,可用,后付费,可用区C,10.89.0.18,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:54
+10.89.0.17,cce-ig-n2n53rim-ligindqy-caep2nx6-04 / i-cgrCuHAp,可用,后付费,可用区C,10.89.0.17,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:54
+10.89.0.19,cce-ig-n2n53rim-ligindqy-caep2nx6-21 / i-YSrFslme,可用,后付费,可用区C,10.89.0.19,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:54
+10.89.0.21,cce-ig-n2n53rim-ligindqy-caep2nx6-08 / i-lBFqxsxK,可用,后付费,可用区C,10.89.0.21,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:54
+10.89.0.20,cce-ig-n2n53rim-ligindqy-caep2nx6-05 / i-XZuomcsb,可用,后付费,可用区C,10.89.0.20,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:54
+10.89.0.12,cce-ig-n2n53rim-ligindqy-caep2nx6-14 / i-KRuH7iov,可用,后付费,可用区C,10.89.0.12,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:54
+10.89.0.8,cce-ig-n2n53rim-ligindqy-caep2nx6-24 / i-nkjsqY4t,可用,后付费,可用区C,10.89.0.8,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,cpu-星环数据处理84c352Gi（cce-ig-n2n53rim）,,-,2025-05-23 13:56:54
+10.90.0.45,cce-ig-vrovxrea-y6m87sc0-34ovr9lb-2 / i-FOnqx3p8,可用,后付费,可用区C,10.90.0.45,64核/256GB/200GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-调度平台业务-64c256g（cce-ig-bg7gcqxk）,,-,2025-05-15 16:46:25
+10.90.0.74,cce-ig-vrovxrea-y6m87sc0-34ovr9lb-1 / i-2XjnFiwl,可用,后付费,可用区C,10.90.0.74,64核/256GB/100GB/g4,,"""0/0""",0,"CPU: - | - 
+内存: - | -",- / -,nodepool-调度平台业务-64c256g（cce-ig-bg7gcqxk）,,-,2025-05-15 16:46:25

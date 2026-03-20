@@ -41,31 +41,17 @@
             <el-switch v-model="row.enabled" @change="handleToggleEnable(row)" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button 
-              type="primary" 
-              size="small" 
-              @click="handleTest(row.id)"
-              style="margin-right: 8px;"
-            >
-              测试
-            </el-button>
-            <el-button 
-              type="primary" 
-              size="small" 
-              @click="handleEdit(row)"
-              style="margin-right: 8px;"
-            >
-              编辑
-            </el-button>
-            <el-button 
-              type="danger" 
-              size="small" 
-              @click="handleDelete(row.id)"
-            >
-              删除
-            </el-button>
+            <div class="action-grid">
+              <div class="action-row action-row-primary">
+                <button class="action-btn btn-primary" @click.stop="handleEdit(row)">编辑</button>
+                <button class="action-btn btn-primary" @click.stop="handleTest(row.id)">测试</button>
+              </div>
+              <div class="action-row action-row-secondary">
+                <button class="action-btn btn-secondary danger" @click.stop="handleDelete(row.id)">删除</button>
+              </div>
+            </div>
           </template>
         </el-table-column>
       </el-table>

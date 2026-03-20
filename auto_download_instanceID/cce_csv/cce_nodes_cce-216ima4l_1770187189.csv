@@ -1,0 +1,37 @@
+节点名称,实例名称/ID,状态,支付方式,可用区,IP地址,配置/类型,加速芯片类型,加速芯片（已使用/总卡数）,空闲加速芯片卡数,资源申请 | 限制,容器组（已分配/总额度）,节点组,超节点,Kubelet版本/Runtime版本/OS版本,创建时间
+10.91.0.10,cce-ig-g7ocxqwl-fdcxf907-o1j4fp1j / i-SGHa57sd,可用,后付费,可用区C,10.91.0.10,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 51.70% | 101.09% 
+内存: 21.26% | 44.70%","""15/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-g7ocxqwl）,,"v1.30.1
+containerd://1.6.36
+BaiduLinux 3",2026-01-29 11:30:59
+10.91.0.13,cce-ig-g7ocxqwl-mipow9a5-o1j4fp1j-3 / i-Gb44c0Mn,可用,后付费,可用区C,10.91.0.13,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 61.85% | 124.53% 
+内存: 33.57% | 65.34%","""27/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-g7ocxqwl）,,"v1.30.1
+containerd://1.6.36
+BaiduLinux 3",2025-05-23 16:11:42
+10.91.0.12,cce-ig-g7ocxqwl-mipow9a5-o1j4fp1j-2 / i-cOtpMWnW,可用,后付费,可用区C,10.91.0.12,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 50.84% | 115.78% 
+内存: 26.45% | 55.83%","""29/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-g7ocxqwl）,,"v1.30.1
+containerd://1.6.36
+BaiduLinux 3",2025-05-23 16:11:42
+10.91.0.14,cce-ig-g7ocxqwl-mipow9a5-o1j4fp1j-1 / i-0pXKGumJ,可用,后付费,可用区C,10.91.0.14,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 59.51% | 127.66% 
+内存: 30.79% | 62.96%","""19/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-g7ocxqwl）,,"v1.30.1
+containerd://1.6.36
+BaiduLinux 3",2025-05-23 16:11:42
+10.91.0.5,cce-ig-dya6a3zn-hcp09348-gahatvie-6 / i-Q5B5djBq,可用,预付费,可用区C,10.91.0.5,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 13.21% | 50.62% 
+内存: 18.02% | 42.34%","""23/128""",nodepool-闭环-dat3-cpu-static-64C256G500G（cce-ig-dya6a3zn）,,"v1.30.1
+containerd://1.6.36
+BaiduLinux 3",2025-05-23 10:24:35
+10.91.0.4,nginx-y7fq405x-4bp0dudg-1 / i-zJqEaqZd,可用,后付费,可用区C,10.91.0.4,16核/64GB/500GB/g4,,"""0/0""",0,"CPU: 8.34% | 101.25% 
+内存: 2.21% | 32.67%","""15/128""",nginx（cce-ig-0k9ncraa）,,"v1.30.1
+containerd://1.6.36
+BaiduLinux 3",2025-05-22 19:26:14
+10.91.0.3,nginx-y7fq405x-4bp0dudg-2 / i-50WPL3ib,可用,后付费,可用区C,10.91.0.3,16核/64GB/500GB/g4,,"""0/0""",0,"CPU: 7.59% | 138.75% 
+内存: 2.02% | 37.80%","""21/128""",nginx（cce-ig-0k9ncraa）,,"v1.30.1
+containerd://1.6.36
+BaiduLinux 3",2025-05-22 19:26:14
+10.91.4.53,cce-216ima4l-gnc489gb / i-Q1Xg3SiD,可用,预付费,可用区C,10.91.4.53,8核/32GB/200GB/g4,,"""0/0""",0,"CPU: 36.06% | 171.25% 
+内存: 9.39% | 46.39%","""11/128""",mid-share中间件节点池-8c32g（cce-ig-m50ts3bg）,,"v1.30.1
+containerd://1.6.36
+BaiduLinux 3",2025-05-16 17:13:55
+10.91.4.52,cce-216ima4l-90wt0p10 / i-7Cb3Onj6,可用,预付费,可用区C,10.91.4.52,8核/32GB/200GB/g4,,"""0/0""",0,"CPU: 36.06% | 171.25% 
+内存: 9.39% | 46.39%","""10/128""",mid-share中间件节点池-8c32g（cce-ig-m50ts3bg）,,"v1.30.1
+containerd://1.6.36
+BaiduLinux 3",2025-05-16 17:13:55

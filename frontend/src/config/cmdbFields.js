@@ -9,18 +9,18 @@ export const serverFieldDefinitions = [
   {
     group: '基本信息',
     fields: [
-      { key: 'bns_hostname', label: '主机名', minWidth: 200, defaultVisible: true, sortable: false, copyable: true },
-      { key: 'rms_sn', label: 'SN', width: 130, defaultVisible: true, sortable: false, copyable: true },
-      { key: 'rms_manufacturer', label: '品牌', width: 80, defaultVisible: true, sortable: false },
-      { key: 'rms_type', label: '类型', width: 120, defaultVisible: true, sortable: false },
-      { key: 'nova_host_node_type', label: '节点', width: 80, defaultVisible: true, sortable: false },
-      { key: 'nova_host_azone', label: '可用区', width: 100, defaultVisible: false, sortable: false },
-      { key: 'nova_host_cluster', label: '集群', width: 120, defaultVisible: false, sortable: false },
-      { key: 'rms_model', label: '服务器型号', width: 150, defaultVisible: false, sortable: false },
-      { key: 'rms_suit', label: '套餐号', width: 120, defaultVisible: false, sortable: false },
-      { key: 'rms_product', label: '产品线', width: 100, defaultVisible: false, sortable: false },
-      { key: 'rms_idc', label: '数据中心', width: 120, defaultVisible: false, sortable: false },
-      { key: 'rms_department', label: '所属部门', width: 120, defaultVisible: false, sortable: false },
+      { key: 'bns_hostname', label: '主机名', minWidth: 180, defaultVisible: true, sortable: false, copyable: true },
+      { key: 'rms_sn', label: 'SN', width: 120, minWidth: 100, defaultVisible: true, sortable: false, copyable: true },
+      { key: 'rms_manufacturer', label: '品牌', width: 90, minWidth: 80, defaultVisible: true, sortable: false },
+      { key: 'rms_type', label: '类型', width: 110, minWidth: 90, defaultVisible: true, sortable: false },
+      { key: 'nova_host_node_type', label: '节点类型', width: 100, minWidth: 90, defaultVisible: true, sortable: false },
+      { key: 'nova_host_azone', label: '可用区', width: 100, minWidth: 90, defaultVisible: false, sortable: false },
+      { key: 'nova_host_cluster', label: '集群', width: 120, minWidth: 100, defaultVisible: false, sortable: false },
+      { key: 'rms_model', label: '服务器型号', width: 150, minWidth: 120, defaultVisible: false, sortable: false },
+      { key: 'rms_suit', label: '套餐号', width: 120, minWidth: 100, defaultVisible: false, sortable: false },
+      { key: 'rms_product', label: '产品线', width: 100, minWidth: 90, defaultVisible: false, sortable: false },
+      { key: 'rms_idc', label: '数据中心', width: 120, minWidth: 100, defaultVisible: false, sortable: false },
+      { key: 'rms_department', label: '所属部门', width: 120, minWidth: 100, defaultVisible: false, sortable: false },
     ]
   },
   
@@ -28,8 +28,8 @@ export const serverFieldDefinitions = [
   {
     group: '资源使用',
     fields: [
-      { key: 'nova_host_vcpus_used', label: 'vCPU', width: 140, defaultVisible: true, sortable: true, type: 'resource' },
-      { key: 'memory_used', label: '内存', width: 160, defaultVisible: true, sortable: true, type: 'resource' },
+      { key: 'nova_host_vcpus_used', label: 'vCPU', width: 140, defaultVisible: true, sortable: true, type: 'resource', totalKey: 'nova_host_vcpus_total' },
+      { key: 'memory_used', label: '内存', width: 160, defaultVisible: true, sortable: true, type: 'resource', totalKey: 'nova_host_physical_memory_mb_total' },
       { key: 'nova_host_running_vms', label: '实例数', width: 100, defaultVisible: true, sortable: true },
       { key: 'nova_host_physical_disk_gb_free', label: '磁盘剩余(GB)', width: 130, defaultVisible: true, sortable: true },
       { key: 'nova_host_vcpus_total', label: 'vCPU总数', width: 100, defaultVisible: false, sortable: false },

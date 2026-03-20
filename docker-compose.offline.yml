@@ -140,11 +140,11 @@ services:
       DEBUG: ${DEBUG:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8089}
       # 代理配置（绕过代理访问内网服务和百度云控制台）
-      # 注意：只绕过内网IP和百度内网域名，外部服务（飞书、如流）仍走代理
+      # .im.baidu.com：如流（apiin.im.baidu.com）是内网服务，需绕过代理直连，否则代理会返回502
       HTTP_PROXY: http://agent.baidu.com:8891
       HTTPS_PROXY: http://agent.baidu.com:8891
-      NO_PROXY: localhost,127.0.0.1,10.175.96.168,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,console.bce.baidu.com,llms-se.baidu-int.com
-      no_proxy: localhost,127.0.0.1,10.175.96.168,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,console.bce.baidu.com,llms-se.baidu-int.com
+      NO_PROXY: localhost,127.0.0.1,10.175.96.168,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,.im.baidu.com,console.bce.baidu.com,llms-se.baidu-int.com
+      no_proxy: localhost,127.0.0.1,10.175.96.168,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,.im.baidu.com,console.bce.baidu.com,llms-se.baidu-int.com
       WORKERS: ${WORKERS:-2}  # Worker 数量，内网环境降低为2避免启动时耗尽MySQL连接池
       # 宿主机MySQL配置（用于查询集群信息）
       HOST_MYSQL_IP: ${HOST_MYSQL_IP:-host.docker.internal}

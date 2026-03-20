@@ -34,7 +34,7 @@ class ConfigSaveRequest(BaseModel):
     @validator('module')
     def validate_module(cls, v):
         """验证模块名称"""
-        allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'icafe']
+        allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'icafe', 'bce_sync']
         if v not in allowed_modules:
             raise ValueError(f'无效的模块名称：{v}，允许的值：{", ".join(allowed_modules)}')
         return v
@@ -193,7 +193,7 @@ async def load_config(
     - icafe: iCafe配置
     """
     # 验证模块名称
-    allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'icafe']
+    allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'icafe', 'bce_sync']
     if module not in allowed_modules:
         raise HTTPException(
             status_code=400,

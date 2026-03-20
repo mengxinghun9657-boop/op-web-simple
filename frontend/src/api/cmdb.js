@@ -53,3 +53,34 @@ export const updateSyncSchedule = (config) => axios.post('/api/v1/cmdb/sync/sche
 
 // 关联性搜索
 export const advancedSearch = (params) => axios.get('/api/v1/cmdb/search', { params })
+
+// ========== BCE 数据同步 ==========
+
+// 获取 BCE 同步配置
+export const getBCEConfig = () => axios.get('/api/v1/cmdb/bce/config')
+
+// 更新 BCE 同步配置（cookie、region、cluster_ids）
+export const updateBCEConfig = (config) => axios.post('/api/v1/cmdb/bce/config', config)
+
+// 一键同步 BCE 数据（target: all / bcc / cce）
+export const syncBCE = (target = 'all') => axios.post('/api/v1/cmdb/bce/sync', null, { params: { target } })
+
+// 获取 BCE 数据统计（本地库记录数、最新采集日期）
+export const getBCEStats = () => axios.get('/api/v1/cmdb/bce/stats')
+
+// 获取服务器 BCE 关联信息（BCC实例 + CCE节点，以 IP 关联）
+export const getServerBceContext = (hostname) => axios.get(`/api/v1/cmdb/servers/${encodeURIComponent(hostname)}/bce-context`)
+
+// ========== BCE 测试连接 ==========
+
+// 测试 BCE 连接
+export const testBCEConnection = (config) => axios.post('/api/v1/cmdb/bce/test-connection', config)
+
+// ========== BCE 自动同步配置 ==========
+
+// 获取 BCE 自动同步配置
+export const getBCESyncConfig = () => axios.get('/api/v1/cmdb/bce/sync-config')
+
+// 更新 BCE 自动同步配置
+export const updateBCESyncConfig = (config) => axios.post('/api/v1/cmdb/bce/sync-config', config)
+

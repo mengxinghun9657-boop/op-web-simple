@@ -79,12 +79,14 @@
             <div class="search-box">
               <el-input
                 v-model="searchText"
-                placeholder="搜索主机名/SN/IP/UUID（支持跨视图搜索）"
-                clearable
-                @keyup.enter="handleSearch"
-              >
-                <template #prefix><el-icon><Search /></el-icon></template>
-              </el-input>
+                type="textarea"
+                :autosize="{ minRows: 1, maxRows: 5 }"
+                placeholder="搜索主机名/SN/IP/UUID，支持多条（换行或英文逗号分隔）"
+                @keydown.enter.exact.prevent="handleSearch"
+              />
+              <div v-if="searchKeywordCount > 1" class="search-hint">
+                {{ searchKeywordCount }} 个关键词
+              </div>
             </div>
             <el-select v-model="filterManufacturer" placeholder="服务器品牌" clearable @change="handleSearch" style="width: 160px;">
               <el-option v-for="m in filters.manufacturers" :key="m" :label="m" :value="m" />
@@ -105,6 +107,15 @@
             >
               <el-icon><Tools /></el-icon>
               配置管理
+            </el-button>
+            <!-- BCE 同步按钮（仅管理员可见） -->
+            <el-button
+              v-if="isAdmin"
+              type="success"
+              @click="router.push({ name: 'SystemConfig', query: { section: 'bce_sync' } })"
+            >
+              <el-icon><Refresh /></el-icon>
+              BCE 同步
             </el-button>
             <!-- 字段配置按钮 -->
             <el-button @click="fieldConfigVisible = true">
@@ -285,81 +296,252 @@
     </div>
 
     <!-- 服务器详情抽屉 -->
-    <el-drawer v-model="drawerVisible" :title="currentServer?.bns_hostname" size="60%" class="google-drawer">
+    <el-drawer v-model="drawerVisible" :title="currentServer?.bns_hostname" size="56%" class="google-drawer">
       <template v-if="currentServer">
-        <el-descriptions :column="2" border class="modern-descriptions">
-          <el-descriptions-item label="主机名">{{ currentServer.bns_hostname }}</el-descriptions-item>
-          <el-descriptions-item label="SN">{{ currentServer.rms_sn }}</el-descriptions-item>
-          <el-descriptions-item label="套餐号">{{ currentServer.rms_suit }}</el-descriptions-item>
-          <el-descriptions-item label="服务器类型">{{ currentServer.rms_type }}</el-descriptions-item>
-          <el-descriptions-item label="服务器型号">{{ currentServer.rms_model }}</el-descriptions-item>
-          <el-descriptions-item label="品牌">{{ currentServer.rms_manufacturer }}</el-descriptions-item>
-          <el-descriptions-item label="类别">{{ currentServer.rms_product }}</el-descriptions-item>
-          <el-descriptions-item label="节点标识">{{ currentServer.nova_host_node_type }}</el-descriptions-item>
-          <el-descriptions-item label="CPU配置" :span="2">{{ currentServer.rms_cpu }}</el-descriptions-item>
-          <el-descriptions-item label="内存配置" :span="2">{{ currentServer.rms_memory }}</el-descriptions-item>
-          <el-descriptions-item label="磁盘配置" :span="2">{{ currentServer.rms_ssd }}</el-descriptions-item>
-          <el-descriptions-item label="物理CPU核数">{{ currentServer.nova_host_physical_cpus }}</el-descriptions-item>
-          <el-descriptions-item label="vCPU总数">{{ currentServer.nova_host_vcpus_total }}</el-descriptions-item>
-          <el-descriptions-item label="vCPU已用">{{ currentServer.nova_host_vcpus_used }}</el-descriptions-item>
-          <el-descriptions-item label="vCPU空闲">{{ currentServer.nova_host_vcpus_free }}</el-descriptions-item>
-          <el-descriptions-item label="内存总量">{{ formatMemory(currentServer.nova_host_physical_memory_mb_total) }}</el-descriptions-item>
-          <el-descriptions-item label="内存空闲">{{ formatMemory(currentServer.nova_host_physical_memory_mb_free) }}</el-descriptions-item>
-          <el-descriptions-item label="磁盘空闲">{{ currentServer.nova_host_physical_disk_gb_free }} GB</el-descriptions-item>
-          <el-descriptions-item label="运行实例数">{{ currentServer.nova_host_running_vms }}</el-descriptions-item>
-          <el-descriptions-item label="加黑说明" :span="2">{{ currentServer.nova_host_blacklisted_description || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="加黑原因" :span="2">{{ currentServer.nova_host_blacklisted_reason || '-' }}</el-descriptions-item>
-        </el-descriptions>
-        
-        <div class="drawer-section">
-          <h4 class="section-title">
-            <el-icon><Cpu /></el-icon>
-            实例列表 ({{ serverInstances.length }})
-          </h4>
-          <el-table :data="serverInstances" max-height="400" class="modern-table">
-            <el-table-column prop="nova_vm_instance_uuid" label="UUID" width="300" :show-overflow-tooltip="false">
-              <template #default="{ row }">
-                <el-tooltip
-                  :content="row.nova_vm_instance_uuid"
-                  placement="top"
-                  :disabled="!row.nova_vm_instance_uuid"
-                  :show-after="500"
-                  :popper-options="{ strategy: 'fixed' }"
-                >
-                  <div class="copyable-cell" @click.stop>
-                    <span class="cell-text">{{ row.nova_vm_instance_uuid }}</span>
-                    <el-icon class="copy-icon" @click="copyToClipboard(row.nova_vm_instance_uuid, 'UUID')">
-                      <DocumentCopy />
-                    </el-icon>
+        <el-tabs class="drawer-tabs">
+          <!-- Tab 1: 基本信息 -->
+          <el-tab-pane label="基本信息">
+            <div class="drawer-kv-grid">
+              <div class="kv-item">
+                <span class="kv-label">主机名</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.bns_hostname, '主机名')">{{ currentServer.bns_hostname }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item">
+                <span class="kv-label">SN</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.rms_sn, 'SN')">{{ currentServer.rms_sn || '-' }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item">
+                <span class="kv-label">品牌</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.rms_manufacturer, '品牌')">{{ currentServer.rms_manufacturer || '-' }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item">
+                <span class="kv-label">节点类型</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.nova_host_node_type, '节点类型')">{{ currentServer.nova_host_node_type || '-' }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item">
+                <span class="kv-label">服务器类型</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.rms_type, '服务器类型')">{{ currentServer.rms_type || '-' }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item">
+                <span class="kv-label">服务器型号</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.rms_model, '服务器型号')">{{ currentServer.rms_model || '-' }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item">
+                <span class="kv-label">套餐号</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.rms_suit, '套餐号')">{{ currentServer.rms_suit || '-' }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item">
+                <span class="kv-label">产品线</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.rms_product, '产品线')">{{ currentServer.rms_product || '-' }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item kv-item-full">
+                <span class="kv-label">CPU 配置</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.rms_cpu, 'CPU配置')">{{ currentServer.rms_cpu || '-' }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item kv-item-full">
+                <span class="kv-label">内存配置</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.rms_memory, '内存配置')">{{ currentServer.rms_memory || '-' }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item kv-item-full">
+                <span class="kv-label">磁盘配置</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.rms_ssd, '磁盘配置')">{{ currentServer.rms_ssd || '-' }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item kv-item-full" v-if="currentServer.nova_host_blacklisted_reason">
+                <span class="kv-label kv-label-warn">加黑原因</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.nova_host_blacklisted_reason, '加黑原因')">{{ currentServer.nova_host_blacklisted_reason }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+              <div class="kv-item kv-item-full" v-if="currentServer.nova_host_blacklisted_description">
+                <span class="kv-label kv-label-warn">加黑说明</span>
+                <span class="kv-value kv-copyable" @click="copyToClipboard(currentServer.nova_host_blacklisted_description, '加黑说明')">{{ currentServer.nova_host_blacklisted_description }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
+              </div>
+            </div>
+          </el-tab-pane>
+
+          <!-- Tab 2: 资源使用 -->
+          <el-tab-pane label="资源使用">
+            <!-- 虚拟化资源（有 nova 数据时显示进度卡片） -->
+            <template v-if="currentServer.nova_host_vcpus_total">
+              <div class="drawer-resource-grid" style="margin-bottom: 16px;">
+                <div class="resource-card">
+                  <div class="resource-card-header">
+                    <span class="resource-card-title">vCPU</span>
+                    <span class="resource-card-value">{{ currentServer.nova_host_vcpus_used }} / {{ currentServer.nova_host_vcpus_total }}</span>
                   </div>
-                </el-tooltip>
-              </template>
-            </el-table-column>
-            <el-table-column prop="nova_vm_fixed_ips" label="IP" width="140">
-              <template #default="{ row }">
-                <div class="copyable-cell" @click.stop>
-                  <span class="cell-text">{{ row.nova_vm_fixed_ips }}</span>
-                  <el-icon class="copy-icon" @click="copyToClipboard(row.nova_vm_fixed_ips, 'IP')">
-                    <DocumentCopy />
-                  </el-icon>
+                  <div class="progress-track">
+                    <div class="progress-bar" :style="{ width: Math.min(Math.round(currentServer.nova_host_vcpus_used / currentServer.nova_host_vcpus_total * 100), 100) + '%', background: getProgressColor(Math.min(Math.round(currentServer.nova_host_vcpus_used / currentServer.nova_host_vcpus_total * 100), 100)) }"></div>
+                  </div>
+                  <div class="resource-card-sub">空闲 {{ currentServer.nova_host_vcpus_free }} 核 · 物理 {{ currentServer.nova_host_physical_cpus }} 核</div>
+                </div>
+                <div class="resource-card" v-if="currentServer.nova_host_physical_memory_mb_total">
+                  <div class="resource-card-header">
+                    <span class="resource-card-title">内存</span>
+                    <span class="resource-card-value">{{ formatMemory(currentServer.nova_host_physical_memory_mb_total - currentServer.nova_host_physical_memory_mb_free) }} / {{ formatMemory(currentServer.nova_host_physical_memory_mb_total) }}</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-bar" :style="{ width: Math.min(Math.round((currentServer.nova_host_physical_memory_mb_total - currentServer.nova_host_physical_memory_mb_free) / currentServer.nova_host_physical_memory_mb_total * 100), 100) + '%', background: getProgressColor(Math.min(Math.round((currentServer.nova_host_physical_memory_mb_total - currentServer.nova_host_physical_memory_mb_free) / currentServer.nova_host_physical_memory_mb_total * 100), 100)) }"></div>
+                  </div>
+                  <div class="resource-card-sub">空闲 {{ formatMemory(currentServer.nova_host_physical_memory_mb_free) }}</div>
+                </div>
+                <div class="resource-card" v-if="currentServer.nova_host_running_vms != null">
+                  <div class="resource-card-header">
+                    <span class="resource-card-title">运行实例</span>
+                    <span class="resource-card-value">{{ currentServer.nova_host_running_vms }} 个</span>
+                  </div>
+                </div>
+                <div class="resource-card" v-if="currentServer.nova_host_physical_disk_gb_free">
+                  <div class="resource-card-header">
+                    <span class="resource-card-title">磁盘剩余</span>
+                    <span class="resource-card-value">{{ currentServer.nova_host_physical_disk_gb_free }} GB</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- 其他有值的资源字段（KV 形式，动态展示） -->
+            <div class="drawer-kv-grid">
+              <template v-for="item in resourceKVItems" :key="item.key">
+                <div class="kv-item" :class="item.full ? 'kv-item-full' : ''">
+                  <span class="kv-label">{{ item.label }}</span>
+                  <span class="kv-value kv-copyable" @click="copyToClipboard(String(item.value), item.label)">{{ item.value }}<el-icon class="kv-copy-icon"><DocumentCopy /></el-icon></span>
                 </div>
               </template>
-            </el-table-column>
-            <el-table-column prop="nova_vm_metadata_source" label="类型" width="100" />
-            <el-table-column prop="nova_vm_vcpus" label="vCPU" width="70" align="center" />
-            <el-table-column label="内存" width="80" align="center">
-              <template #default="{ row }">{{ formatMemory(row.nova_vm_memory_mb) }}</template>
-            </el-table-column>
-            <el-table-column prop="nova_vm_root_gb" label="磁盘(GB)" width="80" align="center" />
-            <el-table-column prop="nova_vm_vm_state" label="状态" width="80">
-              <template #default="{ row }">
-                <span class="glass-tag" :class="row.nova_vm_vm_state === 'active' ? 'glass-tag-success' : 'glass-tag-primary'">
-                  {{ row.nova_vm_vm_state }}
-                </span>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
+              <div v-if="!resourceKVItems.length && !currentServer.nova_host_vcpus_total" class="kv-item kv-item-full" style="color: var(--text-tertiary); font-size: 13px;">
+                暂无资源数据
+              </div>
+            </div>
+          </el-tab-pane>
+
+          <!-- Tab 3: 实例列表 -->
+          <el-tab-pane :label="`实例 (${serverInstances.length})`">
+            <div class="table-wrapper">
+              <el-table
+                :data="serverInstances"
+                max-height="500"
+                class="modern-table"
+                size="small"
+                border
+                style="width: 100%;"
+                :header-cell-style="{ whiteSpace: 'nowrap', fontSize: '12px', background: 'var(--bg-secondary, #f9fafb)', padding: '8px 4px' }"
+                :cell-style="{ padding: '8px 4px' }"
+              >
+                <el-table-column
+                  v-for="col in instanceColumns"
+                  :key="col.key"
+                  :prop="col.key"
+                  :label="col.label"
+                  :width="col.width"
+                  :min-width="col.minWidth || 80"
+                  show-overflow-tooltip
+                  resizable
+                >
+                  <template #default="{ row }">
+                    <template v-if="col.key === 'nova_vm_instance_uuid' || col.key === 'nova_vm_fixed_ips'">
+                      <div class="copyable-cell" @click.stop>
+                        <span class="bce-cell-text">{{ row[col.key] }}</span>
+                        <el-icon class="copy-icon" @click="copyToClipboard(row[col.key], col.label)"><DocumentCopy /></el-icon>
+                      </div>
+                    </template>
+                    <template v-else-if="col.key === 'nova_vm_memory_mb'">
+                      <span class="bce-cell-text">{{ formatMemory(row[col.key]) }}</span>
+                    </template>
+                    <template v-else-if="col.key === 'nova_vm_vm_state'">
+                      <span class="glass-tag" :class="row[col.key] === 'active' ? 'glass-tag-success' : 'glass-tag-primary'">{{ row[col.key] }}</span>
+                    </template>
+                    <template v-else>
+                      <span v-if="row[col.key] != null && row[col.key] !== ''" class="bce-cell-text">{{ row[col.key] }}</span>
+                      <span v-else style="color: var(--text-tertiary, #9ca3af);">-</span>
+                    </template>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </el-tab-pane>
+
+          <!-- Tab 4: BCE 关联 -->
+          <el-tab-pane label="BCE 关联" @click.native="!bceContextLoaded && loadBceContext(currentServer.bns_hostname)">
+            <div v-if="!bceContextLoaded && !bceContextLoading" class="drawer-bce-placeholder">
+              <el-button type="primary" plain @click="loadBceContext(currentServer.bns_hostname)">加载 BCE 关联数据</el-button>
+              <div class="bce-empty-tip" style="margin-top: 8px;">查询该服务器在 BCC/CCE 中的关联记录</div>
+            </div>
+            <div v-else-if="bceContextLoading" class="drawer-bce-placeholder">
+              <el-icon class="is-loading"><Refresh /></el-icon>
+              <span style="margin-left: 8px; color: var(--text-secondary);">加载中...</span>
+            </div>
+            <template v-else>
+              <!-- BCC 实例 -->
+              <div class="drawer-sub-section">
+                <div class="drawer-sub-title">BCC 实例 <span class="drawer-sub-count">{{ bceContext.bcc_instances?.length || 0 }}</span></div>
+                <div class="table-wrapper" v-if="bceContext.bcc_instances?.length">
+                  <el-table
+                    :data="bceContext.bcc_instances"
+                    max-height="280"
+                    class="modern-table"
+                    size="small"
+                    border
+                    style="width: 100%;"
+                    :header-cell-style="{ whiteSpace: 'nowrap', fontSize: '12px', background: 'var(--bg-secondary, #f9fafb)', padding: '8px 4px' }"
+                    :cell-style="{ padding: '8px 4px' }"
+                  >
+                    <el-table-column
+                      v-for="col in bccColumns"
+                      :key="col"
+                      :prop="col"
+                      :label="col"
+                      :min-width="bceColWidth(col)"
+                      show-overflow-tooltip
+                      resizable
+                    >
+                      <template #default="{ row }">
+                        <div v-if="row[col] && row[col] !== 'None'" class="copyable-cell" @click.stop>
+                          <span class="bce-cell-text">{{ row[col] }}</span>
+                          <el-icon class="copy-icon" @click="copyToClipboard(row[col], col)"><DocumentCopy /></el-icon>
+                        </div>
+                        <span v-else style="color: var(--text-tertiary, #9ca3af);">-</span>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+                <div v-else class="bce-empty-tip">无 BCC 关联记录</div>
+              </div>
+
+              <!-- CCE 节点 -->
+              <div class="drawer-sub-section">
+                <div class="drawer-sub-title">CCE 节点 <span class="drawer-sub-count">{{ bceContext.cce_nodes?.length || 0 }}</span></div>
+                <div class="table-wrapper" v-if="bceContext.cce_nodes?.length">
+                  <el-table
+                    :data="bceContext.cce_nodes"
+                    max-height="280"
+                    class="modern-table"
+                    size="small"
+                    border
+                    style="width: 100%;"
+                    :header-cell-style="{ whiteSpace: 'nowrap', fontSize: '12px', background: 'var(--bg-secondary, #f9fafb)', padding: '8px 4px' }"
+                    :cell-style="{ padding: '8px 4px' }"
+                  >
+                    <el-table-column
+                      v-for="col in cceColumns"
+                      :key="col"
+                      :prop="col"
+                      :label="col"
+                      :min-width="bceColWidth(col)"
+                      show-overflow-tooltip
+                      resizable
+                    >
+                      <template #default="{ row }">
+                        <div v-if="row[col] && row[col] !== 'None'" class="copyable-cell" @click.stop>
+                          <span class="bce-cell-text">{{ row[col] }}</span>
+                          <el-icon class="copy-icon" @click="copyToClipboard(row[col], col)"><DocumentCopy /></el-icon>
+                        </div>
+                        <span v-else style="color: var(--text-tertiary, #9ca3af);">-</span>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+                <div v-else class="bce-empty-tip">无 CCE 关联记录</div>
+              </div>
+            </template>
+          </el-tab-pane>
+        </el-tabs>
       </template>
     </el-drawer>
 
@@ -378,7 +560,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElLoading } from 'element-plus'
-import { Monitor, Cpu, Odometer, Coin, Search, Upload, Refresh, Delete, Grid, DocumentCopy, Setting, Tools, FolderOpened, ArrowDown } from '@element-plus/icons-vue'
+import { Monitor, Cpu, Odometer, Coin, Search, Upload, Refresh, Delete, Grid, DocumentCopy, Setting, Tools, FolderOpened, ArrowDown, Connection } from '@element-plus/icons-vue'
 import FieldConfigDialog from '@/components/cmdb/FieldConfigDialog.vue'
 import { getAllFields, getDefaultVisibleFields } from '@/config/cmdbFields'
 import { useUserStore } from '@/stores/user'
@@ -401,6 +583,12 @@ const viewMode = ref('servers')
 const searchText = ref('')
 const filterManufacturer = ref('')
 const filterNodeType = ref('')
+
+// 当前有效关键词数量（用于提示）
+const searchKeywordCount = computed(() => {
+  if (!searchText.value.trim()) return 0
+  return searchText.value.split(/[\n,]/).filter(k => k.trim()).length
+})
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -422,6 +610,86 @@ const drawerVisible = ref(false)
 const currentServer = ref(null)
 const serverInstances = ref([])
 const importMode = ref('update')
+
+// BCE 关联信息（按需加载，随抽屉打开重置）
+const bceContext = ref({ bcc_instances: [], cce_nodes: [], ip_list: [] })
+const bceContextLoading = ref(false)
+const bceContextLoaded = ref(false)
+
+// 资源使用 Tab - 进度条颜色阶梯（数组格式，兼容 el-progress）
+const progressColorStops = [  { color: '#67c23a', percentage: 70 },
+  { color: '#e6a23c', percentage: 90 },
+  { color: '#f56c6c', percentage: 100 },
+]
+
+// 资源使用 Tab - 动态 KV 字段（过滤掉 null/0/空，展示有意义的字段）
+const resourceKVItems = computed(() => {
+  if (!currentServer.value) return []
+  const s = currentServer.value
+  const candidates = [
+    { key: 'nova_host_azone', label: '可用区', value: s.nova_host_azone },
+    { key: 'nova_host_cluster', label: '集群', value: s.nova_host_cluster },
+    { key: 'nova_host_node_type', label: '节点类型', value: s.nova_host_node_type },
+    { key: 'nova_host_node_state', label: '节点状态', value: s.nova_host_node_state },
+    { key: 'nova_host_model', label: '主机型号', value: s.nova_host_model },
+    { key: 'nova_host_machine_suit', label: '机器套件', value: s.nova_host_machine_suit },
+    { key: 'nova_host_physical_cpus', label: '物理CPU核数', value: s.nova_host_physical_cpus },
+    { key: 'nova_host_vcpus_total', label: 'vCPU总数', value: s.nova_host_vcpus_total },
+    { key: 'nova_host_vcpus_used', label: 'vCPU已用', value: s.nova_host_vcpus_used },
+    { key: 'nova_host_vcpus_free', label: 'vCPU空闲', value: s.nova_host_vcpus_free },
+    { key: 'nova_host_running_vms', label: '运行实例', value: s.nova_host_running_vms != null ? `${s.nova_host_running_vms} 个` : null },
+    { key: 'nova_host_physical_disk_gb_free', label: '磁盘剩余', value: s.nova_host_physical_disk_gb_free ? `${s.nova_host_physical_disk_gb_free} GB` : null },
+    { key: 'nova_host_net_bandwidth', label: '网络带宽', value: s.nova_host_net_bandwidth },
+    { key: 'rms_idc', label: '数据中心', value: s.rms_idc },
+    { key: 'rms_rack_info', label: '机架位置', value: s.rms_rack_info },
+    { key: 'rms_ip_in1', label: '内网IP1', value: s.rms_ip_in1 },
+    { key: 'rms_ip_in2', label: '内网IP2', value: s.rms_ip_in2 },
+    { key: 'rms_ilo_ip', label: '带外IP', value: s.rms_ilo_ip },
+    { key: 'rms_kernel', label: '内核版本', value: s.rms_kernel },
+    { key: 'nova_host_blacklisted_reason', label: '加黑原因', value: s.nova_host_blacklisted_reason },
+  ]
+  return candidates.filter(item => item.value !== null && item.value !== undefined && item.value !== '' && item.value !== 0)
+})
+
+// BCE Tab - 动态列（从数据第一行取所有 key，过滤内部字段）
+const BCE_SKIP_COLS = new Set(['id', 'insert_time'])
+
+// 实例 Tab - 固定列定义（顺序 + 宽度 + 友好标签）
+const instanceColumns = [
+  { key: 'nova_vm_instance_uuid', label: 'UUID', width: 240, minWidth: 200 },
+  { key: 'nova_vm_fixed_ips',     label: 'IP',   width: 130, minWidth: 120 },
+  { key: 'nova_vm_vm_state',      label: '状态',  width: 80, minWidth: 70  },
+  { key: 'nova_vm_vcpus',         label: 'vCPU', width: 60, minWidth: 60  },
+  { key: 'nova_vm_memory_mb',     label: '内存',  width: 90, minWidth: 80  },
+  { key: 'nova_vm_root_gb',       label: '系统盘(G)', width: 90, minWidth: 80 },
+  { key: 'nova_vm_ephemeral_gb',  label: '临时盘(G)', width: 90, minWidth: 80 },
+  { key: 'nova_vm_metadata_source', label: '来源', width: 90, minWidth: 80 },
+  { key: 'nova_vm_display_name',  label: '显示名', width: 150, minWidth: 120 },
+  { key: 'nova_vm_azone',         label: '可用区', width: 100, minWidth: 90 },
+  { key: 'nova_vm_cluster',       label: '集群',  width: 120, minWidth: 100 },
+  { key: 'nova_vm_power_state',   label: '电源',  width: 70, minWidth: 70  },
+  { key: 'nova_vm_task_state',    label: '任务',  width: 80, minWidth: 70  },
+  { key: 'nova_vm_created_at',    label: '创建时间', width: 160, minWidth: 140 },
+]
+const bccColumns = computed(() => {
+  const rows = bceContext.value?.bcc_instances
+  if (!rows?.length) return []
+  return Object.keys(rows[0]).filter(k => !BCE_SKIP_COLS.has(k))
+})
+const cceColumns = computed(() => {
+  const rows = bceContext.value?.cce_nodes
+  if (!rows?.length) return []
+  return Object.keys(rows[0]).filter(k => !BCE_SKIP_COLS.has(k))
+})
+// 根据列名自动推断合适的最小宽度
+const bceColWidth = (col) => {
+  if (['id', 'bcc_id', '实例名称_id', 'cluster_id'].includes(col)) return 140
+  if (['名称', '节点名称', '实例规格', '配置_类型', '操作系统名称'].includes(col)) return 160
+  if (['描述', '标签', 'ipv6地址'].includes(col)) return 200
+  if (['主ipv4私网地址', '主ipv4公网地址', 'ip地址', 'ip??'].includes(col)) return 130
+  if (['collect_date', '创建时间', '到期时间'].includes(col)) return 110
+  return 100
+}
 
 // 字段配置相关
 const fieldConfigVisible = ref(false)
@@ -465,6 +733,19 @@ const getProgressColor = (percent) => {
   if (percent >= 90) return 'var(--color-error)'
   if (percent >= 70) return 'var(--color-warning)'
   return 'var(--color-success)'
+}
+
+const loadBceContext = async (hostname) => {
+  bceContextLoading.value = true
+  try {
+    const res = await cmdbApi.getServerBceContext(hostname)
+    bceContext.value = res
+    bceContextLoaded.value = true
+  } catch (e) {
+    ElMessage.error('BCE 关联查询失败: ' + (e.response?.data?.detail || e.message))
+  } finally {
+    bceContextLoading.value = false
+  }
 }
 
 const fetchStats = async () => {
@@ -582,9 +863,12 @@ const handleImport = async (file) => {
 const showServerDetail = async (row) => {
   try {
     const response = await cmdbApi.getServerDetail(row.bns_hostname)
-    // axios拦截器已经返回了response.data，所以response就是{server, instances}
     currentServer.value = response.server
     serverInstances.value = response.instances
+    // 重置 BCE 关联状态（新抽屉按需加载）
+    bceContext.value = { bcc_instances: [], cce_nodes: [], ip_list: [] }
+    bceContextLoaded.value = false
+    bceContextLoading.value = false
     drawerVisible.value = true
   } catch (e) {
     ElMessage.error('获取详情失败')
@@ -740,7 +1024,35 @@ onMounted(() => {
 /* 单元格容器需要撑满列宽，否则 el-progress 宽度为 0 */
 .cell-wrapper {
   width: 100%;
-  overflow: hidden;
+  min-width: 0;
+}
+
+/* 主列表表格样式优化 */
+.google-table {
+  width: 100%;
+}
+
+.google-table :deep(.el-table__header th) {
+  background: var(--bg-secondary, #f9fafb);
+  font-weight: 600;
+  white-space: normal;
+  line-height: 1.3;
+  padding: 8px 4px;
+}
+
+.google-table :deep(.el-table__header .cell) {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.google-table :deep(.el-table__body td) {
+  padding: 8px 4px;
+}
+
+.google-table :deep(.el-table .cell) {
+  padding: 0 4px;
+  line-height: 1.5;
 }
 
 /* 详情页描述列表内容不换行（加黑说明等长文本除外） */
@@ -748,12 +1060,29 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 300px;
 }
 
 /* 搜索框宽度 */
-.search-box :deep(.el-input) {
+.search-box {
+  position: relative;
+}
+
+.search-box :deep(.el-textarea) {
   width: 350px;
+}
+
+.search-box :deep(.el-textarea__inner) {
+  resize: none;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.search-hint {
+  position: absolute;
+  bottom: -18px;
+  left: 4px;
+  font-size: 11px;
+  color: var(--primary);
 }
 
 /* 导入按钮组 */
@@ -787,37 +1116,274 @@ onMounted(() => {
 .copyable-cell {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
 }
 
-.copyable-cell .cell-text {
+.copyable-cell .cell-text,
+.copyable-cell .bce-cell-text {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .copyable-cell .copy-icon {
-  opacity: 0;
-  transition: opacity var(--duration-normal);
+  opacity: 0 !important;
+  transition: opacity 0.2s ease;
   cursor: pointer;
-  color: var(--primary);
+  color: var(--color-primary);
   font-size: 14px;
   flex-shrink: 0;
 }
 
 .copyable-cell:hover .copy-icon {
-  opacity: 1;
+  opacity: 1 !important;
 }
 
 .copyable-cell .copy-icon:hover {
-  color: var(--primary-hover);
+  color: var(--color-primary-hover);
   transform: scale(1.1);
 }
 
 @media (max-width: 768px) {
-  .search-box :deep(.el-input) {
+  .search-box :deep(.el-textarea) {
     width: 100%;
   }
+}
+
+.bce-empty-tip {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.bce-cell-text {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* 抽屉 Tab 样式 */
+.drawer-tabs {
+  height: 100%;
+}
+.drawer-tabs :deep(.el-tabs__header) {
+  margin-bottom: 16px;
+}
+.drawer-tabs :deep(.el-tabs__content) {
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
+}
+
+/* 基本信息 KV 网格 */
+.drawer-kv-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background: var(--border-primary, #e5e7eb);
+  border: 1px solid var(--border-primary, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.kv-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-primary, #fff);
+}
+.kv-item-full {
+  grid-column: 1 / -1;
+}
+.kv-label {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-tertiary, #9ca3af);
+  min-width: 72px;
+}
+.kv-label-warn {
+  color: #e6a23c;
+}
+.kv-value {
+  font-size: 13px;
+  color: var(--text-primary, #111827);
+  word-break: break-all;
+}
+.kv-value.copyable {
+  cursor: pointer;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+}
+.kv-value.copyable:hover {
+  color: var(--primary, #3b82f6);
+  text-decoration: underline;
+}
+
+/* 资源使用卡片 */
+.drawer-resource-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.resource-card {
+  padding: 16px;
+  border: 1px solid var(--border-primary, #e5e7eb);
+  border-radius: 8px;
+  background: var(--bg-primary, #fff);
+}
+.resource-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.resource-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
+}
+.resource-card-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  font-family: var(--font-mono, monospace);
+}
+.resource-card-sub {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-tertiary, #9ca3af);
+}
+
+/* 进度条样式 - 资源使用卡片 */
+.progress-track {
+  width: 100%;
+  height: 4px;
+  background: var(--border-primary, #e5e7eb);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background 0.3s ease;
+  min-width: 2px;
+}
+
+/* BCE 关联 Tab 内部分节 */
+.drawer-sub-section {
+  margin-bottom: 20px;
+}
+.drawer-sub-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.drawer-sub-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--bg-secondary, #f3f4f6);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary, #9ca3af);
+}
+.drawer-bce-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+/* 表格包装器 - 修复内容超出和框线对齐问题 */
+.table-wrapper {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border-primary, #e5e7eb);
+  overflow: hidden;
+}
+
+.table-wrapper :deep(.el-table) {
+  border: none;
+  width: 100% !important;
+}
+
+/* 修复表头和内容列对齐问题 - 关键：使用相同的滚动容器 */
+.table-wrapper :deep(.el-table__header-wrapper) {
+  overflow: hidden;
+}
+
+.table-wrapper :deep(.el-table__body-wrapper) {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+/* 统一表头和单元格样式 */
+.table-wrapper :deep(.el-table__header th) {
+  border-right: 1px solid var(--border-primary, #e5e7eb);
+  border-bottom: 1px solid var(--border-primary, #e5e7eb);
+  background: var(--bg-secondary, #f9fafb);
+  padding: 8px 4px;
+}
+
+.table-wrapper :deep(.el-table__header th:last-child) {
+  border-right: none;
+}
+
+.table-wrapper :deep(.el-table__body td) {
+  border-right: 1px solid var(--border-primary, #e5e7eb);
+  border-bottom: 1px solid var(--border-primary, #e5e7eb);
+  padding: 8px 4px;
+}
+
+.table-wrapper :deep(.el-table__body td:last-child) {
+  border-right: none;
+}
+
+.table-wrapper :deep(.el-table__body tr:last-child td) {
+  border-bottom: none;
+}
+
+/* 修复表格单元格内容溢出 */
+.table-wrapper :deep(.el-table .cell) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+  line-height: 1.5;
+}
+
+/* 修复第一列对齐问题 */
+.table-wrapper :deep(.el-table__header th:first-child),
+.table-wrapper :deep(.el-table__body td:first-child) {
+  border-left: none;
+}
+
+/* 修复滚动条导致的对齐问题 */
+.table-wrapper :deep(.el-table__body-wrapper::-webkit-scrollbar) {
+  height: 8px;
+}
+
+.table-wrapper :deep(.el-table__body-wrapper::-webkit-scrollbar-thumb) {
+  background: var(--scrollbar-thumb, rgba(0, 0, 0, 0.15));
+  border-radius: 4px;
+}
+
+.table-wrapper :deep(.el-table__body-wrapper::-webkit-scrollbar-track) {
+  background: var(--scrollbar-track, transparent);
 }
 </style>

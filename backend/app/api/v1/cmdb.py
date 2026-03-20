@@ -14,6 +14,7 @@ from app.core.deps import get_db, get_current_user
 from app.models.iaas import IaasServer, IaasInstance
 from app.models.user import UserRole
 from app.services.cmdb_sync_service import CMDBSyncService
+from app.schemas.response import APIResponse
 
 router = APIRouter()
 
@@ -223,27 +224,62 @@ async def list_servers(
 ):
     """获取服务器列表（支持排序和跨表搜索）"""
     query = db.query(IaasServer)
-    
+
     if search:
-        # 增强搜索：支持搜索服务器字段和关联实例的IP/UUID
-        # 先查找匹配IP或UUID的实例对应的主机名
-        matching_hostnames = db.query(distinct(IaasInstance.bns_hostname)).filter(
-            (IaasInstance.nova_vm_fixed_ips.contains(search)) |
-            (IaasInstance.nova_vm_instance_uuid.contains(search))
-        ).all()
-        matching_hostnames = [h[0] for h in matching_hostnames if h[0]]
-        
-        # 构建搜索条件：主机名、SN或关联实例的主机名
-        search_conditions = [
-            IaasServer.bns_hostname.contains(search),
-            IaasServer.rms_sn.contains(search)
-        ]
-        
-        if matching_hostnames:
-            search_conditions.append(IaasServer.bns_hostname.in_(matching_hostnames))
-        
-        from sqlalchemy import or_
-        query = query.filter(or_(*search_conditions))
+        # 支持批量搜索：按换行符或英文逗号分割，过滤空值
+        keywords = [k.strip() for k in search.replace('\n', ',').split(',') if k.strip()]
+
+        all_conditions = []
+        for kw in keywords:
+            # 每个关键词：先找匹配IP或UUID的实例对应的主机名
+            matching_hostnames = db.query(distinct(IaasInstance.bns_hostname)).filter(
+                (IaasInstance.nova_vm_fixed_ips.contains(kw)) |
+                (IaasInstance.nova_vm_instance_uuid.contains(kw))
+            ).all()
+            matching_hostnames = [h[0] for h in matching_hostnames if h[0]]
+
+            # BCE 反向关联：从 bce_bcc_instances / bce_cce_nodes 中匹配 IP，再反查 CMDB
+            try:
+                from app.core.database import get_db_connection
+                _conn = get_db_connection()
+                _cur = _conn.cursor()
+                bce_ips = set()
+                # 匹配 BCC 实例名、实例ID、IP
+                _cur.execute(
+                    "SELECT `主ipv4私网地址` FROM `bce_bcc_instances`"
+                    " WHERE `主ipv4私网地址` LIKE %s OR `名称` LIKE %s OR `bcc_id` LIKE %s"
+                    " LIMIT 200",
+                    (f'%{kw}%', f'%{kw}%', f'%{kw}%')
+                )
+                bce_ips.update(r[0] for r in _cur.fetchall() if r[0])
+                # 匹配 CCE 节点名、IP
+                _cur.execute(
+                    "SELECT `ip地址` FROM `bce_cce_nodes`"
+                    " WHERE `ip地址` LIKE %s OR `节点名称` LIKE %s"
+                    " LIMIT 200",
+                    (f'%{kw}%', f'%{kw}%')
+                )
+                bce_ips.update(r[0] for r in _cur.fetchall() if r[0])
+                _cur.close()
+                _conn.close()
+                if bce_ips:
+                    bce_hostnames = db.query(distinct(IaasInstance.bns_hostname)).filter(
+                        or_(*[IaasInstance.nova_vm_fixed_ips.contains(ip) for ip in bce_ips])
+                    ).all()
+                    matching_hostnames += [h[0] for h in bce_hostnames if h[0] and h[0] not in matching_hostnames]
+            except Exception as _e:
+                logger.debug(f"BCE 反向关联查询跳过: {_e}")
+
+            kw_conditions = [
+                IaasServer.bns_hostname.contains(kw),
+                IaasServer.rms_sn.contains(kw)
+            ]
+            if matching_hostnames:
+                kw_conditions.append(IaasServer.bns_hostname.in_(matching_hostnames))
+
+            all_conditions.append(or_(*kw_conditions))
+
+        query = query.filter(or_(*all_conditions))
     if manufacturer:
         query = query.filter(IaasServer.rms_manufacturer == manufacturer)
     if node_type:
@@ -359,27 +395,58 @@ async def list_instances(
 ):
     """获取实例列表（支持跨表搜索）"""
     query = db.query(IaasInstance)
-    
+
     if search:
-        # 增强搜索：支持搜索实例字段和关联服务器的主机名/SN
-        # 先查找匹配主机名或SN的服务器对应的主机名
-        matching_servers = db.query(distinct(IaasServer.bns_hostname)).filter(
-            (IaasServer.bns_hostname.contains(search)) |
-            (IaasServer.rms_sn.contains(search))
-        ).all()
-        matching_hostnames = [h[0] for h in matching_servers if h[0]]
-        
-        # 构建搜索条件：UUID、IP、主机名或关联服务器的主机名
-        search_conditions = [
-            IaasInstance.nova_vm_instance_uuid.contains(search),
-            IaasInstance.nova_vm_fixed_ips.contains(search),
-            IaasInstance.bns_hostname.contains(search)
-        ]
-        
-        if matching_hostnames:
-            search_conditions.append(IaasInstance.bns_hostname.in_(matching_hostnames))
-        
-        query = query.filter(or_(*search_conditions))
+        # 支持批量搜索：按换行符或英文逗号分割，过滤空值
+        keywords = [k.strip() for k in search.replace('\n', ',').split(',') if k.strip()]
+
+        all_conditions = []
+        for kw in keywords:
+            # 先查找匹配主机名或SN的服务器对应的主机名
+            matching_servers = db.query(distinct(IaasServer.bns_hostname)).filter(
+                (IaasServer.bns_hostname.contains(kw)) |
+                (IaasServer.rms_sn.contains(kw))
+            ).all()
+            matching_hostnames = [h[0] for h in matching_servers if h[0]]
+
+            # BCE 反向关联：从 BCE 表中查到 IP，再匹配实例
+            bce_ips = set()
+            try:
+                from app.core.database import get_db_connection
+                _conn = get_db_connection()
+                _cur = _conn.cursor()
+                _cur.execute(
+                    "SELECT `主ipv4私网地址` FROM `bce_bcc_instances`"
+                    " WHERE `主ipv4私网地址` LIKE %s OR `名称` LIKE %s OR `bcc_id` LIKE %s"
+                    " LIMIT 200",
+                    (f'%{kw}%', f'%{kw}%', f'%{kw}%')
+                )
+                bce_ips.update(r[0] for r in _cur.fetchall() if r[0])
+                _cur.execute(
+                    "SELECT `ip地址` FROM `bce_cce_nodes`"
+                    " WHERE `ip地址` LIKE %s OR `节点名称` LIKE %s"
+                    " LIMIT 200",
+                    (f'%{kw}%', f'%{kw}%')
+                )
+                bce_ips.update(r[0] for r in _cur.fetchall() if r[0])
+                _cur.close()
+                _conn.close()
+            except Exception as _e:
+                logger.debug(f"BCE 反向关联查询跳过: {_e}")
+
+            kw_conditions = [
+                IaasInstance.nova_vm_instance_uuid.contains(kw),
+                IaasInstance.nova_vm_fixed_ips.contains(kw),
+                IaasInstance.bns_hostname.contains(kw)
+            ]
+            if matching_hostnames:
+                kw_conditions.append(IaasInstance.bns_hostname.in_(matching_hostnames))
+            if bce_ips:
+                kw_conditions.append(or_(*[IaasInstance.nova_vm_fixed_ips.contains(ip) for ip in bce_ips]))
+
+            all_conditions.append(or_(*kw_conditions))
+
+        query = query.filter(or_(*all_conditions))
     if state:
         query = query.filter(IaasInstance.nova_vm_vm_state == state)
     if source:
@@ -677,6 +744,360 @@ async def update_sync_schedule(
     except Exception as e:
         logger.error(f"更新定时同步配置失败: {e}")
         raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
+
+
+# ========== BCE 数据同步接口 ==========
+
+@router.get("/bce/config")
+async def get_bce_config(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_admin)
+):
+    """获取 BCE 同步配置（Cookie 脱敏、区域、集群ID列表）"""
+    from app.services.bce_sync_service import BCESyncService
+    return BCESyncService(db).get_full_config()
+
+
+@router.post("/bce/config")
+async def update_bce_config(
+    request: dict,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_admin)
+):
+    """更新 BCE 同步配置（patch 式，只更新传入字段）"""
+    from app.services.bce_sync_service import BCESyncService
+    svc = BCESyncService(db)
+    ids = request.get('cluster_ids')
+    if isinstance(ids, str):
+        ids = [x.strip() for x in ids.replace('\n', ',').split(',') if x.strip()]
+    svc.update_config(
+        cookie=request.get('cookie', ''),
+        region=request.get('region', ''),
+        cluster_ids=ids,
+        updated_by_id=current_user.id
+    )
+    return {"success": True, "message": "BCE 配置已更新"}
+
+
+@router.post("/bce/sync")
+async def bce_sync(
+    target: str = Query("all", description="同步目标: all / bcc / cce"),
+    db: Session = Depends(get_db),
+    current_user = Depends(require_admin)
+):
+    """一键同步 BCE 数据到本地容器数据库（BCC实例 + CCE节点）"""
+    from app.services.bce_sync_service import BCESyncService
+    svc = BCESyncService(db)
+    try:
+        if target == 'bcc':
+            result = svc.sync_bcc()
+        elif target == 'cce':
+            result = svc.sync_cce()
+        else:
+            result = svc.sync_all()
+        return {"success": True, "result": result}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"BCE 同步失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/bce/stats")
+async def get_bce_stats(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """查询本地库中 BCE 数据的统计信息（记录数、最新采集日期）"""
+    from app.services.bce_sync_service import BCESyncService
+    return BCESyncService(db).get_table_stats()
+
+
+@router.post("/bce/test-connection", response_model=APIResponse, summary="测试 BCE 连接")
+async def test_bce_connection(
+    config: Optional[Dict[str, Any]] = None,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    测试 BCE 连接
+
+    支持两种模式：
+    1. 传入配置数据：使用传入的 Cookie 测试（保存前测试）
+    2. 不传配置：使用数据库中的配置测试（保存后测试）
+
+    需要管理员权限
+    """
+    try:
+        # 检查权限
+        if current_user.role not in ['admin', 'super_admin']:
+            raise HTTPException(status_code=403, detail="仅管理员可以测试连接")
+
+        from app.services.bce_sync_service import BCESyncService, _BCCDownloader
+
+        # 如果传入了配置，使用传入的配置
+        if config and config.get('bce_cookie'):
+            cookie = config.get('bce_cookie')
+            region = config.get('region', 'cd')
+        else:
+            # 否则从数据库读取配置
+            svc = BCESyncService(db)
+            cookie = svc.get_cookie()
+            region = svc.get_region()
+
+        if not cookie:
+            return APIResponse(
+                success=False,
+                error="未配置 BCE Cookie",
+                message="请先配置 BCE Cookie"
+            )
+
+        # 测试连接：尝试下载 BCC 数据
+        logger.info(f"测试 BCE 连接（region={region}）")
+        result = _BCCDownloader(cookie, region).download()
+
+        if result['success']:
+            return APIResponse(
+                success=True,
+                data={"connected": True, "region": region},
+                message="BCE 连接测试成功"
+            )
+        else:
+            return APIResponse(
+                success=False,
+                error=result.get('error', '连接失败'),
+                message="BCE 连接测试失败"
+            )
+
+    except Exception as e:
+        logger.error(f"❌ 测试 BCE 连接失败: {e}")
+        return APIResponse(
+            success=False,
+            error=str(e),
+            message="连接测试异常"
+        )
+
+
+@router.get("/bce/sync-config", response_model=APIResponse, summary="获取 BCE 自动同步配置")
+async def get_bce_sync_config(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_admin)
+):
+    """
+    获取 BCE 自动同步配置
+
+    需要管理员权限
+    """
+    try:
+        from app.services.bce_sync_service import BCESyncService
+        from app.models.system_config import SystemConfig
+
+        # 读取同步配置
+        row = db.query(SystemConfig).filter_by(
+            module='bce_sync', config_key='sync_config').first()
+
+        default_config = {
+            'enabled': False,
+            'sync_interval': 3600,  # 默认1小时
+            'auto_sync_bcc': True,
+            'auto_sync_cce': True,
+            'last_sync_time': None,
+            'next_sync_time': None
+        }
+
+        if row and row.config_value:
+            try:
+                import json
+                stored = json.loads(row.config_value)
+                default_config.update(stored)
+            except Exception:
+                pass
+
+        return APIResponse(
+            success=True,
+            data=default_config,
+            message="获取同步配置成功"
+        )
+
+    except Exception as e:
+        logger.error(f"❌ 获取 BCE 同步配置失败: {e}")
+        return APIResponse(
+            success=False,
+            error=str(e),
+            message="获取同步配置失败"
+        )
+
+
+@router.post("/bce/sync-config", response_model=APIResponse, summary="更新 BCE 自动同步配置")
+async def update_bce_sync_config(
+    config: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user = Depends(require_admin)
+):
+    """
+    更新 BCE 自动同步配置
+
+    需要管理员权限
+    """
+    try:
+        from app.models.system_config import SystemConfig
+        import json
+
+        # 验证配置
+        if 'sync_interval' in config:
+            interval = config['sync_interval']
+            if not isinstance(interval, int) or interval < 300:
+                return APIResponse(
+                    success=False,
+                    error="同步间隔不能小于300秒（5分钟）",
+                    message="配置验证失败"
+                )
+
+        # 读取现有配置
+        row = db.query(SystemConfig).filter_by(
+            module='bce_sync', config_key='sync_config').first()
+
+        if row and row.config_value:
+            try:
+                current = json.loads(row.config_value)
+            except Exception:
+                current = {}
+        else:
+            current = {}
+
+        # 合并配置
+        current.update(config)
+
+        # 保存配置
+        config_value = json.dumps(current, ensure_ascii=False)
+        if row:
+            row.config_value = config_value
+            row.updated_at = datetime.utcnow()
+            row.updated_by = current_user.id
+        else:
+            row = SystemConfig(
+                module='bce_sync',
+                config_key='sync_config',
+                config_value=config_value,
+                description='BCE 自动同步配置',
+                updated_by=current_user.id
+            )
+            db.add(row)
+
+        db.commit()
+
+        return APIResponse(
+            success=True,
+            data=current,
+            message="同步配置已更新"
+        )
+
+    except Exception as e:
+        logger.error(f"❌ 更新 BCE 同步配置失败: {e}")
+        db.rollback()
+        return APIResponse(
+            success=False,
+            error=str(e),
+            message="更新同步配置失败"
+        )
+
+
+@router.get("/servers/{hostname}/bce-context")
+async def get_server_bce_context(
+    hostname: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    以 IP 为中心，查询某台服务器及其实例在 BCE（BCC/CCE）中的关联信息。
+
+    关联逻辑：
+    - 收集该服务器下所有实例的私网 IP（nova_vm_fixed_ips）
+    - 用这批 IP 在 bce_bcc_instances 中匹配 `主ipv4私网地址`
+    - 同时在 bce_cce_nodes 中匹配 `ip地址`，获取所属集群 ID
+    """
+    from app.core.database import get_db_connection
+
+    # 1. 从 ORM 取该服务器下所有实例的 IP 列表
+    # nova_vm_fixed_ips 可能是 JSON 数组字符串如 '["10.90.0.211"]'，也可能是普通 IP 字符串
+    import json as _json
+    instances = db.query(IaasInstance).filter(IaasInstance.bns_hostname == hostname).all()
+    ip_set = set()
+    for inst in instances:
+        raw = inst.nova_vm_fixed_ips
+        if not raw:
+            continue
+        raw_str = str(raw).strip()
+        # 尝试 JSON 解析
+        if raw_str.startswith('[') or raw_str.startswith('"'):
+            try:
+                parsed = _json.loads(raw_str)
+                if isinstance(parsed, list):
+                    for ip in parsed:
+                        ip = str(ip).strip()
+                        if ip:
+                            ip_set.add(ip)
+                    continue
+                elif isinstance(parsed, str):
+                    if parsed.strip():
+                        ip_set.add(parsed.strip())
+                    continue
+            except Exception:
+                pass
+        # 普通逗号/分号分隔
+        for part in raw_str.replace(';', ',').split(','):
+            part = part.strip()
+            if part:
+                ip_set.add(part)
+
+    ip_list = [ip for ip in ip_set if ip]
+
+    if not ip_list:
+        return {"bcc_instances": [], "cce_nodes": [], "ip_list": []}
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        bcc_rows = []
+        cce_rows = []
+
+        # 2. 查 bce_bcc_instances（先检查表是否存在）
+        cursor.execute("SHOW TABLES LIKE 'bce_bcc_instances'")
+        if cursor.fetchone():
+            placeholders = ','.join(['%s'] * len(ip_list))
+            cursor.execute(
+                f"SELECT * FROM `bce_bcc_instances`"
+                f" WHERE `主ipv4私网地址` IN ({placeholders})"
+                f" ORDER BY `collect_date` DESC",
+                ip_list
+            )
+            cols = [d[0] for d in cursor.description]
+            for row in cursor.fetchall():
+                bcc_rows.append(dict(zip(cols, [str(v) if v is not None else None for v in row])))
+
+        # 3. 查 bce_cce_nodes（先检查表是否存在）
+        cursor.execute("SHOW TABLES LIKE 'bce_cce_nodes'")
+        if cursor.fetchone():
+            placeholders = ','.join(['%s'] * len(ip_list))
+            cursor.execute(
+                f"SELECT * FROM `bce_cce_nodes`"
+                f" WHERE `ip地址` IN ({placeholders})"
+                f" ORDER BY `collect_date` DESC",
+                ip_list
+            )
+            cols = [d[0] for d in cursor.description]
+            for row in cursor.fetchall():
+                cce_rows.append(dict(zip(cols, [str(v) if v is not None else None for v in row])))
+
+        cursor.close()
+    finally:
+        conn.close()
+
+    return {
+        "bcc_instances": bcc_rows,
+        "cce_nodes": cce_rows,
+        "ip_list": ip_list
+    }
 
 
 # ========== 增强搜索接口 ==========

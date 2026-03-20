@@ -1,0 +1,21 @@
+节点名称,实例名称/ID,状态,支付方式,可用区,IP地址,配置/类型,加速芯片类型,加速芯片（已使用/总卡数）,空闲加速芯片卡数,资源申请 | 限制,容器组（已分配/总额度）,节点组,超节点,Kubelet版本/Runtime版本/OS版本,创建时间
+10.91.0.2,cce-bcc-halo-data-cleaning-dev-cpu-35czj81g-bgf88evq / i-YRX1YYcT,可用,后付费,可用区C,10.91.0.2,4核/8GB/100GB/c4,,"""0/0""",0,"CPU: 28.12% | 292.50% 
+内存: 9.16% | 98.14%","""13/128""",nodepool-清洗服务-cpu-4C16G（cce-ig-7t40zkxa）,,"v1.30.1
+containerd://1.6.36
+CentOS Linux 7 (Core)",2025-12-11 16:31:54
+10.91.0.41,cce-bcc-biaozhu-dev-ingress-nginx-mvbh266r-g9mzzf0o-1 / i-WnilCVGV,可用,后付费,可用区C,10.91.0.41,2核/4GB/200GB/c4,,"""0/0""",0,"CPU: 28.75% | 575.00% 
+内存: 14.22% | 348.67%","""8/128""",ingress-nginx（cce-ig-fw9rmffu）,,"v1.30.1
+containerd://1.6.36
+CentOS Linux 7 (Core)",2025-07-23 16:54:35
+10.91.0.42,cce-bcc-biaozhu-dev-ingress-nginx-mvbh266r-g9mzzf0o-2 / i-BBCBwWVd,可用,后付费,可用区C,10.91.0.42,2核/4GB/200GB/c4,,"""0/0""",0,"CPU: 28.75% | 575.00% 
+内存: 14.22% | 348.67%","""8/128""",ingress-nginx（cce-ig-fw9rmffu）,,"v1.30.1
+containerd://1.6.36
+CentOS Linux 7 (Core)",2025-07-23 16:54:35
+10.91.0.40,cce-bcc-biaozhu-dev-cpu-0qxbs9fp-aadyr6yq-2 / i-71VDWMTP,可用,后付费,可用区C,10.91.0.40,16核/64GB/500GB/g4,,"""0/0""",0,"CPU: 80.78% | 324.38% 
+内存: 48.80% | 145.24%","""36/128""",nodepool-标注-cpu-16C64G（cce-ig-qeu4ugyh）,,"v1.30.1
+containerd://1.6.36
+CentOS Linux 7 (Core)",2025-07-23 16:39:41
+10.91.0.39,cce-bcc-biaozhu-dev-cpu-0qxbs9fp-aadyr6yq-1 / i-Ur4hhKZS,可用,后付费,可用区C,10.91.0.39,16核/64GB/500GB/g4,,"""0/0""",0,"CPU: 72.03% | 231.25% 
+内存: 38.04% | 113.33%","""24/128""",nodepool-标注-cpu-16C64G（cce-ig-qeu4ugyh）,,"v1.30.1
+containerd://1.6.36
+CentOS Linux 7 (Core)",2025-07-23 16:39:40

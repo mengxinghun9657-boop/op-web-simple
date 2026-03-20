@@ -1,0 +1,381 @@
+节点名称,实例名称/ID,状态,支付方式,可用区,IP地址,配置/类型,加速芯片类型,加速芯片（已使用/总卡数）,空闲加速芯片卡数,资源申请 | 限制,容器组（已分配/总额度）,节点组,超节点,Kubelet版本/Runtime版本/OS版本,创建时间
+10.90.128.27,CCE-EBC-triton-server-L20-wp9co1l7-5uuvqlpf-06 / i-RGvBjtch,可用,后付费,可用区C,10.90.128.27,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 77.03% | 84.33% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-02-28 19:14:06
+10.90.128.6,CCE-EBC-triton-server-L20-bgbm5onz-5uuvqlpf-1 / i-t4Dh574t,可用,后付费,可用区C,10.90.128.6,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-02-28 19:14:06
+10.90.128.40,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-15 / i-c2KogmM9,可用,后付费,可用区C,10.90.128.40,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-02-28 19:14:06
+10.90.128.105,CCE-EBC-triton-server-H20-tianshu-llm-gaf14tah-k1261nr6 / i-qHtrTdgb,可用,后付费,可用区C,10.90.128.105,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 62.60% | 69.42% 
+内存: 63.80% | 65.29%","""19/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-02-28 18:37:39
+10.90.1.16,cce-uk1zi507-euij4oh6 / i-DwwVdj3z,可用,后付费,可用区C,10.90.1.16,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 62.60% | 69.42% 
+内存: 63.80% | 65.29%","""18/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-02-28 18:37:39
+10.90.1.7,cce-uk1zi507-qfrzzofx / i-BTnqMfd3,可用,后付费,可用区C,10.90.1.7,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 62.60% | 69.42% 
+内存: 63.80% | 65.29%","""19/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-02-28 18:37:39
+10.90.128.41,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-11 / i-irQjZE1L,可用,后付费,可用区C,10.90.128.41,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 79.96% | 89.13% 
+内存: 51.40% | 54.88%","""27/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-02-28 18:02:07
+10.90.128.28,CCE-EBC-triton-server-L20-wp9co1l7-5uuvqlpf-04 / i-ir9yqRi6,可用,后付费,可用区C,10.90.128.28,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-02-27 15:55:14
+10.90.128.78,cce-ig-ld7crc5z-m9fx8xog-jjpo3wr5-1 / i-TuRAo0Ec,可用,后付费,可用区C,10.90.128.78,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.80,CCE-EBC-triton-server-L20-vkbfmdgl-u5esp1do-20 / i-5FYzBvZR,可用,后付费,可用区C,10.90.128.80,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.90,CCE-EBC-triton-server-L20-vkbfmdgl-u5esp1do-18 / i-i3QLKtKF,可用,后付费,可用区C,10.90.128.90,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 84.97% | 92.50% 
+内存: 54.59% | 57.76%","""28/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.86,CCE-EBC-triton-server-L20-vkbfmdgl-u5esp1do-03 / i-cCdTQCIg,可用,后付费,可用区C,10.90.128.86,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.85,CCE-EBC-triton-server-L20-vkbfmdgl-u5esp1do-29 / i-NUxHuqcI,可用,后付费,可用区C,10.90.128.85,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.82,CCE-EBC-triton-server-L20-vkbfmdgl-u5esp1do-10 / i-h5DGglOQ,可用,后付费,可用区C,10.90.128.82,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.81,CCE-EBC-triton-server-L20-vkbfmdgl-u5esp1do-24 / i-oHwjYun0,可用,后付费,可用区C,10.90.128.81,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.83,CCE-EBC-triton-server-L20-vkbfmdgl-u5esp1do-02 / i-SoXWcxG1,可用,后付费,可用区C,10.90.128.83,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.76,cce-ig-ld7crc5z-m9fx8xog-jjpo3wr5-5 / i-UbF8cOYX,可用,后付费,可用区C,10.90.128.76,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.79,CCE-EBC-triton-server-L20-o9zz48tl-kuic0iq7 / i-HjZYbti1,可用,后付费,可用区C,10.90.128.79,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.92,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-09 / i-yXj314eD,可用,后付费,可用区C,10.90.128.92,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.91,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-11 / i-Vg1jJek7,可用,后付费,可用区C,10.90.128.91,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 87.61% | 94.90% 
+内存: 54.57% | 57.66%","""27/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.84,CCE-EBC-triton-server-L20-vkbfmdgl-u5esp1do-25 / i-a4Q1ALGX,可用,后付费,可用区C,10.90.128.84,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.77,cce-ig-ld7crc5z-m9fx8xog-jjpo3wr5-6 / i-rP3qZKST,可用,后付费,可用区C,10.90.128.77,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""27/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.93,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-22 / i-wsb8pYku,可用,后付费,可用区C,10.90.128.93,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-22 14:13:14
+10.90.128.104,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-17 / i-WzUviGXn,可用,后付费,可用区C,10.90.128.104,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-21 16:32:45
+10.90.128.107,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-27 / i-SSVkEUNo,可用,后付费,可用区C,10.90.128.107,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-21 16:32:45
+10.90.128.108,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-26 / i-stH1olbh,可用,后付费,可用区C,10.90.128.108,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-21 16:32:45
+10.90.128.128,CCE-EBC-triton-server-L20-x1f00zrs-kuic0iq7-1 / i-Y2GKgIOK,可用,后付费,可用区C,10.90.128.128,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 91.47% | 98.75% 
+内存: 60.93% | 64.01%","""29/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-21 14:42:20
+10.90.128.10,CCE-EBC-triton-server-L20-x1f00zrs-kuic0iq7-3 / i-YwKO0p30,可用,后付费,可用区C,10.90.128.10,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 86.65% | 93.94% 
+内存: 57.75% | 60.83%","""28/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-21 14:42:20
+10.90.128.8,CCE-EBC-triton-server-L20-x1f00zrs-kuic0iq7-4 / i-cscKHDhB,可用,后付费,可用区C,10.90.128.8,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 94.36% | 102.60% 
+内存: 65.30% | 69.57%","""32/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-21 14:42:20
+10.90.128.131,CCE-EBC-triton-server-L20-x1f00zrs-kuic0iq7-2 / i-arpvOdwJ,可用,后付费,可用区C,10.90.128.131,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 88.58% | 95.87% 
+内存: 60.93% | 64.01%","""30/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-21 14:42:20
+10.90.128.96,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-01 / i-cPM1LZkq,可用,后付费,可用区C,10.90.128.96,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 44.34% | 51.15% 
+内存: 32.33% | 35.31%","""23/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-07 17:22:19
+10.90.128.95,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-15 / i-M7I6wzET,可用,后付费,可用区C,10.90.128.95,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 74.14% | 80.96% 
+内存: 51.39% | 54.38%","""25/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-07 17:22:19
+10.90.128.97,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-07 / i-ZJ1sceDa,可用,后付费,可用区C,10.90.128.97,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 53.97% | 60.91% 
+内存: 45.04% | 48.05%","""27/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-07 17:22:19
+10.90.128.101,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-14 / i-XpU9D3eV,可用,后付费,可用区C,10.90.128.101,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 74.14% | 80.96% 
+内存: 51.39% | 54.38%","""25/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-07 16:03:36
+10.90.128.102,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-04 / i-qWXqvHWB,可用,后付费,可用区C,10.90.128.102,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 80.40% | 87.69% 
+内存: 60.98% | 64.11%","""31/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-07 16:03:36
+10.90.128.103,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-21 / i-1iRfzb1q,可用,后付费,可用区C,10.90.128.103,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 78.01% | 85.10% 
+内存: 57.75% | 60.79%","""29/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2026-01-07 16:03:36
+10.90.128.39,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-07 / i-0x98Zt9z,可用,后付费,可用区C,10.90.128.39,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-10-29 17:05:19
+10.90.128.7,CCE-EBC-triton-server-H20-tianshu-llm-a42nkygr-k1261nr6 / i-XfzOsZSn,可用,后付费,可用区C,10.90.128.7,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 62.60% | 69.42% 
+内存: 63.80% | 65.29%","""18/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-10-24 09:04:53
+10.90.128.13,CCE-EBC-triton-server-L20-b1o4abck-5uuvqlpf / i-CLywvKqY,可用,后付费,可用区C,10.90.128.13,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 91.47% | 98.75% 
+内存: 60.93% | 64.01%","""29/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-10-23 17:41:17
+10.90.128.87,cce-xrg955qz-y3wys5xm / i-ZB2SMaeo,可用,后付费,可用区C,10.90.128.87,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 64.53% | 71.35% 
+内存: 65.39% | 66.88%","""20/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-28 08:44:24
+10.90.128.89,cce-uk1zi507-cwzn3tzj / i-L4bv5Udf,可用,后付费,可用区C,10.90.128.89,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 70.94% | 78.85% 
+内存: 70.22% | 72.05%","""28/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-27 18:09:29
+10.90.128.24,CCE-EBC-triton-server-L20-tcdnudg2-5uuvqlpf-2 / i-CujjJUci,可用,后付费,可用区C,10.90.128.24,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 94.16% | 103.32% 
+内存: 64.18% | 67.65%","""33/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 21:00:46
+10.90.128.25,CCE-EBC-triton-server-L20-tcdnudg2-5uuvqlpf-1 / i-DCSxsOMB,可用,后付费,可用区C,10.90.128.25,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 21:00:46
+10.90.128.29,CCE-EBC-triton-server-L20-wp9co1l7-5uuvqlpf-10 / i-TcP0dIhG,可用,后付费,可用区C,10.90.128.29,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 89.54% | 96.83% 
+内存: 57.75% | 60.83%","""28/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 21:00:46
+10.90.128.30,CCE-EBC-triton-server-L20-wp9co1l7-5uuvqlpf-03 / i-mRC6uX5A,可用,后付费,可用区C,10.90.128.30,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 88.58% | 95.87% 
+内存: 60.93% | 64.01%","""29/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 21:00:46
+10.90.128.4,CCE-EBC-triton-server-L20-46llbh36-5uuvqlpf / i-p3ZwTE1L,可用,后付费,可用区C,10.90.128.4,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 91.61% | 99.47% 
+内存: 61.01% | 64.21%","""31/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 21:00:46
+10.90.128.5,CCE-EBC-triton-server-L20-paaefq05-5uuvqlpf / i-9ixwRR6q,可用,后付费,可用区C,10.90.128.5,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 89.54% | 96.83% 
+内存: 57.75% | 60.83%","""28/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 21:00:46
+10.90.128.9,CCE-EBC-triton-server-L20-c0ue3tx5-5uuvqlpf / i-CUDKHsVO,可用,后付费,可用区C,10.90.128.9,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 89.54% | 96.83% 
+内存: 57.75% | 60.83%","""28/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 21:00:46
+10.90.128.12,CCE-EBC-triton-server-L20-bgbm5onz-5uuvqlpf-2 / i-19YLpkLe,可用,后付费,可用区C,10.90.128.12,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 89.54% | 96.83% 
+内存: 57.75% | 60.83%","""28/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 21:00:45
+10.90.128.18,CCE-EBC-triton-server-L20-l91vcjqd-sxfht1bl-2 / i-BvpRcouO,可用,后付费,可用区C,10.90.128.18,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 21:00:45
+10.90.128.19,CCE-EBC-triton-server-L20-l91vcjqd-sxfht1bl-3 / i-VwCjKz8x,可用,后付费,可用区C,10.90.128.19,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.73% | 92.98% 
+内存: 51.41% | 54.58%","""27/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 21:00:45
+10.90.128.49,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-02 / i-YeFcKnt0,可用,后付费,可用区C,10.90.128.49,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 84.73% | 92.02% 
+内存: 54.57% | 57.66%","""27/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 19:06:38
+10.90.128.46,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-20 / i-CaayACXa,可用,后付费,可用区C,10.90.128.46,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 19:06:38
+10.90.128.45,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-10 / i-kUitlxUc,可用,后付费,可用区C,10.90.128.45,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 19:06:38
+10.90.128.43,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-12 / i-71qqwgs6,可用,后付费,可用区C,10.90.128.43,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.70% | 92.98% 
+内存: 60.93% | 64.01%","""29/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 19:06:38
+10.90.128.42,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-16 / i-f14AoG7J,可用,后付费,可用区C,10.90.128.42,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 91.47% | 98.75% 
+内存: 60.93% | 64.01%","""29/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 19:06:38
+10.90.128.36,CCE-EBC-triton-server-L20-wp9co1l7-5uuvqlpf-05 / i-BIWIHCtr,可用,后付费,可用区C,10.90.128.36,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.89% | 90.58% 
+内存: 51.42% | 54.88%","""28/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 19:06:38
+10.90.128.35,CCE-EBC-triton-server-L20-wp9co1l7-5uuvqlpf-08 / i-M4ZgLFzX,可用,后付费,可用区C,10.90.128.35,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 19:06:38
+10.90.128.34,CCE-EBC-triton-server-L20-wp9co1l7-5uuvqlpf-09 / i-KdFoNKjE,可用,后付费,可用区C,10.90.128.34,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.94% | 91.06% 
+内存: 51.43% | 54.67%","""27/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 19:06:38
+10.90.128.33,CCE-EBC-triton-server-L20-wp9co1l7-5uuvqlpf-07 / i-1U1AVINF,可用,后付费,可用区C,10.90.128.33,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 19:06:38
+10.90.128.32,CCE-EBC-triton-server-L20-wp9co1l7-5uuvqlpf-02 / i-Fv6NXVzC,可用,后付费,可用区C,10.90.128.32,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 90.51% | 97.79% 
+内存: 64.11% | 67.19%","""30/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 19:06:38
+10.90.128.31,CCE-EBC-triton-server-L20-wp9co1l7-5uuvqlpf-01 / i-UnwUoJpT,可用,后付费,可用区C,10.90.128.31,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 19:06:38
+10.90.128.52,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-08 / i-YuQIycEw,可用,后付费,可用区C,10.90.128.52,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:33
+10.90.128.51,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-03 / i-mUOenPPT,可用,后付费,可用区C,10.90.128.51,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:33
+10.90.128.50,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-04 / i-HzWhWuOU,可用,后付费,可用区C,10.90.128.50,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 84.73% | 92.02% 
+内存: 54.57% | 57.66%","""27/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:33
+10.90.128.71,cce-ig-ld7crc5z-m9fx8xog-jjpo3wr5-4 / i-B6B6r075,可用,后付费,可用区C,10.90.128.71,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 91.96% | 98.75% 
+内存: 70.49% | 73.46%","""32/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:32
+10.90.128.70,CCE-EBC-triton-server-L20-ht153503-jjpo3wr5 / i-vQaCpfr5,可用,后付费,可用区C,10.90.128.70,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.24% | 90.10% 
+内存: 64.17% | 67.38%","""32/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:32
+10.90.128.69,CCE-EBC-triton-server-L20-hc7bbvns-jjpo3wr5-2 / i-nuxxNmpR,可用,后付费,可用区C,10.90.128.69,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 83.78% | 91.68% 
+内存: 62.12% | 66.33%","""32/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:32
+10.90.128.59,CCE-EBC-triton-server-L20-fi1kcirj-u5esp1do / i-twMdTzs4,可用,后付费,可用区C,10.90.128.59,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 53.39% | 62.21% 
+内存: 45.14% | 48.70%","""28/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:32
+10.90.128.58,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-06 / i-09HIQ8xQ,可用,后付费,可用区C,10.90.128.58,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 78.95% | 85.77% 
+内存: 54.57% | 57.56%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:32
+10.90.128.57,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-01 / i-gVmyFVXi,可用,后付费,可用区C,10.90.128.57,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 86.65% | 93.94% 
+内存: 57.75% | 60.83%","""28/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:32
+10.90.128.56,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-05 / i-3rxynzw3,可用,后付费,可用区C,10.90.128.56,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:32
+10.90.128.55,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-13 / i-K6dxWQI3,可用,后付费,可用区C,10.90.128.55,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:32
+10.90.128.54,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-19 / i-bPyWSTZ8,可用,后付费,可用区C,10.90.128.54,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 82.80% | 90.10% 
+内存: 51.39% | 54.48%","""27/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:32
+10.90.128.53,CCE-EBC-triton-server-L20-yqdwjnbx-5uuvqlpf-09 / i-Wy3INvTJ,可用,后付费,可用区C,10.90.128.53,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-14 17:18:32
+10.90.128.94,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-23 / i-XJdFkjLW,可用,后付费,可用区C,10.90.128.94,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 84.74% | 91.54% 
+内存: 64.11% | 67.09%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-12 15:08:31
+10.90.128.98,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-03 / i-J3PMbh61,可用,后付费,可用区C,10.90.128.98,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 28.24% | 36.25% 
+内存: 26.03% | 29.44%","""23/128""",NP-L20-自动标注（cce-ig-2zicvblt）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-12 15:08:31
+10.90.128.99,CCE-EBC-triton-server-L20-80wb5vvm-u5esp1do-05 / i-Cgpa4Jdu,可用,后付费,可用区C,10.90.128.99,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 88.58% | 95.38% 
+内存: 60.93% | 63.91%","""29/128""",NP-L20-自动标注（cce-ig-2zicvblt）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-08-12 15:08:31
+10.90.128.61,cce-uk1zi507-3dbs4gd9 / i-1TLicv8F,可用,后付费,可用区C,10.90.128.61,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 64.53% | 71.35% 
+内存: 65.39% | 66.88%","""20/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-07-08 19:42:28
+10.90.128.66,cce-uk1zi507-94zow5g1 / i-oL94kfsv,可用,后付费,可用区C,10.90.128.66,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 64.53% | 71.35% 
+内存: 65.39% | 66.88%","""20/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-07-08 19:42:28
+10.90.128.63,cce-uk1zi507-csbtjmnf / i-mDIjkIz1,可用,后付费,可用区C,10.90.128.63,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 64.53% | 71.35% 
+内存: 65.39% | 66.88%","""19/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-07-08 19:42:28
+10.90.128.64,cce-uk1zi507-duudrd0v / i-ZJv1RCq2,可用,后付费,可用区C,10.90.128.64,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 62.60% | 69.42% 
+内存: 63.80% | 65.29%","""19/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-07-08 19:42:28
+10.90.128.68,cce-uk1zi507-f06t6j8k / i-wV8XJ52n,可用,后付费,可用区C,10.90.128.68,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 64.53% | 71.35% 
+内存: 65.39% | 66.88%","""19/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-07-08 19:42:28
+10.90.128.67,cce-uk1zi507-f8123nly / i-MuoTELKz,可用,后付费,可用区C,10.90.128.67,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 64.53% | 71.35% 
+内存: 65.39% | 66.88%","""19/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-07-08 19:42:28
+10.90.128.62,cce-uk1zi507-fm41ayw0 / i-tits63tg,可用,后付费,可用区C,10.90.128.62,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 64.58% | 73.27% 
+内存: 65.39% | 67.08%","""20/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-07-08 19:42:28
+10.90.128.60,cce-uk1zi507-kn59aof9 / i-eQrsJtLU,可用,后付费,可用区C,10.90.128.60,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 49.14% | 55.96% 
+内存: 49.50% | 51.00%","""20/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-07-08 19:42:28
+10.90.128.65,cce-uk1zi507-ra97nmif / i-AMTK4Dbs,可用,后付费,可用区C,10.90.128.65,208核/2048GB/500GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 64.53% | 71.35% 
+内存: 65.39% | 66.88%","""19/128""",NP-H20-天枢大模型（cce-ig-rbtrwee7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-07-08 19:42:28
+10.90.128.38,CCE-EBC-triton-server-L20-tianshu-llm-4y3da4if-sxfht1bl-1 / i-DxzPFUWb,可用,后付费,可用区C,10.90.128.38,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 71.31% | 78.70% 
+内存: 51.39% | 54.46%","""23/128""",NP-L20-天枢大模型（cce-ig-hyeqvaa7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-06-09 16:17:31
+10.90.128.37,CCE-EBC-triton-server-L20-tianshu-llm-4y3da4if-sxfht1bl-2 / i-7WzeEBdp,可用,后付费,可用区C,10.90.128.37,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 74.14% | 80.96% 
+内存: 51.39% | 54.38%","""22/128""",NP-L20-天枢大模型（cce-ig-hyeqvaa7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-06-09 16:17:31
+10.90.128.26,CCE-EBC-triton-server-L20-tianshu-llm-xgyq2lb7-sxfht1bl-2 / i-ZSYPTq6s,可用,后付费,可用区C,10.90.128.26,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 85.68% | 92.98% 
+内存: 51.39% | 54.48%","""26/128""",NP-L20-融合链路/数据运营-CUDA12.8.0（cce-ig-xzavk15m）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-05-07 09:25:57
+10.90.128.21,CCE-EBC-triton-server-L20-tianshu-llm-xntefyzn-sxfht1bl / i-oTKxcalh,可用,后付费,可用区C,10.90.128.21,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 64.53% | 71.35% 
+内存: 54.57% | 57.56%","""20/128""",NP-L20-天枢大模型（cce-ig-hyeqvaa7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-04-18 14:57:39
+10.90.128.17,CCE-EBC-triton-server-L20-tianshu-llm-l91vcjqd-sxfht1bl-7 / i-ueZJcdCS,可用,后付费,可用区C,10.90.128.17,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 71.52% | 82.40% 
+内存: 51.42% | 55.27%","""24/128""",NP-L20-天枢大模型（cce-ig-hyeqvaa7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-04-03 14:13:22
+10.90.128.14,CCE-EBC-triton-server-L20-tianshu-llm-l91vcjqd-sxfht1bl-1 / i-VIRiYtJC,可用,后付费,可用区C,10.90.128.14,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 76.07% | 82.88% 
+内存: 54.57% | 57.56%","""21/128""",NP-L20-天枢大模型（cce-ig-hyeqvaa7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-04-03 14:13:22
+10.90.128.16,CCE-EBC-triton-server-L20-tianshu-llm-l91vcjqd-sxfht1bl-5 / i-82gfS2eE,可用,后付费,可用区C,10.90.128.16,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 74.14% | 80.96% 
+内存: 51.39% | 54.38%","""20/128""",NP-L20-天枢大模型（cce-ig-hyeqvaa7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-04-03 14:13:22
+10.90.128.20,CCE-EBC-triton-server-L20-tianshu-llm-l91vcjqd-sxfht1bl-4 / i-AepzaldP,可用,后付费,可用区C,10.90.128.20,208核/1024GB/500GB/lgn7sne,nTeslaL20,"""0/8""",0,"CPU: 68.37% | 75.19% 
+内存: 51.39% | 54.38%","""20/128""",NP-L20-天枢大模型（cce-ig-hyeqvaa7）,,"v1.28.8
+containerd://1.6.36
+CentOS Linux 8",2025-04-03 14:13:22

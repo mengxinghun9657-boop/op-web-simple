@@ -1,0 +1,9 @@
+节点名称,实例名称/ID,状态,支付方式,可用区,IP地址,配置/类型,加速芯片类型,加速芯片（已使用/总卡数）,空闲加速芯片卡数,资源申请 | 限制,容器组（已分配/总额度）,节点组,超节点,Kubelet版本/Runtime版本/OS版本,创建时间
+10.90.0.91,CCE-BBC-ai-platform-H20-test / i-Ax2KDdYl,可用,后付费,可用区C,10.90.0.91,208核/2048GB/100GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 33.58% | 47.62% 
+内存: 7.97% | 10.50%","""88/128""",H20-nodepool（cce-ig-uqwkynnp）,,"v1.30.1
+containerd://1.6.36
+Ubuntu 22.04.1 LTS",2025-05-15 19:50:26
+10.90.0.88,CCE-BBC-ai-platform-H20-test / i-DzwaG1KB,可用,后付费,可用区C,10.90.0.88,208核/2048GB/100GB/lgn7tne,nTeslaH20,"""0/8""",0,"CPU: 21.45% | 31.83% 
+内存: 7.53% | 9.35%","""36/128""",H20-nodepool（cce-ig-uqwkynnp）,,"v1.30.1
+containerd://1.6.36
+Ubuntu 22.04.1 LTS",2025-05-15 15:59:51

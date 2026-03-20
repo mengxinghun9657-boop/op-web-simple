@@ -48,6 +48,10 @@
             <el-icon><Postcard /></el-icon>
             <span>iCafe配置</span>
           </el-menu-item>
+          <el-menu-item index="bce_sync">
+            <el-icon><Connection /></el-icon>
+            <span>BCE同步配置</span>
+          </el-menu-item>
         </el-menu>
       </aside>
 
@@ -63,13 +67,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Setting, User, DataBoard, Monitor, TrendCharts, Histogram, Postcard } from '@element-plus/icons-vue'
+import { Setting, User, DataBoard, Monitor, TrendCharts, Histogram, Postcard, Connection } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import CMDBConfig from '@/components/config/CMDBConfig.vue'
 import MonitoringConfig from '@/components/config/MonitoringConfig.vue'
 import AnalysisConfig from '@/components/config/AnalysisConfig.vue'
 import PFSConfig from '@/components/config/PFSConfig.vue'
 import ICafeConfig from '@/components/config/ICafeConfig.vue'
+import BCESyncConfig from '@/components/config/BCESyncConfig.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -93,7 +98,8 @@ const currentComponent = computed(() => {
     monitoring: MonitoringConfig,
     analysis: AnalysisConfig,
     pfs: PFSConfig,
-    icafe: ICafeConfig
+    icafe: ICafeConfig,
+    bce_sync: BCESyncConfig
   }
   return components[activeSection.value] || CMDBConfig
 })

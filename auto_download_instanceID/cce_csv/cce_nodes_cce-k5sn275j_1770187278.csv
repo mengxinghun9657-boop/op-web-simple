@@ -1,0 +1,237 @@
+节点名称,实例名称/ID,状态,支付方式,可用区,IP地址,配置/类型,加速芯片类型,加速芯片（已使用/总卡数）,空闲加速芯片卡数,资源申请 | 限制,容器组（已分配/总额度）,节点组,超节点,Kubelet版本/Runtime版本/OS版本,创建时间
+10.89.0.23,cce-ig-n2n53rim-ligindqy-caep2nx6-17 / i-ljYx8sMz,可用,后付费,可用区C,10.89.0.23,84核/352GB/200GB/g4,,"""0/0""",0,"CPU: 38.40% | 102.62% 
+内存: 92.46% | 94.16%","""13/128""",worker-python-84c352g（cce-ig-bjjcpy8k）,,"v1.30.1
+containerd://1.6.36
+Ubuntu 22.04.1 LTS",2025-10-10 10:15:19
+10.89.0.24,cce-ig-n2n53rim-ligindqy-caep2nx6-02 / i-bNSbzE8e,可用,后付费,可用区C,10.89.0.24,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: 38.40% | 102.62% 
+内存: 92.46% | 94.16%","""13/128""",worker-python-84c352g（cce-ig-bjjcpy8k）,,"v1.30.1
+containerd://1.6.36
+Ubuntu 22.04.1 LTS",2025-10-10 10:15:19
+10.89.0.25,cce-ig-n2n53rim-ligindqy-caep2nx6-15 / i-PgJ4HYSL,可用,后付费,可用区C,10.89.0.25,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: 38.40% | 102.62% 
+内存: 92.46% | 94.16%","""13/128""",worker-python-84c352g（cce-ig-bjjcpy8k）,,"v1.30.1
+containerd://1.6.36
+Ubuntu 22.04.1 LTS",2025-10-10 10:15:19
+10.89.0.26,cce-ig-n2n53rim-ligindqy-caep2nx6-22 / i-QlcZVm5s,可用,后付费,可用区C,10.89.0.26,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: 38.40% | 102.62% 
+内存: 92.46% | 94.16%","""13/128""",worker-python-84c352g（cce-ig-bjjcpy8k）,,"v1.30.1
+containerd://1.6.36
+Ubuntu 22.04.1 LTS",2025-10-10 10:15:19
+10.89.0.27,cce-ig-n2n53rim-ligindqy-caep2nx6-01 / i-JlO7GYeX,可用,后付费,可用区C,10.89.0.27,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: 31.38% | 83.81% 
+内存: 70.55% | 73.43%","""13/128""",worker-python-84c352g（cce-ig-bjjcpy8k）,,"v1.30.1
+containerd://1.6.36
+Ubuntu 22.04.1 LTS",2025-10-10 10:15:19
+10.89.0.28,cce-ig-n2n53rim-ligindqy-caep2nx6-06 / i-AQ0MFA1E,可用,后付费,可用区C,10.89.0.28,84核/352GB/100GB/g4,,"""0/0""",0,"CPU: 38.40% | 102.62% 
+内存: 92.46% | 94.16%","""13/128""",worker-python-84c352g（cce-ig-bjjcpy8k）,,"v1.30.1
+containerd://1.6.36
+Ubuntu 22.04.1 LTS",2025-10-10 10:15:19
+10.90.0.80,cce-ig-n5aki70w-z28b7j0e-olxa9pf0-1 / i-oztykVOx,可用,后付费,可用区C,10.90.0.80,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 73.84% | 139.38% 
+内存: 39.80% | 85.80%","""20/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-n5aki70w）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-09-03 17:54:41
+10.90.0.81,cce-ig-n5aki70w-z28b7j0e-olxa9pf0-4 / i-gvXRP9PV,可用,后付费,可用区C,10.90.0.81,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 71.50% | 167.50% 
+内存: 45.75% | 126.29%","""26/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-n5aki70w）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-09-03 17:54:41
+10.90.0.78,cce-ig-n5aki70w-z28b7j0e-olxa9pf0-2 / i-lRI9OkDD,可用,后付费,可用区C,10.90.0.78,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 73.84% | 131.56% 
+内存: 40.59% | 64.37%","""21/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-n5aki70w）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-09-03 17:54:41
+10.90.0.79,cce-ig-n5aki70w-z28b7j0e-olxa9pf0-3 / i-0tbuvpkD,可用,后付费,可用区C,10.90.0.79,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 52.75% | 112.81% 
+内存: 27.49% | 93.74%","""17/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-n5aki70w）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-09-03 17:54:41
+10.90.0.42,cce-ig-h7ii7ink-4nxt54z1-l346s2jm-1 / i-NNlgqBrE,可用,预付费,可用区C,10.90.0.42,32核/64GB/200GB/c4,,"""0/0""",0,"CPU: 57.06% | 113.13% 
+内存: 67.29% | 124.44%","""12/128""",cavision服务节点池（cce-ig-h7ii7ink）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-08-28 14:12:24
+10.90.0.41,cce-ig-h7ii7ink-4nxt54z1-l346s2jm-5 / i-QUcyFjVB,可用,预付费,可用区C,10.90.0.41,32核/64GB/200GB/c4,,"""0/0""",0,"CPU: 57.06% | 113.13% 
+内存: 67.29% | 124.44%","""12/128""",cavision服务节点池（cce-ig-h7ii7ink）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-08-28 14:12:24
+10.90.0.129,cce-ig-h7ii7ink-4nxt54z1-l346s2jm-3 / i-hNhwEhi6,可用,预付费,可用区C,10.90.0.129,32核/64GB/200GB/c4,,"""0/0""",0,"CPU: 57.06% | 113.13% 
+内存: 67.29% | 124.44%","""12/128""",cavision服务节点池（cce-ig-h7ii7ink）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-08-28 14:12:24
+10.90.0.107,cce-ig-h7ii7ink-4nxt54z1-l346s2jm-7 / i-tP75fEOk,可用,预付费,可用区C,10.90.0.107,32核/64GB/200GB/c4,,"""0/0""",0,"CPU: 57.06% | 113.13% 
+内存: 67.29% | 124.44%","""12/128""",cavision服务节点池（cce-ig-h7ii7ink）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-08-28 14:12:24
+10.90.0.5,cce-ig-n5aki70w-egqw2n3n-olxa9pf0-1 / i-hHB8EZNt,可用,后付费,可用区C,10.90.0.5,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 87.12% | 155.00% 
+内存: 54.49% | 86.60%","""26/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-n5aki70w）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-21 09:43:57
+10.90.1.53,cce-ig-wky0o7p4-hxfmzcnv-supmth5y-1 / i-HNrP2wfA,可用,后付费,可用区C,10.90.1.53,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 0.41% | 9.69% 
+内存: 0.20% | 4.88%","""9/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-10 15:32:45
+10.90.1.54,cce-ig-wky0o7p4-hxfmzcnv-supmth5y-2 / i-nYZg4Q5U,可用,后付费,可用区C,10.90.1.54,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""10/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-10 15:32:45
+10.90.1.12,cce-ig-wky0o7p4-hxfmzcnv-supmth5y-4 / i-Tn7sQAWl,可用,后付费,可用区C,10.90.1.12,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 0.41% | 9.69% 
+内存: 0.20% | 4.88%","""9/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-10 15:32:45
+10.90.1.52,cce-ig-wky0o7p4-hxfmzcnv-supmth5y-5 / i-OQVRtzSv,可用,后付费,可用区C,10.90.1.52,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""10/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-10 15:32:45
+10.90.1.51,cce-ig-wky0o7p4-hxfmzcnv-supmth5y-3 / i-Fc5WuTFu,可用,后付费,可用区C,10.90.1.51,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""10/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-10 15:32:45
+10.90.0.255,cce-ig-wky0o7p4-bnw7xz12-supmth5y-1 / i-BqdtASPF,可用,后付费,可用区C,10.90.0.255,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""10/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-09 21:38:27
+10.90.0.193,cce-ig-wky0o7p4-bnw7xz12-supmth5y-2 / i-pFbUpCpX,可用,后付费,可用区C,10.90.0.193,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""10/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-09 21:38:27
+10.90.0.168,cce-ig-wky0o7p4-bnw7xz12-supmth5y-3 / i-MegYk3So,可用,后付费,可用区C,10.90.0.168,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""10/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-09 21:38:27
+10.90.0.174,cce-ig-wky0o7p4-bnw7xz12-supmth5y-4 / i-dOUgxcyJ,可用,后付费,可用区C,10.90.0.174,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""11/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-09 21:38:27
+10.90.1.11,cce-ig-wky0o7p4-bnw7xz12-supmth5y-8 / i-zVfSNubk,可用,后付费,可用区C,10.90.1.11,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""10/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-09 21:38:27
+10.90.0.158,cce-ig-wky0o7p4-bnw7xz12-supmth5y-5 / i-XrN4rwfV,可用,后付费,可用区C,10.90.0.158,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""10/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-09 21:38:27
+10.90.0.155,cce-ig-wky0o7p4-bnw7xz12-supmth5y-6 / i-Br7GtBLT,可用,后付费,可用区C,10.90.0.155,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""10/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-09 21:38:27
+10.90.0.151,cce-ig-wky0o7p4-bnw7xz12-supmth5y-7 / i-Jc9wd6e3,可用,后付费,可用区C,10.90.0.151,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""11/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-07-09 21:38:27
+10.90.96.5,truncate_serivice_prod_02 / i-UnqPYoGN,可用,预付费,可用区C,10.90.96.5,8核/16GB/500GB/c4,,"""0/0""",0,"CPU: 53.25% | 177.50% 
+内存: 52.83% | 141.76%","""11/128""",truncate-service（cce-ig-bv6bhxcs）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-06-25 14:21:59
+10.90.96.4,truncate_service_prod_01 / i-CmFRLjw1,可用,预付费,可用区C,10.90.96.4,8核/16GB/500GB/c4,,"""0/0""",0,"CPU: 53.25% | 177.50% 
+内存: 52.83% | 141.76%","""11/128""",truncate-service（cce-ig-bv6bhxcs）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-06-25 11:09:58
+10.90.0.137,cce-ig-or1qvxa1-e92sihiq-banu8rw6-3 / i-tJckxlYG,可用,预付费,可用区C,10.90.0.137,64核/256GB/300GB/g4,,"""0/0""",0,"CPU: 92.59% | 212.81% 
+内存: 96.96% | 208.86%","""12/128""",nodepool-PROD-PAAS-copy-node-带宽22Gbit每秒（cce-ig-or1qvxa1）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-06-16 19:07:54
+10.90.0.136,cce-ig-or1qvxa1-e92sihiq-banu8rw6-1 / i-RasJnq4I,可用,预付费,可用区C,10.90.0.136,64核/256GB/300GB/g4,,"""0/0""",0,"CPU: 83.22% | 147.19% 
+内存: 54.09% | 113.59%","""11/128""",nodepool-PROD-PAAS-copy-node-带宽22Gbit每秒（cce-ig-or1qvxa1）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-06-16 19:07:54
+10.90.0.138,cce-ig-or1qvxa1-e92sihiq-banu8rw6-2 / i-gTdQVzyP,可用,预付费,可用区C,10.90.0.138,64核/256GB/300GB/g4,,"""0/0""",0,"CPU: 88.15% | 155.86% 
+内存: 57.31% | 118.94%","""17/128""",nodepool-PROD-PAAS-copy-node-带宽22Gbit每秒（cce-ig-or1qvxa1）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-06-16 19:07:54
+10.90.0.100,cce-ig-9icm5kx5-i4j8wsvo-5wgr6nhi-3 / i-tohCz5MG,可用,后付费,可用区C,10.90.0.100,4核/16GB/461GB/g4,,"""0/0""",0,"CPU: 81.50% | 230.00% 
+内存: 78.42% | 116.15%","""10/128""",Pool-数据质检-4C16G460G（cce-ig-9icm5kx5）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-05-16 15:03:49
+10.90.0.93,cce-ig-9icm5kx5-i4j8wsvo-5wgr6nhi-2 / i-PXz13qdj,可用,后付费,可用区C,10.90.0.93,4核/16GB/461GB/g4,,"""0/0""",0,"CPU: 81.50% | 230.00% 
+内存: 78.42% | 116.15%","""10/128""",Pool-数据质检-4C16G460G（cce-ig-9icm5kx5）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-05-16 15:03:49
+10.90.0.92,cce-ig-9icm5kx5-i4j8wsvo-5wgr6nhi-1 / i-us4FyrLK,可用,后付费,可用区C,10.90.0.92,4核/16GB/461GB/g4,,"""0/0""",0,"CPU: 81.50% | 230.00% 
+内存: 78.42% | 116.15%","""10/128""",Pool-数据质检-4C16G460G（cce-ig-9icm5kx5）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-05-16 15:03:49
+10.90.0.77,cce-ig-wky0o7p4-a07emxsx-supmth5y-1 / i-I9fgvFvF,可用,后付费,可用区C,10.90.0.77,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""10/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-05-15 09:30:38
+10.90.0.76,cce-ig-wky0o7p4-a07emxsx-supmth5y-2 / i-CIbG90S3,可用,后付费,可用区C,10.90.0.76,64核/128GB/200GB/c4,,"""0/0""",0,"CPU: 37.91% | 47.19% 
+内存: 12.91% | 23.94%","""10/128""",kaobei-go-nodepool-22Gbps（cce-ig-wky0o7p4）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-05-15 09:30:38
+10.90.0.97,cce-ig-arszgyj4-m77qhwe6-1v6w8xtr-2 / i-6WO1xH4i,可用,后付费,可用区C,10.90.0.97,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 94.16% | 190.94% 
+内存: 85.85% | 170.77%","""34/128""",nodepool-闭环-dat3-cpu-static-64C256G500G（cce-ig-arszgyj4）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-05-13 10:45:16
+10.90.0.96,cce-ig-arszgyj4-m77qhwe6-1v6w8xtr-4 / i-bFTVS9rB,可用,后付费,可用区C,10.90.0.96,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 87.91% | 184.69% 
+内存: 89.03% | 180.30%","""37/128""",nodepool-闭环-dat3-cpu-static-64C256G500G（cce-ig-arszgyj4）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-05-13 10:45:16
+10.90.0.99,cce-ig-arszgyj4-m77qhwe6-1v6w8xtr-1 / i-9UVYZC0A,可用,后付费,可用区C,10.90.0.99,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 97.28% | 197.19% 
+内存: 89.03% | 177.12%","""35/128""",nodepool-闭环-dat3-cpu-static-64C256G500G（cce-ig-arszgyj4）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-05-13 10:45:16
+10.90.0.95,cce-ig-arszgyj4-m77qhwe6-1v6w8xtr-5 / i-da0Skzep,可用,后付费,可用区C,10.90.0.95,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 97.28% | 197.19% 
+内存: 89.03% | 177.12%","""35/128""",nodepool-闭环-dat3-cpu-static-64C256G500G（cce-ig-arszgyj4）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-05-13 10:45:16
+10.90.0.98,cce-ig-arszgyj4-m77qhwe6-1v6w8xtr-3 / i-aSRvIRmY,可用,后付费,可用区C,10.90.0.98,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 97.28% | 197.19% 
+内存: 89.03% | 177.12%","""35/128""",nodepool-闭环-dat3-cpu-static-64C256G500G（cce-ig-arszgyj4）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-05-13 10:45:16
+10.90.0.94,cce-ig-arszgyj4-7rkk9rvi-1v6w8xtr / i-nGtdw2Gc,可用,后付费,可用区C,10.90.0.94,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 91.03% | 184.69% 
+内存: 82.68% | 164.42%","""33/128""",nodepool-闭环-dat3-cpu-static-64C256G500G（cce-ig-arszgyj4）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-05-13 10:41:41
+10.90.0.71,cce-ig-vgxytg1z-e60cb1z1-s3gcynlb-5 / i-eUFnpnzK,可用,后付费,可用区C,10.90.0.71,64核/256GB/200GB/g4,,"""0/0""",0,"CPU: 97.28% | 133.12% 
+内存: 75.52% | 91.36%","""23/128""",nodepool-闭环-backendtask-64c256GB200GB（cce-ig-vgxytg1z）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-04-17 15:50:45
+10.90.0.73,cce-ig-vgxytg1z-e60cb1z1-s3gcynlb-1 / i-VQnxdJEI,可用,后付费,可用区C,10.90.0.73,64核/256GB/200GB/g4,,"""0/0""",0,"CPU: 97.28% | 145.62% 
+内存: 66.00% | 88.19%","""20/128""",nodepool-闭环-backendtask-64c256GB200GB（cce-ig-vgxytg1z）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-04-17 15:50:45
+10.90.0.67,cce-ig-vgxytg1z-e60cb1z1-s3gcynlb-3 / i-ljeE8hS0,可用,后付费,可用区C,10.90.0.67,64核/256GB/200GB/g4,,"""0/0""",0,"CPU: 94.16% | 165.94% 
+内存: 47.74% | 81.83%","""14/128""",nodepool-闭环-backendtask-64c256GB200GB（cce-ig-vgxytg1z）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-04-17 15:50:45
+10.90.0.26,cce-ig-uhg0zwbp-xv3obprh-i13vbvsj-3 / i-rANoLWbf,可用,预付费,可用区C,10.90.0.26,32核/128GB/200GB/g4,,"""0/0""",0,"CPU: 6.75% | 83.12% 
+内存: 2.70% | 26.74%","""19/128""",nodepool-基建-cpu-static-32C128G200G500G（cce-ig-uhg0zwbp）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-03-21 18:05:22
+10.90.0.27,cce-ig-uhg0zwbp-xv3obprh-i13vbvsj-1 / i-nAJMYl3u,可用,预付费,可用区C,10.90.0.27,32核/128GB/200GB/g4,,"""0/0""",0,"CPU: 7.06% | 38.12% 
+内存: 3.38% | 14.41%","""11/128""",nodepool-基建-cpu-static-32C128G200G500G（cce-ig-uhg0zwbp）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-03-21 18:05:22
+10.90.0.28,cce-ig-uhg0zwbp-xv3obprh-i13vbvsj-2 / i-ofDdAeCg,可用,预付费,可用区C,10.90.0.28,32核/128GB/200GB/g4,,"""0/0""",0,"CPU: 10.50% | 35.00% 
+内存: 5.04% | 12.01%","""12/128""",nodepool-基建-cpu-static-32C128G200G500G（cce-ig-uhg0zwbp）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-03-21 18:05:22
+10.90.0.25,cce-ig-or1qvxa1-gf34k9iy-banu8rw6 / i-31Cr1Y5N,可用,预付费,可用区C,10.90.0.25,64核/256GB/300GB/g4,,"""0/0""",0,"CPU: 0.88% | 12.81% 
+内存: 0.26% | 3.22%","""10/128""",nodepool-PROD-PAAS-copy-node-带宽22Gbit每秒（cce-ig-or1qvxa1）,,"v1.30.1
+containerd://1.7.25
+CentOS Linux 7 (Core)",2025-03-21 18:04:50
+10.90.0.23,cce-ig-n5aki70w-0a7a320s-olxa9pf0-2 / i-o98YJPOq,可用,后付费,可用区C,10.90.0.23,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 76.97% | 170.62% 
+内存: 42.98% | 110.43%","""28/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-n5aki70w）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-03-19 17:36:34
+10.90.0.24,cce-ig-n5aki70w-0a7a320s-olxa9pf0-1 / i-l6CwNoHd,可用,后付费,可用区C,10.90.0.24,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 90.25% | 167.50% 
+内存: 48.14% | 112.81%","""25/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-n5aki70w）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-03-19 17:36:34
+10.90.0.15,cce-ig-elh3e0j9-4qy8fnjm-wza951jz-2 / i-lJKcRLXd,可用,预付费,可用区C,10.90.0.15,8核/32GB/200GB/g4,,"""0/0""",0,"CPU: 28.25% | 127.50% 
+内存: 7.19% | 32.37%","""10/128""",mid-share中间件节点池-8c32g（cce-ig-elh3e0j9）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-03-19 16:01:28
+10.90.0.22,cce-ig-elh3e0j9-4qy8fnjm-wza951jz-1 / i-Q8qXneE0,可用,预付费,可用区C,10.90.0.22,8核/32GB/200GB/g4,,"""0/0""",0,"CPU: 28.25% | 127.50% 
+内存: 7.19% | 32.37%","""11/128""",mid-share中间件节点池-8c32g（cce-ig-elh3e0j9）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-03-19 16:01:27
+10.90.0.21,cce-ig-3qylra7u-lwpxrqjw-sqxv5qxr / i-T6LTYwN7,可用,后付费,可用区C,10.90.0.21,16核/64GB/500GB/g4,,"""0/0""",0,"CPU: 5.81% | 93.75% 
+内存: 1.32% | 23.66%","""14/128""",nginx（cce-ig-3qylra7u）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-03-05 19:03:03
+10.90.0.14,cce-ig-3qylra7u-do3axo5q-sqxv5qxr-1 / i-0n2KhLAd,可用,后付费,可用区C,10.90.0.14,16核/64GB/500GB/g4,,"""0/0""",0,"CPU: 7.06% | 100.00% 
+内存: 1.92% | 26.00%","""14/128""",nginx（cce-ig-3qylra7u）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-03-04 20:49:30
+10.90.0.3,cce-ig-n5aki70w-egqw2n3n-olxa9pf0-2 / i-2sUlDoJT,可用,后付费,可用区C,10.90.0.3,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 85.56% | 186.25% 
+内存: 44.17% | 131.07%","""31/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-n5aki70w）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-03-04 19:24:13
+10.90.0.2,cce-ig-n5aki70w-envj6npr-olxa9pf0 / i-IaozBqcW,可用,后付费,可用区C,10.90.0.2,64核/256GB/500GB/g4,,"""0/0""",0,"CPU: 88.69% | 197.19% 
+内存: 51.31% | 147.75%","""26/128""",nodepool-闭环-cpu-static-64C256G500G500G（cce-ig-n5aki70w）,,"v1.30.1
+containerd://1.7.25
+BaiduLinux 3",2025-03-04 19:19:43

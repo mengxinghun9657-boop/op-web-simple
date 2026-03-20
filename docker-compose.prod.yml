@@ -115,9 +115,9 @@ services:
       PYTHONUNBUFFERED: 1
       TZ: Asia/Shanghai
       # 代理配置（绕过代理访问内网服务）
-      # 注意：只绕过内网IP和百度内网域名，外部服务（飞书、如流）仍走代理
-      NO_PROXY: localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,llms-se.baidu-int.com
-      no_proxy: localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,llms-se.baidu-int.com
+      # .im.baidu.com：如流（apiin.im.baidu.com）是内网服务，需绕过代理直连
+      NO_PROXY: localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,.im.baidu.com,llms-se.baidu-int.com
+      no_proxy: localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,.im.baidu.com,llms-se.baidu-int.com
     ports:
       - "8000:8000"
     volumes:

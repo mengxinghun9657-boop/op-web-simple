@@ -56,8 +56,13 @@ export const resendNotification = (alertId) => {
  * @returns {Promise}
  */
 export const batchResendNotifications = (alertIds = null) => {
-  const params = alertIds ? { alert_ids: alertIds } : {}
-  return axios.post('/api/v1/alerts/batch-resend-notification', null, { params })
+  if (alertIds && alertIds.length > 0) {
+    // FastAPI 的 list[int] Query 参数需要重复键名: ?alert_ids=1&alert_ids=2
+    const searchParams = new URLSearchParams()
+    alertIds.forEach(id => searchParams.append('alert_ids', id))
+    return axios.post(`/api/v1/alerts/batch-resend-notification?${searchParams.toString()}`)
+  }
+  return axios.post('/api/v1/alerts/batch-resend-notification')
 }
 
 /**

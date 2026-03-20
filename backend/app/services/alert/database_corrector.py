@@ -1,108 +1,95 @@
 """
 告警数据库修正服务
-从宿主机数据库查询正确的cluster_id，修正容器内数据库的告警记录
+从本地容器数据库查询正确的cluster_id，修正容器内数据库的告警记录
+（bce_cce_nodes 表由宿主机下载脚本定期同步到容器数据库）
 """
-import os
-import pymysql
 from typing import Optional, Dict, List, Any
 from sqlalchemy.orm import Session
 from loguru import logger
 
 from app.models.alert import AlertRecord
 from app.core.deps import SessionLocal
+from app.core.database import get_db_connection
 
 
 class DatabaseCorrectorService:
     """数据库修正服务：修正告警记录中的cluster_id"""
-    
+
     def __init__(self):
         """初始化服务"""
-        # 宿主机数据库配置（用于查询正确的cluster_id）
-        host_ip = os.getenv("HOST_MYSQL_IP", "host.docker.internal")
-        
-        self.host_db_config = {
-            "host": host_ip,
-            "user": "root", 
-            "password": "DF210354ws!",
-            "database": "mydb",
-            "charset": "utf8mb4",
-            "port": 8306
-        }
-        
         # 缓存查询结果
         self._cluster_cache: Dict[str, str] = {}
-    
-    def _get_host_db_connection(self):
-        """获取宿主机数据库连接"""
+
+    def _get_local_db_connection(self):
+        """获取本地容器数据库连接"""
         try:
-            return pymysql.connect(**self.host_db_config)
+            return get_db_connection()
         except Exception as e:
-            logger.error(f"连接宿主机数据库失败: {e}")
+            logger.error(f"连接本地数据库失败: {e}")
             return None
-    
+
     def test_host_connection(self) -> Dict[str, Any]:
         """
-        测试宿主机数据库连接
-        
+        测试本地数据库连接（保留接口兼容性）
+
         Returns:
             连接测试结果
         """
         try:
-            conn = self._get_host_db_connection()
+            conn = self._get_local_db_connection()
             if conn:
                 try:
                     cursor = conn.cursor()
-                    cursor.execute("SELECT 1")
+                    cursor.execute("SELECT COUNT(*) FROM bce_cce_nodes LIMIT 1")
+                    count = cursor.fetchone()[0]
                     cursor.close()
                     conn.close()
                     return {
                         'success': True,
-                        'message': '宿主机数据库连接正常'
+                        'message': f'本地数据库连接正常，bce_cce_nodes 共 {count} 条记录'
                     }
                 except Exception as e:
                     conn.close()
                     return {
                         'success': False,
                         'error': f'数据库查询失败: {str(e)}',
-                        'message': '宿主机数据库连接异常'
+                        'message': '本地数据库连接异常（bce_cce_nodes 表可能尚未同步）'
                     }
             else:
                 return {
                     'success': False,
-                    'error': f'无法连接到宿主机数据库 {self.host_db_config["host"]}:{self.host_db_config["port"]}',
-                    'message': '宿主机数据库连接失败',
+                    'error': '无法连接到本地数据库',
+                    'message': '本地数据库连接失败',
                     'suggestions': [
-                        '检查宿主机MySQL服务是否启动',
-                        '检查网络连接是否正常',
-                        '检查数据库用户权限',
-                        '检查防火墙设置'
+                        '检查容器内 MySQL 服务是否启动',
+                        '确认 bce_cce_nodes 表已由宿主机脚本同步'
                     ]
                 }
         except Exception as e:
             return {
                 'success': False,
                 'error': str(e),
-                'message': '宿主机数据库连接测试异常'
+                'message': '本地数据库连接测试异常'
             }
-    
+
     def _query_correct_cluster_id(self, ip: str) -> Optional[str]:
         """
         通过IP查询正确的cluster_id
-        
+
         Args:
             ip: 节点IP地址
-            
+
         Returns:
             正确的cluster_id，如果查询失败返回None
         """
         # 检查缓存
         if ip in self._cluster_cache:
             return self._cluster_cache[ip]
-        
-        conn = self._get_host_db_connection()
+
+        conn = self._get_local_db_connection()
         if not conn:
             return None
-        
+
         try:
             cursor = conn.cursor()
             # 查询bce_cce_nodes表，通过节点名称（IP）获取cluster_id
@@ -111,13 +98,13 @@ class DatabaseCorrectorService:
                 (ip,)
             )
             result = cursor.fetchone()
-            
+
             if result:
                 correct_cluster_id = str(result[0])
                 # 确保格式为 cce-xxxxxxxx
                 if not correct_cluster_id.startswith("cce-"):
                     correct_cluster_id = f"cce-{correct_cluster_id}"
-                
+
                 # 缓存结果
                 self._cluster_cache[ip] = correct_cluster_id
                 logger.debug(f"查询到正确的cluster_id: IP={ip} -> cluster_id={correct_cluster_id}")
@@ -125,7 +112,7 @@ class DatabaseCorrectorService:
             else:
                 logger.debug(f"未找到IP对应的cluster_id: {ip}")
                 return None
-                
+
         except Exception as e:
             logger.error(f"查询cluster_id失败: IP={ip}, 错误={e}")
             return None

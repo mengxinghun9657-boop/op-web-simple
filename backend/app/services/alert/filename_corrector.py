@@ -1,65 +1,52 @@
 """
 长安告警文件名修正服务
-修正文件名中的cluster_id，通过宿主机数据库查询正确的集群ID
+修正文件名中的cluster_id，通过本地容器数据库查询正确的集群ID
+（bce_cce_nodes 表由宿主机下载脚本定期同步到容器数据库）
 """
 import os
 import re
-import pymysql
 from pathlib import Path
 from typing import Optional, Dict, Any
 from loguru import logger
 
 from app.core.config_alert import settings
+from app.core.database import get_db_connection
 
 
 class FilenameCorrectorService:
     """文件名修正服务"""
-    
+
     def __init__(self):
         """初始化服务"""
-        # 宿主机数据库配置（用于查询正确的cluster_id）
-        # 注意：容器内访问宿主机需要使用宿主机IP，不能用127.0.0.1
-        # 从环境变量获取宿主机IP，默认使用host.docker.internal（Mac/Windows）
-        host_ip = os.getenv("HOST_MYSQL_IP", "host.docker.internal")
-        
-        self.host_db_config = {
-            "host": host_ip,  # 宿主机IP或host.docker.internal
-            "user": "root",
-            "password": "DF210354ws!",
-            "database": "mydb",
-            "charset": "utf8mb4",
-            "port": 8306  # 宿主机MySQL端口
-        }
-        
         # 缓存查询结果，避免重复查询
         self._cluster_cache: Dict[str, str] = {}
-    
-    def _get_host_db_connection(self):
-        """获取宿主机数据库连接"""
+
+    def _get_local_db_connection(self):
+        """获取本地容器数据库连接"""
         try:
-            return pymysql.connect(**self.host_db_config)
+            return get_db_connection()
         except Exception as e:
-            logger.error(f"连接宿主机数据库失败: {e}")
+            logger.error(f"连接本地数据库失败: {e}")
             return None
-    
+
     def _query_correct_cluster_id(self, ip: str) -> Optional[str]:
         """
         通过IP查询正确的cluster_id
-        
+
         Args:
             ip: 节点IP地址
-            
+
         Returns:
             正确的cluster_id，如果查询失败返回None
         """
         # 检查缓存
         if ip in self._cluster_cache:
             return self._cluster_cache[ip]
-        
-        conn = self._get_host_db_connection()
+
+        conn = self._get_local_db_connection()
         if not conn:
             return None
-        
+
         try:
             cursor = conn.cursor()
             # 查询bce_cce_nodes表，通过节点名称（IP）获取cluster_id
@@ -68,13 +55,13 @@ class FilenameCorrectorService:
                 (ip,)
             )
             result = cursor.fetchone()
-            
+
             if result:
                 correct_cluster_id = str(result[0])
                 # 去掉数据库里多余的 cce- 前缀
                 if correct_cluster_id.startswith("cce-"):
                     correct_cluster_id = correct_cluster_id[4:]
-                
+
                 # 缓存结果
                 self._cluster_cache[ip] = correct_cluster_id
                 logger.debug(f"查询到正确的cluster_id: IP={ip} -> cluster_id={correct_cluster_id}")
@@ -82,7 +69,7 @@ class FilenameCorrectorService:
             else:
                 logger.warning(f"未找到IP对应的cluster_id: {ip}")
                 return None
-                
+
         except Exception as e:
             logger.error(f"查询cluster_id失败: IP={ip}, 错误={e}")
             return None

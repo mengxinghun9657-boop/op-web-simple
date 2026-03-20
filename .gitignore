@@ -71,3 +71,8 @@ build/
 
 # Node.js (frontend)
 node_modules/
+
+# AI Assistant / IDE Config
+.claude/
+.kiro/
+.shared/

@@ -253,6 +253,7 @@ const allMenuItems = [
     roles: ['super_admin', 'admin'],
     children: [
       { name: '系统配置', path: '/system-config', icon: 'Setting', roles: ['super_admin', 'admin'] },
+      { name: '容器日志', path: '/container-logs', icon: 'Document', roles: ['super_admin', 'admin'] },
       { name: '用户管理', path: '/admin/users', icon: 'User', roles: ['super_admin', 'admin'] },
       { name: '审计日志', path: '/admin/audit', icon: 'Document', roles: ['super_admin', 'admin'] },
       { name: 'MinIO', path: '/minio', icon: 'FolderOpened', roles: ['super_admin', 'admin'], external: false },

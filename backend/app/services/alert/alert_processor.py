@@ -478,6 +478,10 @@ class AlertProcessor:
         # 将raw_data中的datetime对象转换为ISO格式字符串，以便JSON序列化
         raw_data_serializable = self._make_json_serializable(alert_data)
         
+        # 确定告警来源
+        source = alert_data.get('source', 'file')
+        file_path = alert_data.get('file_path', '')
+        
         alert = AlertRecord(
             alert_type=alert_data.get('alert_type', ''),
             component=alert_data.get('component'),
@@ -488,6 +492,8 @@ class AlertProcessor:
             hostname=alert_data.get('hostname'),
             is_cce_cluster=alert_data.get('is_cce_cluster', False),
             timestamp=alert_data.get('timestamp', datetime.now()),
+            file_path=file_path,
+            source=source,
             raw_data=raw_data_serializable
         )
         

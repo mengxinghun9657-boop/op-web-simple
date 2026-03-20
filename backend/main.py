@@ -278,6 +278,10 @@ app.include_router(pfs.router, prefix=f"{settings.API_V1_PREFIX}/pfs", tags=["PF
 from app.api.v1.api import api_router
 app.include_router(api_router, prefix=settings.API_V1_PREFIX, tags=["硬件告警管理"])
 
+# 容器日志路由
+from app.api.v1 import logs
+app.include_router(logs.router, prefix=settings.API_V1_PREFIX, tags=["容器日志"])
+
 # 静态文件
 results_dir = settings.RESULT_DIR
 if os.path.exists(results_dir):

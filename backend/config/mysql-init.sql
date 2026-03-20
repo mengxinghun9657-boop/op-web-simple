@@ -371,6 +371,9 @@ CREATE TABLE IF NOT EXISTS `alert_records` (
     -- 文件信息
     `file_path` VARCHAR(1000) COMMENT '源文件路径',
     
+    -- 告警来源
+    `source` VARCHAR(50) DEFAULT 'file' COMMENT '告警来源(file/manual)',  -- file: 文件解析, manual: 手动录入
+    
     -- 原始数据（完整保存，支持未来重新解析）
     `raw_data` JSON COMMENT '告警原始数据（完整JSON）',
     
@@ -397,6 +400,7 @@ CREATE TABLE IF NOT EXISTS `alert_records` (
     INDEX `idx_severity` (`severity`),
     INDEX `idx_timestamp` (`timestamp`),
     INDEX `idx_status` (`status`),
+    INDEX `idx_source` (`source`),
     INDEX `idx_is_cce_cluster` (`is_cce_cluster`),
     INDEX `idx_created_at` (`created_at`),
     INDEX `idx_timestamp_severity` (`timestamp`, `severity`),

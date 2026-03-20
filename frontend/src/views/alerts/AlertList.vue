@@ -81,6 +81,39 @@
           </el-select>
         </div>
 
+        <div class="filter-item">
+          <span class="filter-item-label">告警来源</span>
+          <el-select
+            v-model="filters.source"
+            placeholder="全部"
+            clearable
+            style="width: 100%"
+          >
+            <el-option label="HAS告警" value="file" />
+            <el-option label="手动录入" value="manual" />
+          </el-select>
+        </div>
+
+        <div class="filter-item">
+          <span class="filter-item-label">节点IP</span>
+          <el-input
+            v-model="filters.ip"
+            placeholder="输入IP模糊搜索"
+            clearable
+            style="width: 100%"
+          />
+        </div>
+
+        <div class="filter-item">
+          <span class="filter-item-label">集群ID</span>
+          <el-input
+            v-model="filters.cluster_id"
+            placeholder="输入集群ID模糊搜索"
+            clearable
+            style="width: 100%"
+          />
+        </div>
+
         <div class="filter-item" style="min-width: 360px;">
           <span class="filter-item-label">时间范围</span>
           <el-date-picker
@@ -113,6 +146,13 @@
       <div class="table-header">
         <div class="table-title">告警列表</div>
         <div class="table-toolbar">
+          <el-button
+            type="primary"
+            :icon="Plus"
+            @click="handleCreateAlert"
+          >
+            手动添加告警
+          </el-button>
           <el-button
             type="warning"
             :icon="Notification"
@@ -212,6 +252,14 @@
               >
                 <span :class="`status-dot ${getStatusBadgeClass(row.status)}`"></span>
                 {{ statusLabels[row.status] }}
+              </span>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="source" label="来源" width="100" sortable="custom">
+            <template #default="{ row }">
+              <span :class="`status-badge ${getSourceBadgeClass(row.source)}`">
+                {{ getSourceLabel(row.source) }}
               </span>
             </template>
           </el-table-column>
@@ -324,71 +372,98 @@
         <el-form-item label="告警ID">
           <el-input v-model="editForm.alertId" readonly />
         </el-form-item>
-        
-        <el-form-item label="告警类型" prop="alertType">
-          <el-input
-            v-model="editForm.alertType"
-            placeholder="请输入告警类型"
-            maxlength="200"
-            show-word-limit
-          />
-        </el-form-item>
-        
-        <el-form-item label="组件类型" prop="component">
-          <el-select v-model="editForm.component" placeholder="请选择组件类型" style="width: 100%" teleported popper-class="dialog-select-popper">
-            <el-option label="GPU" value="GPU" />
-            <el-option label="Memory" value="Memory" />
-            <el-option label="CPU" value="CPU" />
-            <el-option label="Motherboard" value="Motherboard" />
-            <el-option label="硬盘" value="硬盘" />
-            <el-option label="网卡" value="网卡" />
-            <el-option label="电源" value="电源" />
-            <el-option label="风扇" value="风扇" />
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="严重程度" prop="severity">
-          <el-select v-model="editForm.severity" placeholder="请选择严重程度" style="width: 100%" teleported popper-class="dialog-select-popper">
-            <el-option label="严重" value="ERROR" />
-            <el-option label="警告" value="WARN" />
-            <el-option label="失败" value="FAIL" />
-            <el-option label="正常" value="GOOD" />
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="节点IP" prop="ip">
-          <el-input
-            v-model="editForm.ip"
-            placeholder="请输入节点IP地址"
-            maxlength="15"
-          />
-        </el-form-item>
-        
-        <el-form-item label="集群ID" prop="clusterId">
-          <el-input
-            v-model="editForm.clusterId"
-            placeholder="请输入集群ID（如：cce-xxxxxxxx）"
-            maxlength="50"
-          />
-        </el-form-item>
-        
-        <el-form-item label="主机名" prop="hostname">
-          <el-input
-            v-model="editForm.hostname"
-            placeholder="请输入主机名"
-            maxlength="100"
-          />
-        </el-form-item>
-        
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="告警类型" prop="alertType">
+              <el-select
+                v-model="editForm.alertType"
+                placeholder="请选择告警类型"
+                filterable
+                allow-create
+                default-first-option
+                style="width: 100%"
+                teleported
+                popper-class="dialog-select-popper"
+              >
+                <el-option
+                  v-for="type in alertTypeEnums"
+                  :key="type"
+                  :label="type"
+                  :value="type"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="严重程度" prop="severity">
+              <el-select v-model="editForm.severity" placeholder="请选择严重程度" style="width: 100%" teleported popper-class="dialog-select-popper">
+                <el-option label="严重 (Critical)" value="critical" />
+                <el-option label="警告 (Warning)" value="warning" />
+                <el-option label="信息 (Info)" value="info" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="组件类型" prop="component">
+              <el-select v-model="editForm.component" placeholder="请选择组件类型" style="width: 100%" teleported popper-class="dialog-select-popper">
+                <el-option
+                  v-for="comp in componentEnums"
+                  :key="comp"
+                  :label="comp"
+                  :value="comp"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="节点IP" prop="ip">
+              <el-input
+                v-model="editForm.ip"
+                placeholder="例如: 192.168.1.1"
+                maxlength="100"
+                show-word-limit
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="集群ID" prop="clusterId">
+              <el-input
+                v-model="editForm.clusterId"
+                placeholder="例如: cce-xxx 或 bcc-xxx"
+                maxlength="200"
+                show-word-limit
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="主机名" prop="hostname">
+              <el-input
+                v-model="editForm.hostname"
+                placeholder="请输入主机名"
+                maxlength="200"
+                show-word-limit
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <el-form-item label="实例ID" prop="instanceId">
           <el-input
             v-model="editForm.instanceId"
             placeholder="请输入实例ID"
-            maxlength="100"
+            maxlength="200"
+            show-word-limit
           />
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="handleEditCancel">取消</el-button>
@@ -574,12 +649,158 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="handleICafeCancel">取消</el-button>
-          <el-button 
-            type="primary" 
+          <el-button
+            type="primary"
             @click="handleICafeSubmit"
             :loading="icafeCreating"
           >
             创建卡片
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 创建告警对话框 -->
+    <el-dialog
+      v-model="createAlertDialogVisible"
+      title="手动添加告警"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-form
+        ref="createAlertFormRef"
+        :model="createAlertForm"
+        :rules="createAlertRules"
+        label-width="100px"
+      >
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="告警类型" prop="alert_type">
+              <el-select
+                v-model="createAlertForm.alert_type"
+                placeholder="请选择告警类型"
+                filterable
+                allow-create
+                default-first-option
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="type in alertTypeEnums"
+                  :key="type"
+                  :label="type"
+                  :value="type"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="严重程度" prop="severity">
+              <el-select v-model="createAlertForm.severity" placeholder="请选择" style="width: 100%">
+                <el-option label="严重 (Critical)" value="critical" />
+                <el-option label="警告 (Warning)" value="warning" />
+                <el-option label="信息 (Info)" value="info" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="组件类型" prop="component">
+              <el-select
+                v-model="createAlertForm.component"
+                placeholder="请选择组件类型"
+                clearable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="comp in componentEnums"
+                  :key="comp"
+                  :label="comp"
+                  :value="comp"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="告警时间" prop="timestamp">
+              <el-date-picker
+                v-model="createAlertForm.timestamp"
+                type="datetime"
+                placeholder="选择告警时间"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="节点IP" prop="ip">
+              <el-input
+                v-model="createAlertForm.ip"
+                placeholder="例如: 192.168.1.1"
+                maxlength="100"
+                show-word-limit
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="集群ID" prop="cluster_id">
+              <el-input
+                v-model="createAlertForm.cluster_id"
+                placeholder="例如: cce-xxx 或 bcc-xxx"
+                maxlength="200"
+                show-word-limit
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="实例ID" prop="instance_id">
+              <el-input
+                v-model="createAlertForm.instance_id"
+                placeholder="请输入实例ID"
+                maxlength="200"
+                show-word-limit
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="主机名" prop="hostname">
+              <el-input
+                v-model="createAlertForm.hostname"
+                placeholder="请输入主机名"
+                maxlength="200"
+                show-word-limit
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="CCE集群">
+          <el-switch
+            v-model="createAlertForm.is_cce_cluster"
+            active-text="是"
+            inactive-text="否"
+          />
+          <el-text type="info" size="small" style="margin-left: 10px">
+            自动判断：集群ID以 cce- 开头则为CCE集群
+          </el-text>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="handleCreateAlertCancel">取消</el-button>
+          <el-button
+            type="primary"
+            @click="handleCreateAlertSubmit"
+            :loading="createAlertLoading"
+          >
+            创建告警
           </el-button>
         </div>
       </template>
@@ -591,8 +812,8 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, CircleCheck, CircleClose, Notification, QuestionFilled, Edit, EditPen, Bell } from '@element-plus/icons-vue'
-import { getAlerts, getFilterOptions, diagnoseAlert, batchResendNotifications, updateAlertStatus, createICafeCard, detectIncorrectAlerts, correctClusterIds, testHostConnection, updateAlertFields } from '@/api/alerts'
+import { Search, Refresh, CircleCheck, CircleClose, Notification, QuestionFilled, Edit, EditPen, Bell, Plus } from '@element-plus/icons-vue'
+import { getAlerts, getFilterOptions, diagnoseAlert, batchResendNotifications, updateAlertStatus, createICafeCard, detectIncorrectAlerts, correctClusterIds, testHostConnection, updateAlertFields, createAlert, getComponentEnums, getAlertTypeEnums } from '@/api/alerts'
 
 const router = useRouter()
 
@@ -633,6 +854,22 @@ const getStatusBadgeClass = (status) => {
   return classes[status] || 'primary'
 }
 
+const getSourceBadgeClass = (source) => {
+  const classes = {
+    file: 'info',      // HAS告警 - 蓝色
+    manual: 'warning'  // 手动录入 - 橙色
+  }
+  return classes[source] || 'primary'
+}
+
+const getSourceLabel = (source) => {
+  const labels = {
+    file: 'HAS告警',
+    manual: '手动录入'
+  }
+  return labels[source] || source || '未知'
+}
+
 // 数据
 const loading = ref(false)
 const alertList = ref([])
@@ -650,6 +887,9 @@ const filters = reactive({
   severity: '',
   component: '',
   status: '',
+  ip: '',           // 节点IP搜索
+  cluster_id: '',   // 集群ID搜索
+  source: '',       // 告警来源筛选
   start_time: '',
   end_time: '',
   sort_by: 'timestamp',  // 默认按时间排序
@@ -693,7 +933,7 @@ const editForm = reactive({
 // 编辑表单验证规则
 const editFormRules = {
   alertType: [
-    { required: true, message: '请输入告警类型', trigger: 'blur' },
+    { required: true, message: '请选择告警类型', trigger: 'change' },
     { max: 200, message: '告警类型不能超过200个字符', trigger: 'blur' }
   ],
   component: [
@@ -702,22 +942,39 @@ const editFormRules = {
   severity: [
     { required: true, message: '请选择严重程度', trigger: 'change' }
   ],
+  // 选填字段的校验（防止超出数据库限制）
   ip: [
-    { required: true, message: '请输入节点IP', trigger: 'blur' },
-    { 
-      pattern: /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
-      message: '请输入有效的IP地址格式',
+    { max: 100, message: 'IP地址不能超过100个字符', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (!value) {
+          callback() // 空值不校验格式
+          return
+        }
+        // 支持IPv4和IPv6以及主机名
+        const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$|^[0-9a-fA-F:]+$|^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$/
+        if (!ipPattern.test(value)) {
+          callback(new Error('请输入有效的IP地址或主机名'))
+        } else {
+          callback()
+        }
+      },
       trigger: 'blur'
     }
   ],
   clusterId: [
-    { max: 50, message: '集群ID不能超过50个字符', trigger: 'blur' }
+    { max: 200, message: '集群ID不能超过200个字符', trigger: 'blur' }
   ],
   hostname: [
-    { max: 100, message: '主机名不能超过100个字符', trigger: 'blur' }
+    { max: 200, message: '主机名不能超过200个字符', trigger: 'blur' },
+    {
+      pattern: /^[a-zA-Z0-9\-_\.]+$/,
+      message: '主机名只能包含字母、数字、横线、下划线和点号',
+      trigger: 'blur'
+    }
   ],
   instanceId: [
-    { max: 100, message: '实例ID不能超过100个字符', trigger: 'blur' }
+    { max: 200, message: '实例ID不能超过200个字符', trigger: 'blur' }
   ]
 }
 
@@ -776,6 +1033,75 @@ const statusFormRef = ref(null)
 const noteFormRef = ref(null)
 const editFormRef = ref(null)
 const icafeFormRef = ref(null)
+const createAlertFormRef = ref(null)
+
+// 创建告警对话框
+const createAlertDialogVisible = ref(false)
+const createAlertLoading = ref(false)
+const componentEnums = ref([])
+const alertTypeEnums = ref([])
+const createAlertForm = reactive({
+  alert_type: '',
+  severity: 'warning',
+  component: '',
+  ip: '',
+  cluster_id: '',
+  instance_id: '',
+  hostname: '',
+  timestamp: new Date(),
+  is_cce_cluster: false
+})
+
+// 创建告警表单验证规则
+const createAlertRules = {
+  alert_type: [
+    { required: true, message: '请选择告警类型', trigger: 'change' },
+    { max: 200, message: '告警类型不能超过200个字符', trigger: 'blur' }
+  ],
+  severity: [
+    { required: true, message: '请选择严重程度', trigger: 'change' }
+  ],
+  timestamp: [
+    { required: true, message: '请选择告警时间', trigger: 'change' }
+  ],
+  // 选填字段的校验（防止超出数据库限制）
+  ip: [
+    { max: 100, message: 'IP地址不能超过100个字符', trigger: 'blur' },
+    { 
+      validator: (rule, value, callback) => {
+        if (!value) {
+          callback() // 空值不校验格式
+          return
+        }
+        // 支持IPv4和IPv6以及主机名
+        const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$|^[0-9a-fA-F:]+$|^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$/
+        if (!ipPattern.test(value)) {
+          callback(new Error('请输入有效的IP地址或主机名'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  cluster_id: [
+    { max: 200, message: '集群ID不能超过200个字符', trigger: 'blur' }
+  ],
+  instance_id: [
+    { max: 200, message: '实例ID不能超过200个字符', trigger: 'blur' }
+  ],
+  hostname: [
+    { max: 200, message: '主机名不能超过200个字符', trigger: 'blur' },
+    { 
+      pattern: /^[a-zA-Z0-9\-_\.]+$/, 
+      message: '主机名只能包含字母、数字、横线、下划线和点号', 
+      trigger: 'blur' 
+    }
+  ],
+  component: [
+    { max: 100, message: '组件类型不能超过100个字符', trigger: 'blur' }
+  ]
+}
 
 // 检查是否有筛选条件
 const hasFilters = computed(() => {
@@ -784,6 +1110,9 @@ const hasFilters = computed(() => {
     filters.severity ||
     filters.component ||
     filters.status ||
+    filters.ip ||
+    filters.cluster_id ||
+    filters.source ||
     filters.start_time ||
     filters.end_time
   )
@@ -857,6 +1186,9 @@ const handleReset = () => {
     severity: '',
     component: '',
     status: '',
+    ip: '',
+    cluster_id: '',
+    source: '',
     start_time: '',
     end_time: ''
   })
@@ -1156,7 +1488,34 @@ const getStatusTagType = (status) => {
 }
 
 // 编辑告警字段
-const handleEditAlert = (alert) => {
+const handleEditAlert = async (alert) => {
+  // 获取组件枚举值
+  try {
+    const response = await getComponentEnums()
+    if (response.success) {
+      componentEnums.value = response.data.components
+    }
+  } catch (error) {
+    // 使用默认值
+    componentEnums.value = ['GPU', 'Memory', 'CPU', 'Motherboard', 'Disk', 'Network', 'Power', 'Temperature']
+  }
+
+  // 获取告警类型枚举值
+  try {
+    const response = await getAlertTypeEnums()
+    if (response.success) {
+      alertTypeEnums.value = response.data.alert_types
+    }
+  } catch (error) {
+    // 使用默认值
+    alertTypeEnums.value = [
+      'GPU故障', 'GPU温度异常', 'GPU显存不足',
+      '内存故障', '内存不足', 'CPU故障', 'CPU温度过高',
+      '磁盘故障', '磁盘空间不足', '网络故障',
+      '电源故障', '主板故障', '风扇故障', '硬件故障', '系统告警'
+    ]
+  }
+
   editForm.alertId = alert.id
   editForm.alertType = alert.alert_type
   editForm.component = alert.component
@@ -1362,6 +1721,95 @@ const handleICafeCancel = () => {
   icafeForm.subcategory = ''
   icafeForm.workHours = 1
   icafeForm.plan = ''
+}
+
+// 打开创建告警对话框
+const handleCreateAlert = async () => {
+  // 获取组件枚举值
+  try {
+    const response = await getComponentEnums()
+    if (response.success) {
+      componentEnums.value = response.data.components
+    }
+  } catch (error) {
+    // 使用默认值
+    componentEnums.value = ['GPU', 'Memory', 'CPU', 'Motherboard', 'Disk', 'Network', 'Power', 'Temperature']
+  }
+
+  // 获取告警类型枚举值
+  try {
+    const response = await getAlertTypeEnums()
+    if (response.success) {
+      alertTypeEnums.value = response.data.alert_types
+    }
+  } catch (error) {
+    // 使用默认值
+    alertTypeEnums.value = [
+      'GPU故障', 'GPU温度异常', 'GPU显存不足',
+      '内存故障', '内存不足', 'CPU故障', 'CPU温度过高',
+      '磁盘故障', '磁盘空间不足', '网络故障',
+      '电源故障', '主板故障', '风扇故障', '硬件故障', '系统告警'
+    ]
+  }
+
+  // 重置表单，时间默认为当前
+  createAlertForm.alert_type = ''
+  createAlertForm.severity = 'warning'
+  createAlertForm.component = ''
+  createAlertForm.ip = ''
+  createAlertForm.cluster_id = ''
+  createAlertForm.instance_id = ''
+  createAlertForm.hostname = ''
+  createAlertForm.timestamp = new Date()
+  createAlertForm.is_cce_cluster = false
+
+  createAlertDialogVisible.value = true
+}
+
+// 提交创建告警
+const handleCreateAlertSubmit = async () => {
+  if (!createAlertFormRef.value) return
+
+  try {
+    await createAlertFormRef.value.validate()
+    createAlertLoading.value = true
+
+    const data = {
+      alert_type: createAlertForm.alert_type,
+      severity: createAlertForm.severity,
+      component: createAlertForm.component || null,
+      ip: createAlertForm.ip || null,
+      cluster_id: createAlertForm.cluster_id || null,
+      instance_id: createAlertForm.instance_id || null,
+      hostname: createAlertForm.hostname || null,
+      timestamp: createAlertForm.timestamp.toISOString(),
+      is_cce_cluster: createAlertForm.is_cce_cluster || (createAlertForm.cluster_id && createAlertForm.cluster_id.startsWith('cce-'))
+    }
+
+    const response = await createAlert(data)
+    if (response.success) {
+      ElMessage.success('告警创建成功，诊断任务已自动触发')
+      createAlertDialogVisible.value = false
+      // 刷新列表
+      fetchAlerts()
+    } else {
+      ElMessage.error(response.message || '创建失败')
+    }
+  } catch (error) {
+    if (error.response?.data?.message) {
+      ElMessage.error(error.response.data.message)
+    } else {
+      ElMessage.error('创建失败：' + (error.message || '未知错误'))
+    }
+  } finally {
+    createAlertLoading.value = false
+  }
+}
+
+// 取消创建告警
+const handleCreateAlertCancel = () => {
+  createAlertDialogVisible.value = false
+  createAlertFormRef.value?.resetFields()
 }
 
 // 格式化日期时间

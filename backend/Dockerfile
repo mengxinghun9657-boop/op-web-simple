@@ -14,11 +14,23 @@ ENV PYTHONUNBUFFERED=1 \
 # 安装系统依赖（使用阿里云源加速）
 RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources
 
+# 先安装基础工具和 Docker CLI
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     default-libmysqlclient-dev \
     pkg-config \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# 添加 Docker 源（使用华为云镜像）并安装 Docker CLI
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://mirrors.huaweicloud.com/docker-ce/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://mirrors.huaweicloud.com/docker-ce/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制依赖文件

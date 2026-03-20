@@ -56,6 +56,7 @@ const routes = [
       { path: 'admin/audit', name: 'AuditLog', component: () => import('@/views/admin/AuditLog.vue'), meta: { title: '审计日志', roles: ['super_admin', 'admin'] } },
       { path: 'minio', name: 'MinIO', component: () => import('@/views/MinIO.vue'), meta: { title: 'MinIO存储', roles: ['super_admin', 'admin'] } },
       { path: 'system-config', name: 'SystemConfig', component: () => import('@/views/SystemConfig.vue'), meta: { title: '系统配置', roles: ['super_admin', 'admin'] } },
+      { path: 'container-logs', name: 'ContainerLogs', component: () => import('@/views/ContainerLogs.vue'), meta: { title: '容器日志', roles: ['super_admin', 'admin'] } },
       // 硬件告警管理（静态路由必须在动态路由前面）
       { path: 'alerts', name: 'AlertList', component: () => import('@/views/alerts/AlertList.vue'), meta: { title: '硬件告警管理' } },
       { path: 'alerts/statistics', name: 'AlertStatistics', component: () => import('@/views/alerts/Statistics.vue'), meta: { title: '告警统计分析' } },

@@ -50,13 +50,37 @@
 
 ### 方式一：完整项目部署（推荐）
 
-在项目根目录执行：
+#### 1. 配置环境变量
+
+复制 `.env.example` 为 `.env` 并修改配置：
 
 ```bash
-# 1. 配置环境变量
+cp .env.example .env
 vi .env
+```
 
-# 2. 执行部署
+**关键配置项说明**：
+
+| 配置项 | 说明 | 示例 |
+|--------|------|------|
+| `MYSQL_ROOT_PASSWORD` | MySQL root密码 | 建议修改为强密码 |
+| `MYSQL_PASSWORD` | MySQL应用密码 | 建议修改为强密码 |
+| `REDIS_PASSWORD` | Redis密码 | 建议修改为强密码 |
+| `MINIO_ROOT_PASSWORD` | MinIO密码 | 建议修改为强密码 |
+| `SECRET_KEY` | JWT密钥 | 已自动生成，无需修改 |
+| `CORS_ORIGINS` | 跨域允许地址 | 必须修改为实际服务器IP |
+| `WORKERS` | 后端Worker数量 | 外网部署建议2，内网建议4 |
+
+**⚠️ 重要：必须修改 CORS_ORIGINS**
+
+```bash
+# 修改为实际服务器IP
+CORS_ORIGINS=http://YOUR_SERVER_IP:8089
+```
+
+#### 2. 执行部署
+
+```bash
 chmod +x deploy.sh
 ./deploy.sh
 ```

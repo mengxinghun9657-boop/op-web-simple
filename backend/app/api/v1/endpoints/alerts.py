@@ -7,10 +7,11 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
-from app.core.deps import get_db
+from app.core.deps import get_db, require_admin
 from app.models.alert import AlertRecord, DiagnosisResult
+from app.models.user import User
 from app.schemas.response import APIResponse
-from app.schemas.alert.alert import AlertRecordResponse, AlertListResponse, AlertListItem, AlertStatusUpdate
+from app.schemas.alert.alert import AlertRecordResponse, AlertListResponse, AlertListItem, AlertStatusUpdate, AlertRecordCreate
 from app.schemas.alert.diagnosis import DiagnosisResultResponse
 from app.services.alert.database_corrector import get_database_corrector
 
@@ -29,6 +30,9 @@ async def get_alerts(
     severity: Optional[str] = Query(None, description="严重程度"),
     component: Optional[str] = Query(None, description="组件类型"),
     status: Optional[str] = Query(None, description="处理状态"),
+    ip: Optional[str] = Query(None, description="节点IP地址（支持模糊搜索）"),
+    cluster_id: Optional[str] = Query(None, description="集群ID（支持模糊搜索）"),
+    source: Optional[str] = Query(None, description="告警来源(file/manual)"),
     start_time: Optional[str] = Query(None, description="开始时间(ISO 8601格式)"),
     end_time: Optional[str] = Query(None, description="结束时间(ISO 8601格式)"),
     sort_by: Optional[str] = Query("timestamp", description="排序字段(timestamp/severity/status/alert_type)"),
@@ -37,14 +41,15 @@ async def get_alerts(
 ):
     """
     获取告警列表
-    
+
     支持分页和多条件筛选
     支持按字段排序（默认按发生时间降序）
+    支持IP、集群ID模糊搜索
     """
     try:
         # 构建查询
         query = db.query(AlertRecord)
-        
+
         # 应用过滤条件（处理空字符串）
         if alert_type and alert_type.strip():
             query = query.filter(AlertRecord.alert_type == alert_type)
@@ -54,6 +59,16 @@ async def get_alerts(
             query = query.filter(AlertRecord.component == component)
         if status and status.strip():
             query = query.filter(AlertRecord.status == status)
+        if source and source.strip():
+            query = query.filter(AlertRecord.source == source)
+
+        # IP模糊搜索
+        if ip and ip.strip():
+            query = query.filter(AlertRecord.ip.like(f"%{ip.strip()}%"))
+
+        # 集群ID模糊搜索
+        if cluster_id and cluster_id.strip():
+            query = query.filter(AlertRecord.cluster_id.like(f"%{cluster_id.strip()}%"))
         
         # 处理时间参数（字符串转datetime）
         if start_time and start_time.strip():
@@ -131,6 +146,7 @@ async def get_alerts(
                 severity=severity_mapped,
                 timestamp=alert.timestamp,
                 status=alert.status,
+                source=alert.source,
                 has_diagnosis=has_diagnosis
             ))
         
@@ -1085,4 +1101,246 @@ async def update_alert_fields(
             success=False,
             error=str(e),
             message="更新告警字段失败"
+        )
+
+
+@router.post("/alerts", response_model=APIResponse)
+async def create_alert(
+    alert_create: AlertRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    手动创建告警记录
+
+    支持前端按照固定字段手动添加告警信息，创建后会自动触发诊断流程
+
+    必填字段:
+    - alert_type: 告警类型
+    - severity: 严重程度 (critical/warning/info)
+    - timestamp: 告警发生时间
+
+    可选字段:
+    - ip: 节点IP地址
+    - cluster_id: 集群ID
+    - instance_id: 实例ID
+    - hostname: 主机名
+    - component: 组件类型 (GPU/Memory/CPU/Motherboard等)
+    - is_cce_cluster: 是否CCE集群
+    """
+    try:
+        # 验证必填字段
+        if not alert_create.alert_type or not alert_create.alert_type.strip():
+            return APIResponse(
+                success=False,
+                error="缺少必填字段",
+                message="告警类型(alert_type)不能为空"
+            )
+
+        if not alert_create.severity or not alert_create.severity.strip():
+            return APIResponse(
+                success=False,
+                error="缺少必填字段",
+                message="严重程度(severity)不能为空"
+            )
+
+        if not alert_create.timestamp:
+            return APIResponse(
+                success=False,
+                error="缺少必填字段",
+                message="告警时间(timestamp)不能为空"
+            )
+
+        # 验证 severity 值
+        valid_severities = ['critical', 'warning', 'info', 'ERROR', 'FAIL', 'WARN', 'GOOD']
+        if alert_create.severity not in valid_severities:
+            return APIResponse(
+                success=False,
+                error="无效的严重程度值",
+                message=f"severity必须是以下之一: {', '.join(valid_severities)}"
+            )
+
+        # 检查是否存在重复告警（基于 alert_type + ip + timestamp）
+        existing_alert = db.query(AlertRecord).filter(
+            AlertRecord.alert_type == alert_create.alert_type,
+            AlertRecord.ip == alert_create.ip,
+            AlertRecord.timestamp == alert_create.timestamp
+        ).first()
+
+        if existing_alert:
+            return APIResponse(
+                success=False,
+                error="重复告警",
+                message="已存在相同的告警记录（相同类型、IP和时间）"
+            )
+
+        # 创建告警记录
+        new_alert = AlertRecord(
+            alert_type=alert_create.alert_type,
+            ip=alert_create.ip,
+            cluster_id=alert_create.cluster_id,
+            instance_id=alert_create.instance_id,
+            hostname=alert_create.hostname,
+            component=alert_create.component,
+            severity=alert_create.severity,
+            timestamp=alert_create.timestamp,
+            is_cce_cluster=alert_create.is_cce_cluster or (alert_create.cluster_id and alert_create.cluster_id.startswith('cce-')),
+            status='pending',
+            source='manual',  # 标记为手动录入
+            file_path='manual',  # 标记为手动创建
+            raw_data=alert_create.raw_data or {
+                'source': 'manual',
+                'created_by': current_user.username if current_user else 'admin',
+                'created_at': datetime.now().isoformat()
+            }
+        )
+
+        db.add(new_alert)
+        db.commit()
+        db.refresh(new_alert)
+
+        logger.info(f"手动创建告警成功: ID={new_alert.id}, 类型={new_alert.alert_type}, 操作人={current_user.username if current_user else 'admin'}")
+
+        # 自动触发诊断流程
+        try:
+            from app.services.alert.alert_processor import AlertProcessor
+            processor = AlertProcessor()
+
+            alert_data = {
+                'alert_type': new_alert.alert_type,
+                'component': new_alert.component,
+                'severity': new_alert.severity,
+                'ip': new_alert.ip,
+                'cluster_id': new_alert.cluster_id,
+                'instance_id': new_alert.instance_id,
+                'hostname': new_alert.hostname,
+                'is_cce_cluster': new_alert.is_cce_cluster,
+                'timestamp': new_alert.timestamp,
+                'raw_data': new_alert.raw_data
+            }
+
+            # 异步触发诊断（不等待结果）
+            import asyncio
+            asyncio.create_task(processor.process_single_alert(alert_data))
+
+            logger.info(f"已自动触发诊断流程: alert_id={new_alert.id}")
+
+        except Exception as diag_error:
+            logger.warning(f"自动触发诊断失败: alert_id={new_alert.id}, error={diag_error}")
+            # 不影响创建成功的返回
+
+        return APIResponse(
+            success=True,
+            data={
+                "id": new_alert.id,
+                "alert_type": new_alert.alert_type,
+                "severity": new_alert.severity,
+                "status": new_alert.status,
+                "timestamp": new_alert.timestamp.isoformat() if new_alert.timestamp else None,
+                "message": "告警创建成功，诊断任务已自动触发"
+            },
+            message="告警创建成功"
+        )
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"手动创建告警失败: {e}", exc_info=True)
+        return APIResponse(
+            success=False,
+            error=str(e),
+            message="创建告警失败"
+        )
+
+
+@router.get("/alerts/components/enum", response_model=APIResponse)
+async def get_component_enums(
+    db: Session = Depends(get_db)
+):
+    """
+    获取组件类型枚举值
+
+    用于前端手动创建告警时的下拉选择
+    """
+    try:
+        # 从数据库中查询已有的组件类型
+        components = db.query(AlertRecord.component).distinct().filter(
+            AlertRecord.component.isnot(None)
+        ).all()
+        component_list = [row[0] for row in components if row[0]]
+
+        # 添加常用的组件类型（如果数据库中没有）
+        default_components = ['GPU', 'Memory', 'CPU', 'Motherboard', 'Disk', 'Network', 'Power', 'Temperature']
+        for comp in default_components:
+            if comp not in component_list:
+                component_list.append(comp)
+
+        return APIResponse(
+            success=True,
+            data={
+                "components": sorted(component_list)
+            },
+            message="获取成功"
+        )
+
+    except Exception as e:
+        logger.error(f"获取组件枚举失败: {e}")
+        return APIResponse(
+            success=False,
+            error=str(e),
+            message="获取组件枚举失败"
+        )
+
+
+@router.get("/alerts/alert-types/enum", response_model=APIResponse)
+async def get_alert_type_enums(
+    db: Session = Depends(get_db)
+):
+    """
+    获取告警类型枚举值
+
+    用于前端手动创建告警时的下拉选择
+    """
+    try:
+        # 从数据库中查询已有的告警类型
+        alert_types = db.query(AlertRecord.alert_type).distinct().filter(
+            AlertRecord.alert_type.isnot(None)
+        ).all()
+        alert_type_list = [row[0] for row in alert_types if row[0]]
+
+        # 添加常用的告警类型（如果数据库中没有）
+        default_alert_types = [
+            'GPU故障',
+            'GPU温度异常',
+            'GPU显存不足',
+            '内存故障',
+            '内存不足',
+            'CPU故障',
+            'CPU温度过高',
+            '磁盘故障',
+            '磁盘空间不足',
+            '网络故障',
+            '电源故障',
+            '主板故障',
+            '风扇故障',
+            '硬件故障',
+            '系统告警'
+        ]
+        for alert_type in default_alert_types:
+            if alert_type not in alert_type_list:
+                alert_type_list.append(alert_type)
+
+        return APIResponse(
+            success=True,
+            data={
+                "alert_types": sorted(alert_type_list)
+            },
+            message="获取成功"
+        )
+
+    except Exception as e:
+        logger.error(f"获取告警类型枚举失败: {e}")
+        return APIResponse(
+            success=False,
+            error=str(e),
+            message="获取告警类型枚举失败"
         )

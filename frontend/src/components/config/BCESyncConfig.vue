@@ -71,6 +71,18 @@
                 {{ testResult }}
               </span>
             </el-form-item>
+
+            <el-divider />
+
+            <el-form-item>
+              <el-button type="primary" @click="handleSync" :loading="syncing" size="large">
+                <el-icon><Refresh /></el-icon>
+                立即同步
+              </el-button>
+              <span v-if="syncResult" :class="syncResultClass" style="margin-left: 12px;">
+                {{ syncResult }}
+              </span>
+            </el-form-item>
           </el-form>
         </el-tab-pane>
 
@@ -84,15 +96,15 @@
 
             <el-form-item label="同步间隔" v-if="syncConfig.enabled">
               <el-input-number
-                v-model="syncConfig.sync_interval"
-                :min="300"
-                :max="86400"
-                :step="300"
+                v-model="syncIntervalHours"
+                :min="1"
+                :max="24"
+                :step="1"
                 style="width: 200px"
               />
-              <span style="margin-left: 8px;">秒</span>
+              <span style="margin-left: 8px;">小时</span>
               <div class="form-tip">
-                同步间隔不能小于 300 秒（5分钟），建议设置为 3600 秒（1小时）
+                同步间隔范围 1-24 小时，建议设置为 1 小时
               </div>
             </el-form-item>
 
@@ -140,10 +152,10 @@
           </el-descriptions>
 
           <div style="margin-top: 20px;">
-            <el-button type="primary" @click="handleSync" :loading="syncing">
-              立即同步
+            <el-button type="primary" @click="loadStats" :loading="loadingStats">
+              <el-icon><Refresh /></el-icon>
+              刷新统计
             </el-button>
-            <el-button @click="loadStats">刷新统计</el-button>
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -165,8 +177,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Refresh } from '@element-plus/icons-vue'
 import {
   getBCEConfig,
   updateBCEConfig,
@@ -206,6 +219,16 @@ const syncConfig = reactive({
   next_sync_time: null
 })
 
+// 计算属性：同步间隔（小时）
+const syncIntervalHours = computed({
+  get() {
+    return Math.floor(syncConfig.sync_interval / 3600)
+  },
+  set(val) {
+    syncConfig.sync_interval = val * 3600
+  }
+})
+
 // 统计数据
 const stats = reactive({
   bcc_count: 0,
@@ -219,9 +242,12 @@ const formRef = ref(null)
 const saving = ref(false)
 const savingSync = ref(false)
 const syncing = ref(false)
+const loadingStats = ref(false)
 const testing = ref(false)
 const testResult = ref('')
 const testResultClass = ref('')
+const syncResult = ref('')
+const syncResultClass = ref('')
 
 // 表单验证规则
 const rules = {
@@ -263,10 +289,22 @@ const loadSyncConfig = async () => {
 // 加载统计数据
 const loadStats = async () => {
   try {
+    loadingStats.value = true
     const response = await getBCEStats()
-    Object.assign(stats, response)
+    console.log('BCE Stats Response:', response)
+    
+    // 确保数据正确赋值
+    stats.bcc_count = response.bcc_count || 0
+    stats.bcc_latest_date = response.bcc_latest_date || null
+    stats.cce_count = response.cce_count || 0
+    stats.cce_latest_date = response.cce_latest_date || null
+    
+    console.log('Updated Stats:', stats)
   } catch (error) {
     console.error('加载统计数据失败:', error)
+    ElMessage.error('加载统计数据失败')
+  } finally {
+    loadingStats.value = false
   }
 }
 
@@ -361,16 +399,24 @@ const handleTestConnection = async () => {
 const handleSync = async () => {
   try {
     syncing.value = true
+    syncResult.value = ''
+    
     const response = await syncBCE('all')
     if (response.success) {
+      syncResult.value = '✅ 同步成功'
+      syncResultClass.value = 'test-success'
       ElMessage.success('BCE 数据同步成功')
-      // 刷新统计数据
+      // 同步完成后刷新统计数据
       await loadStats()
     } else {
+      syncResult.value = `❌ 同步失败：${response.message || '未知错误'}`
+      syncResultClass.value = 'test-error'
       ElMessage.error(response.message || '同步失败')
     }
   } catch (error) {
     console.error('同步失败:', error)
+    syncResult.value = `❌ 同步失败：${error.message || '未知错误'}`
+    syncResultClass.value = 'test-error'
     ElMessage.error('同步失败')
   } finally {
     syncing.value = false

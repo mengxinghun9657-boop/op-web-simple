@@ -128,3 +128,28 @@ export const updateAlertFields = (alertId, data) => {
 export const testHostConnection = () => {
   return axios.get('/api/v1/alerts/test-host-connection')
 }
+
+/**
+ * 手动创建告警
+ * @param {Object} data - 告警数据
+ * @returns {Promise}
+ */
+export const createAlert = (data) => {
+  return axios.post('/api/v1/alerts', data)
+}
+
+/**
+ * 获取组件类型枚举值
+ * @returns {Promise}
+ */
+export const getComponentEnums = () => {
+  return axios.get('/api/v1/alerts/components/enum')
+}
+
+/**
+ * 获取告警类型枚举值
+ * @returns {Promise}
+ */
+export const getAlertTypeEnums = () => {
+  return axios.get('/api/v1/alerts/alert-types/enum')
+}

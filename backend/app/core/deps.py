@@ -39,13 +39,27 @@ def get_db():
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    token: str = None
 ):
-    """从Token获取当前用户"""
+    """从Token获取当前用户
+    
+    支持从 HTTP Header Authorization 或 URL 参数 token 获取
+    """
     # 延迟导入 User 模型，避免循环导入
     from ..models.user import User
     
-    token = credentials.credentials
+    # 优先从 HTTP Header 获取，如果没有则从函数参数获取（用于SSE）
+    if credentials:
+        token = credentials.credentials
+    
+    if not token:
+        from app.core.logger import logger
+        logger.warning("缺少认证令牌")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="缺少认证令牌"
+        )
     
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -93,3 +107,15 @@ def get_current_user(
     from app.core.logger import logger
     logger.debug(f"认证成功: {user.username} (ID: {user.id}, Role: {user.role})")
     return user
+
+
+def require_admin(
+    current_user = Depends(get_current_user)
+):
+    """要求管理员权限"""
+    if current_user.role not in ['super_admin', 'admin']:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="需要管理员权限"
+        )
+    return current_user

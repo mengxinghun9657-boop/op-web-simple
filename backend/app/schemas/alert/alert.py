@@ -17,6 +17,7 @@ class AlertRecordBase(BaseModel):
     severity: str = Field(..., description="严重程度")
     timestamp: datetime = Field(..., description="告警时间")
     file_path: Optional[str] = Field(None, description="源文件路径")
+    source: Optional[str] = Field('file', description="告警来源(file/manual)")
     raw_data: Optional[Any] = Field(None, description="原始数据")
     is_cce_cluster: bool = Field(False, description="是否CCE集群")
 
@@ -53,8 +54,9 @@ class AlertListItem(BaseModel):
     severity: str
     timestamp: datetime
     status: str
+    source: Optional[str] = 'file'
     has_diagnosis: bool
-    
+
     class Config:
         from_attributes = True
 

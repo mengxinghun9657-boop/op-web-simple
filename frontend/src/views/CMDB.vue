@@ -1373,9 +1373,10 @@ onMounted(() => {
   border-left: none;
 }
 
-/* 修复滚动条导致的对齐问题 */
+/* 修复滚动条导致的对齐问题 - 关键修复 */
 .table-wrapper :deep(.el-table__body-wrapper::-webkit-scrollbar) {
   height: 8px;
+  width: 8px;
 }
 
 .table-wrapper :deep(.el-table__body-wrapper::-webkit-scrollbar-thumb) {
@@ -1385,5 +1386,43 @@ onMounted(() => {
 
 .table-wrapper :deep(.el-table__body-wrapper::-webkit-scrollbar-track) {
   background: var(--scrollbar-track, transparent);
+}
+
+/* 修复表头滚动条占位问题 - 关键修复 */
+/* Element Plus 表格在内容区域有水平滚动条时，表头右侧需要留出滚动条空间 */
+.table-wrapper :deep(.el-table__header-wrapper) {
+  overflow: hidden;
+}
+
+/* 为表头添加滚动条占位 - 与内容区域滚动条宽度一致 */
+.table-wrapper :deep(.el-table__header) {
+  table-layout: fixed !important;
+  width: calc(100% - 8px) !important; /* 减去滚动条宽度 */
+}
+
+.table-wrapper :deep(.el-table__body) {
+  table-layout: fixed !important;
+}
+
+/* 修复固定列宽导致的对齐问题 */
+.table-wrapper :deep(.el-table colgroup col) {
+  min-width: 60px;
+}
+
+/* 确保表格容器正确计算宽度 */
+.table-wrapper :deep(.el-table__inner-wrapper) {
+  position: relative;
+}
+
+/* 修复表头右侧滚动条占位 */
+.table-wrapper :deep(.el-table__header-wrapper)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: var(--bg-secondary, #f9fafb);
+  border-left: 1px solid var(--border-primary, #e5e7eb);
 }
 </style>

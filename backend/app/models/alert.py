@@ -37,6 +37,9 @@ class AlertRecord(Base):
     # 文件信息
     file_path = Column(String(1000), comment='源文件路径（预留足够长度）')
     
+    # 告警来源
+    source = Column(String(50), default='file', index=True, comment='告警来源(file/manual)')  # file: 文件解析, manual: 手动录入
+    
     # 原始数据（完整保存，支持未来重新解析）
     raw_data = Column(JSON, comment='告警原始数据（完整JSON）')
     

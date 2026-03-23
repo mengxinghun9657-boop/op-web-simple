@@ -1116,9 +1116,10 @@ onMounted(() => {
 .copyable-cell {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   width: 100%;
   min-width: 0;
+  padding-right: 8px;
 }
 
 .copyable-cell .cell-text,
@@ -1137,6 +1138,7 @@ onMounted(() => {
   color: var(--color-primary);
   font-size: 14px;
   flex-shrink: 0;
+  margin-right: 4px;
 }
 
 .copyable-cell:hover .copy-icon {
@@ -1220,7 +1222,30 @@ onMounted(() => {
 }
 .kv-value.copyable:hover {
   color: var(--primary, #3b82f6);
-  text-decoration: underline;
+}
+
+/* 可复制值样式 */
+.kv-value.kv-copyable {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.kv-value.kv-copyable .kv-copy-icon {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  color: var(--primary, #3b82f6);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.kv-value.kv-copyable:hover .kv-copy-icon {
+  opacity: 1;
+}
+
+.kv-value.kv-copyable:hover {
+  color: var(--primary, #3b82f6);
 }
 
 /* 资源使用卡片 */

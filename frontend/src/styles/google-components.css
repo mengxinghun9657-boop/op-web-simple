@@ -674,8 +674,16 @@
 
 /* ==================== Popper 全局修复 ==================== */
 /* 只覆盖样式，不覆盖 z-index，让 Element Plus PopupManager 自动管理层级 */
+
+/* 下拉菜单 popper - 只作为容器，不显示背景和边框 */
+.el-dropdown__popper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 其他 popper 保持原有样式 */
 .el-popper,
-.el-dropdown__popper,
 .el-select__popper,
 .el-tooltip__popper,
 .el-popover.el-popper,
@@ -683,8 +691,8 @@
 }
 
 /* 确保弹出层不被其他元素遮挡 */
-.el-popper.is-pure,
-.el-popper.is-light {
+.el-popper.is-pure:not(.el-dropdown__popper),
+.el-popper.is-light:not(.el-dropdown__popper) {
   background: var(--bg-elevated) !important;
   border: none !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-primary) !important;

@@ -135,7 +135,7 @@
           </div>
 
           <!-- API诊断结果 -->
-          <div v-if="alertData.diagnosis.api_diagnosis" class="content-card">
+          <div v-if="alertData.diagnosis.api_task_id || alertData.diagnosis.api_diagnosis" class="content-card">
             <div class="content-card-header">
               <div class="content-card-title">
                 <el-icon color="#409EFF"><Document /></el-icon>
@@ -143,66 +143,87 @@
               </div>
               <div class="content-card-extra">
                 <el-tag :type="getApiStatusTagType(alertData.diagnosis.api_status)">
-                  {{ alertData.diagnosis.api_status }}
+                  {{ getApiStatusText(alertData.diagnosis.api_status) }}
                 </el-tag>
               </div>
             </div>
             <div class="content-card-body">
-
-            <div class="api-diagnosis-summary">
-              <el-statistic title="诊断项总数" :value="alertData.diagnosis.api_items_count" />
-              <el-statistic title="错误项" :value="alertData.diagnosis.api_error_count">
-                <template #suffix>
-                  <el-icon color="#F56C6C"><CircleClose /></el-icon>
-                </template>
-              </el-statistic>
-              <el-statistic title="警告项" :value="alertData.diagnosis.api_warning_count">
-                <template #suffix>
-                  <el-icon color="#E6A23C"><Warning /></el-icon>
-                </template>
-              </el-statistic>
-              <el-statistic title="异常项" :value="alertData.diagnosis.api_abnormal_count">
-                <template #suffix>
-                  <el-icon color="#F56C6C"><WarningFilled /></el-icon>
-                </template>
-              </el-statistic>
+            <!-- 诊断中状态 -->
+            <div v-if="alertData.diagnosis.api_status === 'processing'" class="diagnosis-processing">
+              <el-skeleton :rows="3" animated />
+              <div class="processing-text">
+                <el-icon class="is-loading"><Loading /></el-icon>
+                诊断任务进行中，请稍后刷新查看结果...
+              </div>
             </div>
 
-            <el-divider />
+            <!-- 诊断失败状态 -->
+            <div v-else-if="alertData.diagnosis.api_status === 'failed' && alertData.diagnosis.api_diagnosis?.error" class="diagnosis-error">
+              <el-alert
+                :title="'诊断失败: ' + alertData.diagnosis.api_diagnosis.error"
+                type="error"
+                :closable="false"
+                show-icon
+              />
+            </div>
 
-            <el-collapse v-model="activeCollapse">
-              <el-collapse-item
-                v-if="alertData.diagnosis.api_diagnosis.error_items?.length"
-                title="错误项"
-                name="errors"
-              >
-                <el-table :data="alertData.diagnosis.api_diagnosis.error_items" stripe>
-                  <el-table-column prop="item_name_zh" label="诊断项" min-width="200" />
-                  <el-table-column prop="result" label="结果" width="100">
-                    <template #default="{ row }">
-                      <el-tag type="danger" size="small">{{ row.result }}</el-tag>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="exact_message" label="详情" min-width="300" show-overflow-tooltip />
-                </el-table>
-              </el-collapse-item>
+            <!-- 诊断完成状态 -->
+            <template v-else-if="alertData.diagnosis.api_diagnosis">
+              <div class="api-diagnosis-summary">
+                <el-statistic title="诊断项总数" :value="alertData.diagnosis.api_items_count" />
+                <el-statistic title="错误项" :value="alertData.diagnosis.api_error_count">
+                  <template #suffix>
+                    <el-icon color="#F56C6C"><CircleClose /></el-icon>
+                  </template>
+                </el-statistic>
+                <el-statistic title="警告项" :value="alertData.diagnosis.api_warning_count">
+                  <template #suffix>
+                    <el-icon color="#E6A23C"><Warning /></el-icon>
+                  </template>
+                </el-statistic>
+                <el-statistic title="异常项" :value="alertData.diagnosis.api_abnormal_count">
+                  <template #suffix>
+                    <el-icon color="#F56C6C"><WarningFilled /></el-icon>
+                  </template>
+                </el-statistic>
+              </div>
 
-              <el-collapse-item
-                v-if="alertData.diagnosis.api_diagnosis.warning_items?.length"
-                title="警告项"
-                name="warnings"
-              >
-                <el-table :data="alertData.diagnosis.api_diagnosis.warning_items" stripe>
-                  <el-table-column prop="item_name_zh" label="诊断项" min-width="200" />
-                  <el-table-column prop="result" label="结果" width="100">
-                    <template #default="{ row }">
-                      <el-tag type="warning" size="small">{{ row.result }}</el-tag>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="exact_message" label="详情" min-width="300" show-overflow-tooltip />
-                </el-table>
-              </el-collapse-item>
-            </el-collapse>
+              <el-divider />
+
+              <el-collapse v-model="activeCollapse">
+                <el-collapse-item
+                  v-if="alertData.diagnosis.api_diagnosis.error_items?.length"
+                  title="错误项"
+                  name="errors"
+                >
+                  <el-table :data="alertData.diagnosis.api_diagnosis.error_items" stripe>
+                    <el-table-column prop="item_name_zh" label="诊断项" min-width="200" />
+                    <el-table-column prop="result" label="结果" width="100">
+                      <template #default="{ row }">
+                        <el-tag type="danger" size="small">{{ row.result }}</el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="exact_message" label="详情" min-width="300" show-overflow-tooltip />
+                  </el-table>
+                </el-collapse-item>
+
+                <el-collapse-item
+                  v-if="alertData.diagnosis.api_diagnosis.warning_items?.length"
+                  title="警告项"
+                  name="warnings"
+                >
+                  <el-table :data="alertData.diagnosis.api_diagnosis.warning_items" stripe>
+                    <el-table-column prop="item_name_zh" label="诊断项" min-width="200" />
+                    <el-table-column prop="result" label="结果" width="100">
+                      <template #default="{ row }">
+                        <el-tag type="warning" size="small">{{ row.result }}</el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="exact_message" label="详情" min-width="300" show-overflow-tooltip />
+                  </el-table>
+                </el-collapse-item>
+              </el-collapse>
+            </template>
             </div>
           </div>
 
@@ -241,7 +262,8 @@ import {
   Warning,
   WarningFilled,
   MagicStick,
-  ArrowLeft
+  ArrowLeft,
+  Loading
 } from '@element-plus/icons-vue'
 import { getAlertDetail, diagnoseAlert } from '@/api/alerts'
 import { marked } from 'marked'
@@ -265,9 +287,16 @@ const activeCollapse = ref(['errors', 'warnings'])
 
 // 获取告警详情
 const fetchAlertDetail = async () => {
+  // 检查ID是否存在
+  const alertId = route.params.id
+  if (!alertId || alertId === 'undefined') {
+    console.warn('告警ID不存在或无效')
+    return
+  }
+
   loading.value = true
   try {
-    const response = await getAlertDetail(route.params.id)
+    const response = await getAlertDetail(alertId)
     if (response.success) {
       alertData.value = response.data
     }
@@ -280,9 +309,16 @@ const fetchAlertDetail = async () => {
 
 // 重新诊断
 const handleDiagnose = async () => {
+  // 检查ID是否存在
+  const alertId = route.params.id
+  if (!alertId || alertId === 'undefined') {
+    ElMessage.error('告警ID不存在或无效')
+    return
+  }
+
   diagnosing.value = true
   try {
-    const response = await diagnoseAlert(route.params.id, true)  // 传递布尔值而不是对象
+    const response = await diagnoseAlert(alertId, true)  // 传递布尔值而不是对象
     // 检查响应是否成功
     if (response && response.success) {
       ElMessage.success(response.message || '诊断任务已创建,正在处理中...')
@@ -295,11 +331,11 @@ const handleDiagnose = async () => {
       // 仍然开始轮询检查状态
       startDiagnosisPolling()
     }
-    
+
   } catch (error) {
     // 检查是否是axios拦截器抛出的错误（基础流程可能已完成）
     if (error.message && (
-      error.message.includes('重新诊断') || 
+      error.message.includes('重新诊断') ||
       error.message.includes('诊断') ||
       error.message.includes('已存在诊断结果')
     )) {
@@ -393,9 +429,23 @@ const getApiStatusTagType = (status) => {
   const typeMap = {
     normal: 'success',
     abnormal: 'danger',
-    failed: 'danger'
+    failed: 'danger',
+    processing: 'warning',
+    timeout: 'info'
   }
   return typeMap[status] || 'info'
+}
+
+const getApiStatusText = (status) => {
+  const textMap = {
+    normal: '正常',
+    abnormal: '异常',
+    failed: '失败',
+    processing: '诊断中',
+    timeout: '超时',
+    unknown: '未知'
+  }
+  return textMap[status] || status || '未知'
 }
 
 const formatDateTime = (dateStr) => {
@@ -487,5 +537,24 @@ onMounted(() => {
   line-height: 1.6;
   color: var(--primary);
   white-space: pre-wrap;
+}
+
+.diagnosis-processing {
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.diagnosis-processing .processing-text {
+  margin-top: var(--space-4);
+  color: var(--text-secondary);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.diagnosis-error {
+  padding: var(--space-4);
 }
 </style>

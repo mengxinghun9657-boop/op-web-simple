@@ -494,6 +494,28 @@ onMounted(() => {
   align-items: center;
 }
 
+.time-quick-options .el-button {
+  transition: all 0.2s ease;
+}
+
+.time-quick-options .el-button--primary {
+  background: var(--color-primary-600) !important;
+  border-color: var(--color-primary-600) !important;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(26, 115, 232, 0.3) !important;
+}
+
+.time-quick-options .el-button:not(.el-button--primary) {
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.time-quick-options .el-button:not(.el-button--primary):hover {
+  border-color: var(--color-primary-400) !important;
+  color: var(--color-primary-600) !important;
+}
+
 .form-tip {
   margin-left: var(--spacing-3);
   font-size: var(--font-size-sm);

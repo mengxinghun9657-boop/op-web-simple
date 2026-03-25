@@ -482,15 +482,31 @@ class AlertProcessor:
         source = alert_data.get('source', 'file')
         file_path = alert_data.get('file_path', '')
         
+        # 获取IP和cluster_id
+        ip = alert_data.get('ip')
+        cluster_id = alert_data.get('cluster_id')
+        
+        # 如果有IP但没有cluster_id，尝试自动查询修正
+        if ip and not cluster_id:
+            try:
+                from app.services.alert.database_corrector import get_database_corrector
+                corrector = get_database_corrector()
+                correct_cluster_id = corrector._query_correct_cluster_id(ip)
+                if correct_cluster_id:
+                    cluster_id = correct_cluster_id
+                    logger.info(f"自动修正cluster_id: IP={ip} -> cluster_id={cluster_id}")
+            except Exception as e:
+                logger.warning(f"自动修正cluster_id失败: IP={ip}, 错误={e}")
+        
         alert = AlertRecord(
             alert_type=alert_data.get('alert_type', ''),
             component=alert_data.get('component'),
             severity=alert_data.get('severity', 'WARN'),
-            ip=alert_data.get('ip'),
-            cluster_id=alert_data.get('cluster_id'),
+            ip=ip,
+            cluster_id=cluster_id,
             instance_id=alert_data.get('instance_id'),
             hostname=alert_data.get('hostname'),
-            is_cce_cluster=alert_data.get('is_cce_cluster', False),
+            is_cce_cluster=cluster_id.startswith('cce-') if cluster_id else False,
             timestamp=alert_data.get('timestamp', datetime.now()),
             file_path=file_path,
             source=source,
@@ -799,9 +815,10 @@ class AlertProcessor:
                     continue
                 
                 # 🔒 检查是否已发送通知（防止重复发送）
-                if diagnosis.notified:
-                    logger.warning(f"⏭️ [等待诊断] 跳过已通知: diagnosis_id={diagnosis.id}, alert_id={diagnosis.alert_id}")
-                    continue
+                # 注意：即使已发送通知，也需要更新诊断结果，否则前端看不到结果
+                already_notified = diagnosis.notified
+                if already_notified:
+                    logger.warning(f"⏭️ [等待诊断] 已发送过通知，仍更新诊断结果: diagnosis_id={diagnosis.id}, alert_id={diagnosis.alert_id}")
                 
                 # 更新诊断结果
                 diagnosis.api_status = parsed_result.get('task_result', 'unknown')

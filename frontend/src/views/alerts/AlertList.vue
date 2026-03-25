@@ -503,12 +503,9 @@
 
         <el-form-item label="新状态" required>
           <el-select v-model="statusForm.newStatus" style="width: 100%" teleported popper-class="dialog-select-popper">
-            <el-option label="待处理" value="pending" />
             <el-option label="处理中" value="processing" />
-            <el-option label="已诊断" value="diagnosed" />
-            <el-option label="已通知" value="notified" />
             <el-option label="已处理" value="resolved" />
-            <el-option label="失败" value="failed" />
+            <el-option label="已关闭" value="closed" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -819,12 +816,9 @@ const router = useRouter()
 
 // 状态标签映射
 const statusLabels = {
-  pending: '待处理',
   processing: '处理中',
-  diagnosed: '已诊断',
-  notified: '已通知',
-  failed: '失败',
-  resolved: '已处理'
+  resolved: '已处理',
+  closed: '已关闭'
 }
 
 // Google Blue 样式映射函数

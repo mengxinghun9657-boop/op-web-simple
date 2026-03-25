@@ -696,34 +696,13 @@ async def update_alert_status(
                 message="备注更新成功"
             )
         
-        # 验证状态值和转换规则
-        valid_statuses = ['pending', 'processing', 'diagnosed', 'notified', 'failed', 'resolved']
+        # 验证状态值
+        valid_statuses = ['processing', 'resolved', 'closed']
         if status_update.status not in valid_statuses:
             return APIResponse(
                 success=False,
                 error="无效的状态值",
                 message=f"状态必须是以下之一: {', '.join(valid_statuses)}"
-            )
-        
-        # 状态转换规则验证
-        current_status = alert.status
-        new_status = status_update.status
-        
-        # 定义允许的状态转换
-        allowed_transitions = {
-            'pending': ['processing', 'resolved'],
-            'processing': ['diagnosed', 'failed', 'resolved'],
-            'diagnosed': ['notified', 'resolved'],
-            'notified': ['resolved'],
-            'failed': ['pending', 'resolved'],
-            'resolved': ['pending']  # 允许重新打开
-        }
-        
-        if new_status not in allowed_transitions.get(current_status, []):
-            return APIResponse(
-                success=False,
-                error="无效的状态转换",
-                message=f"不能从 '{current_status}' 转换到 '{new_status}'"
             )
         
         # 更新状态（考虑与自动流程的兼容性）

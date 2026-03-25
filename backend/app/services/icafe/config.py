@@ -103,8 +103,16 @@ class IcafeConfig:
                 if icafe_config_record and icafe_config_record.config_value:
                     config_data = icafe_config_record.config_value
                     
+                    # 如果 config_value 是字符串（JSON），解析为字典
+                    if isinstance(config_data, str):
+                        try:
+                            config_data = json.loads(config_data)
+                        except json.JSONDecodeError as e:
+                            logger.error(f"解析 iCafe 配置 JSON 失败: {e}")
+                            raise Exception(f"配置格式错误: {e}")
+                    
                     # 映射系统配置到 iCafe 配置
-                    if config_data.get('api_url'):
+                    if isinstance(config_data, dict) and config_data.get('api_url'):
                         # 转换 API URL 格式
                         api_url = config_data['api_url']
                         if api_url.endswith('/api/v2'):

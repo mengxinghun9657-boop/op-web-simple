@@ -272,12 +272,9 @@ const route = useRoute()
 const router = useRouter()
 
 const statusLabels = {
-  pending: '待处理',
   processing: '处理中',
-  diagnosed: '已诊断',
-  notified: '已通知',
-  failed: '失败',
-  resolved: '已处理'
+  resolved: '已处理',
+  closed: '已关闭'
 }
 
 const loading = ref(false)
@@ -408,12 +405,9 @@ const getSeverityTagType = (severity) => {
 
 const getStatusTagType = (status) => {
   const typeMap = {
-    pending: 'info',
     processing: 'warning',
-    diagnosed: 'success',
-    notified: 'success',
-    failed: 'danger',
-    resolved: 'success'
+    resolved: 'success',
+    closed: 'info'
   }
   return typeMap[status] || ''
 }

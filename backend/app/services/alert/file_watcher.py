@@ -8,7 +8,7 @@ import asyncio
 import fnmatch
 from pathlib import Path
 from typing import Optional, Dict
-from watchdog.observers.polling import PollingObserver as Observer
+from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileCreatedEvent, FileModifiedEvent
 from sqlalchemy.orm import Session
 from loguru import logger
@@ -76,30 +76,94 @@ class PathSpecificHandler(FileSystemEventHandler):
         filename = Path(file_path).name
         return fnmatch.fnmatch(filename, self.path_config.file_pattern)
     
+    def is_file_stable(self, file_path: str, max_wait: float = 3.0, check_interval: float = 0.1, stable_threshold: int = 3) -> bool:
+        """
+        检查文件是否稳定（大小不再变化）
+
+        用于判断 scp/rsync 等工具是否已完成文件上传
+
+        Args:
+            file_path: 文件路径
+            max_wait: 最大等待时间（秒）
+            check_interval: 检查间隔（秒）
+            stable_threshold: 连续几次大小相同认为稳定
+
+        Returns:
+            True: 文件稳定，可以处理
+            False: 文件不稳定或检查失败
+        """
+        try:
+            last_size = -1
+            stable_count = 0
+            start_time = time.time()
+
+            while time.time() - start_time < max_wait:
+                try:
+                    current_size = Path(file_path).stat().st_size
+                except FileNotFoundError:
+                    # 文件被删除
+                    return False
+
+                if current_size == last_size:
+                    stable_count += 1
+                    # 连续 stable_threshold 次大小相同，认为文件稳定
+                    if stable_count >= stable_threshold:
+                        logger.debug(f"文件已稳定: {file_path}, 大小: {current_size}字节, 等待时间: {time.time() - start_time:.2f}秒")
+                        return True
+                else:
+                    # 大小变化，重置计数器
+                    stable_count = 0
+                    last_size = current_size
+
+                time.sleep(check_interval)
+
+            # 超时，但文件至少稳定过一次
+            if stable_count > 0:
+                logger.warning(f"文件稳定检查超时，但文件已稳定: {file_path}, 大小: {last_size}字节")
+                return True
+
+            logger.warning(f"文件稳定检查超时: {file_path}")
+            return False
+
+        except Exception as e:
+            logger.error(f"检查文件稳定性失败: {file_path}, 错误: {e}")
+            return False
+
     def process_file(self, file_path: str):
         """处理文件（直接解析，无需文件同步）"""
         # 验证文件格式
         if not self.match_pattern(file_path):
             return
-        
+
+        # 检查文件稳定性（确保 scp/rsync 等工具已完成上传）
+        if not self.is_file_stable(file_path):
+            logger.debug(f"文件不稳定（可能正在上传），跳过: {file_path}")
+            return
+
+        # 获取文件大小（用于日志）
+        try:
+            file_size = Path(file_path).stat().st_size
+        except:
+            file_size = 0
+
         # 使用Redis原子操作获取文件处理锁（防止多worker重复处理）
         if not self.try_acquire_file_lock(file_path):
             logger.debug(f"文件已处理过（Redis原子锁），跳过: {file_path}")
             return
-        
-        logger.info(f"检测到新文件: {file_path} (路径: {self.path_config.path}, 优先级: {self.path_config.priority})")
-        
+
+        logger.info(f"检测到新文件: {file_path} (路径: {self.path_config.path}, 优先级: {self.path_config.priority}, 大小: {file_size}字节)")
+
         try:
             # 使用线程池执行异步任务
             import concurrent.futures
-            
+
             def run_async_task():
                 """在新线程中运行异步任务"""
                 processor = None
                 try:
                     # 创建新的processor实例
                     processor = self.processor_factory()
-                    
+
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
                     try:
@@ -111,12 +175,12 @@ class PathSpecificHandler(FileSystemEventHandler):
                     logger.error(f"异步任务执行失败: {str(e)}", exc_info=True)
                     # 处理失败时取消标记，允许重试
                     self.unmark_file_processed(file_path)
-            
+
             # 使用线程池执行
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(run_async_task)
                 # 不等待完成，避免阻塞文件监控
-            
+
         except Exception as e:
             logger.error(f"处理文件失败 {file_path}: {str(e)}", exc_info=True)
             # 处理失败时取消标记，允许重试
@@ -126,12 +190,20 @@ class PathSpecificHandler(FileSystemEventHandler):
         """新文件创建时触发"""
         if not event.is_directory:
             self.process_file(event.src_path)
-    
+
     def on_modified(self, event: FileModifiedEvent):
-        """文件修改时触发（忽略，避免重复处理）"""
-        # PollingObserver会多次触发on_modified事件
-        # 我们只处理on_created事件，避免重复处理
-        pass
+        """文件修改时触发
+
+        使用 inotify (Observer) 时，scp 上传文件会触发：
+        1. on_created - 创建空文件
+        2. on_modified - 写入内容
+
+        需要处理修改事件，因为文件可能在创建后才有完整内容
+        """
+        if not event.is_directory:
+            # 使用 Redis 锁防止重复处理同一文件
+            # process_file 内部会检查文件锁
+            self.process_file(event.src_path)
 
 
 class FileWatcherService:

@@ -787,6 +787,89 @@ async def correct_alert_filenames(
         )
 
 
+@router.post("/alerts/process-existing-files", response_model=APIResponse)
+async def process_existing_alert_files(
+    dry_run: bool = Query(False, description="是否为试运行模式（只检查不处理）"),
+    db: Session = Depends(get_db)
+):
+    """
+    手动触发处理已存在的告警文件
+    
+    用于解决 scp/rsync 上传文件时可能遗漏的问题
+    会扫描 /app/alerts_source 目录，处理所有未处理的 .txt 文件
+    
+    Args:
+        dry_run: 试运行模式，只返回会处理的文件列表，不实际处理
+    """
+    try:
+        from app.services.alert.file_watcher import FileWatcherService
+        from pathlib import Path
+        import fnmatch
+        
+        watch_path = Path("/app/alerts_source").expanduser()
+        
+        if not watch_path.exists():
+            return APIResponse(
+                success=False,
+                error="告警源目录不存在",
+                message=f"目录不存在: {watch_path}"
+            )
+        
+        # 获取所有匹配的文件
+        all_files = list(watch_path.glob("*"))
+        matched_files = [
+            f for f in all_files
+            if f.is_file() and fnmatch.fnmatch(f.name, "*.txt")
+        ]
+        
+        file_list = [f.name for f in matched_files]
+        
+        if dry_run:
+            return APIResponse(
+                success=True,
+                data={
+                    "total_files": len(file_list),
+                    "files": file_list
+                },
+                message=f"试运行模式：找到 {len(file_list)} 个待处理文件"
+            )
+        
+        # 实际处理文件
+        logger.info(f"手动触发处理已存在文件: {len(matched_files)} 个文件")
+        
+        # 创建文件监控服务并处理已存在文件
+        file_watcher = FileWatcherService()
+        
+        # 在后台线程中处理，避免阻塞API响应
+        import threading
+        def process_in_background():
+            try:
+                file_watcher.process_existing_files()
+                logger.info("✅ 手动触发：已存在文件处理完成")
+            except Exception as e:
+                logger.error(f"❌ 手动触发：处理已存在文件失败: {e}", exc_info=True)
+        
+        thread = threading.Thread(target=process_in_background, daemon=True)
+        thread.start()
+        
+        return APIResponse(
+            success=True,
+            data={
+                "total_files": len(file_list),
+                "files": file_list
+            },
+            message=f"已开始处理 {len(file_list)} 个文件，请在后台查看处理结果"
+        )
+        
+    except Exception as e:
+        logger.error(f"手动触发处理已存在文件失败: {e}", exc_info=True)
+        return APIResponse(
+            success=False,
+            error=str(e),
+            message="手动触发处理已存在文件失败"
+        )
+
+
 @router.post("/alerts/{alert_id}/create-icafe-card", response_model=APIResponse)
 async def create_icafe_card(
     alert_id: int,

@@ -706,8 +706,11 @@
             <el-form-item label="组件类型" prop="component">
               <el-select
                 v-model="createAlertForm.component"
-                placeholder="请选择组件类型"
+                placeholder="请选择或输入组件类型"
                 clearable
+                filterable
+                allow-create
+                default-first-option
                 style="width: 100%"
               >
                 <el-option

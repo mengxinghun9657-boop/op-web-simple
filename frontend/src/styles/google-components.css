@@ -277,7 +277,11 @@
   box-shadow: none !important;
 }
 
+/* select popper - 只作为容器，不显示背景和边框 */
 .el-select__popper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .el-select-dropdown__item {

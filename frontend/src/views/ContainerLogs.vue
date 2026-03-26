@@ -194,35 +194,70 @@ const toggleConnection = async () => {
   }
 }
 
+// 检查并刷新Token（如果即将过期）
+const ensureValidToken = async () => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    throw new Error('未登录')
+  }
+
+  try {
+    // 解析JWT获取过期时间
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const expTime = payload.exp * 1000 // 转换为毫秒
+    const now = Date.now()
+    const timeUntilExp = expTime - now
+
+    // 如果Token将在5分钟内过期，先刷新
+    if (timeUntilExp < 5 * 60 * 1000) {
+      console.log('Token即将过期，正在刷新...')
+      const { useUserStore } = await import('@/stores/user')
+      const userStore = useUserStore()
+      await userStore.refreshTokenAction()
+      console.log('Token刷新成功')
+    }
+  } catch (error) {
+    console.error('Token检查失败:', error)
+    // 如果刷新失败，尝试继续用现有Token
+  }
+}
+
 // 建立连接
 const connect = async () => {
   try {
     connecting.value = true
-    
+
     // 先清空之前的日志
     logs.value = []
-    
+
+    // 检查并刷新Token（如果即将过期）
+    await ensureValidToken()
+
     // 创建 EventSource 连接
     const container = activeContainer.value
     const token = localStorage.getItem('token')
     const url = `/api/v1/logs/stream/${container}?token=${token}`
-    
+
     eventSource.value = new EventSource(url)
-    
+
     eventSource.value.onopen = () => {
       isConnected.value = true
       connecting.value = false
       ElMessage.success(`已连接到 ${containerNames[container]}`)
     }
-    
+
     eventSource.value.onmessage = (event) => {
       const logLine = event.data
       addLog(logLine)
     }
-    
+
     eventSource.value.onerror = (error) => {
       console.error('EventSource error:', error)
-      if (isConnected.value) {
+      // 检查是否是401错误（Token过期）
+      if (error.target && error.target.readyState === EventSource.CLOSED) {
+        // 尝试刷新Token后重连
+        handleReconnect()
+      } else if (isConnected.value) {
         ElMessage.error('连接断开，请重试')
         disconnect()
       }
@@ -231,6 +266,29 @@ const connect = async () => {
     console.error('连接失败:', error)
     ElMessage.error('连接失败: ' + error.message)
     connecting.value = false
+  }
+}
+
+// 处理重连（Token过期后）
+const handleReconnect = async () => {
+  try {
+    console.log('尝试刷新Token后重连...')
+    const { useUserStore } = await import('@/stores/user')
+    const userStore = useUserStore()
+    await userStore.refreshTokenAction()
+
+    // 刷新成功，重新连接
+    disconnect()
+    await connect()
+  } catch (refreshError) {
+    console.error('Token刷新失败，需要重新登录:', refreshError)
+    ElMessage.error('登录已过期，请重新登录')
+    // 登出并跳转到登录页
+    const { useUserStore } = await import('@/stores/user')
+    const userStore = useUserStore()
+    userStore.logout()
+    const router = await import('@/router')
+    router.default.push('/login')
   }
 }
 

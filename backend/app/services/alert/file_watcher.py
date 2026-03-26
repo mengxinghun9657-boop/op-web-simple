@@ -366,62 +366,12 @@ class FileWatcherService:
                             print(f"[WARNING] Redis检查失败，继续处理: {str(e)}")
                             logger.warning(f"Redis检查失败，继续处理: {str(e)}")
 
-                    # 数据库层面去重：通过文件名提取IP和文件修改时间，查询是否已存在告警记录
-                    # 文件名格式: 长安-xxxxx-10.90.0.117.txt
-                    filename = actual_file_path.name
-                    ip_match = None
-                    try:
-                        # 从文件名提取IP（支持 10.x.x.x 或 192.168.x.x 等格式）
-                        import re
-                        ip_pattern = r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
-                        ip_match = re.search(ip_pattern, filename)
-                    except Exception:
-                        pass
-
-                    if ip_match:
-                        ip = ip_match.group(1)
-                        # 获取文件修改时间
-                        try:
-                            file_mtime = actual_file_path.stat().st_mtime
-                            file_mtime_dt = datetime.fromtimestamp(file_mtime)
-                        except Exception:
-                            file_mtime_dt = None
-
-                        # 查询数据库是否已存在该IP且时间相近的告警记录
-                        try:
-                            from app.core.database import SessionLocal
-                            from app.models.alert import AlertRecord
-                            from datetime import timedelta
-
-                            db = SessionLocal()
-                            try:
-                                query = db.query(AlertRecord).filter(AlertRecord.ip == ip)
-
-                                # 如果获取到文件修改时间，查询时间相近的记录（±1小时）
-                                if file_mtime_dt:
-                                    time_start = file_mtime_dt - timedelta(hours=1)
-                                    time_end = file_mtime_dt + timedelta(hours=1)
-                                    query = query.filter(
-                                        AlertRecord.timestamp >= time_start,
-                                        AlertRecord.timestamp <= time_end
-                                    )
-
-                                existing_alert = query.first()
-
-                                if existing_alert:
-                                    print(f"[DEBUG] 数据库中已存在该IP且时间相近的告警记录，跳过: {actual_file_path}, IP={ip}, alert_id={existing_alert.id}, file_time={file_mtime_dt}")
-                                    logger.info(f"数据库中已存在该IP且时间相近的告警记录，跳过: {actual_file_path}, IP={ip}, alert_id={existing_alert.id}")
-                                    # 设置Redis锁，避免下次重复检查
-                                    if self.redis_client:
-                                        try:
-                                            self.redis_client.set(redis_key, "1", ex=86400)  # 24小时
-                                        except:
-                                            pass
-                                    continue
-                            finally:
-                                db.close()
-                        except Exception as e:
-                            print(f"[WARNING] 数据库查询失败，继续处理: {str(e)}")
+                    # 注意：不再进行数据库层面去重
+                    # 原因：
+                    # 1. Redis 文件锁（1小时）足以防止正常情况下的重复处理
+                    # 2. 同IP不同alert_type的文件应该正常解析
+                    # 3. 真正的去重在告警记录层面（alert_type + IP + timestamp）
+                    # 4. 应用重启后重新解析文件不会创建重复告警
                             logger.warning(f"数据库查询失败，继续处理: {str(e)}")
 
                     print(f"[INFO] 处理文件: {actual_file_path}")

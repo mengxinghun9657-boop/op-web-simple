@@ -102,7 +102,7 @@
             </div>
           </div>
           <div class="content-card-body">
-            <div ref="topNodesChartRef" class="chart" style="height: 450px"></div>
+            <div ref="topNodesChartRef" class="chart" :style="{ height: topNodesChartHeight }"></div>
           </div>
         </div>
       </el-col>
@@ -127,6 +127,7 @@ const timeRange = ref({
 const trendGroupBy = ref('day')
 const distributionDimension = ref('alert_type')
 const topNodesOrderBy = ref('total')
+const topNodesChartHeight = ref('360px')
 
 // 图表实例
 const trendChartRef = ref(null)
@@ -367,8 +368,12 @@ const renderTopNodesChart = (data) => {
   if (!topNodesChart) {
     topNodesChart = echarts.init(topNodesChartRef.value)
   }
+
+  const nodeCount = data.top_nodes?.length || 0
+  const calculatedHeight = Math.max(280, Math.min(440, 120 + nodeCount * 42))
+  topNodesChartHeight.value = `${calculatedHeight}px`
   
-  const nodes = data.top_nodes.map(item => item.hostname || item.ip || item.cluster_id)
+  const nodes = data.top_nodes.map(item => item.ip || item.hostname || item.cluster_id || '未知节点')
   const total = data.top_nodes.map(item => item.total_alerts)
   const critical = data.top_nodes.map(item => item.critical_count)
   const warning = data.top_nodes.map(item => item.warning_count)
@@ -378,15 +383,35 @@ const renderTopNodesChart = (data) => {
       trigger: 'axis',
       axisPointer: {
         type: 'shadow'
+      },
+      formatter: (params) => {
+        const dataIndex = params?.[0]?.dataIndex ?? 0
+        const node = data.top_nodes[dataIndex] || {}
+        const label = node.ip || node.hostname || node.cluster_id || '未知节点'
+        const lines = [`节点IP: ${label}`]
+
+        if (node.hostname && node.hostname !== label) {
+          lines.push(`主机名: ${node.hostname}`)
+        }
+        if (node.cluster_id) {
+          lines.push(`集群ID: ${node.cluster_id}`)
+        }
+
+        params.forEach(item => {
+          lines.push(`${item.marker}${item.seriesName}: ${item.value}`)
+        })
+
+        return lines.join('<br/>')
       }
     },
     legend: {
       data: ['Critical', 'Warning', '其他']
     },
     grid: {
-      left: '3%',
+      left: '6%',
       right: '4%',
-      bottom: '3%',
+      top: 50,
+      bottom: 16,
       containLabel: true
     },
     xAxis: {
@@ -394,13 +419,18 @@ const renderTopNodesChart = (data) => {
     },
     yAxis: {
       type: 'category',
-      data: nodes
+      data: nodes,
+      axisLabel: {
+        width: 180,
+        overflow: 'truncate'
+      }
     },
     series: [
       {
         name: 'Critical',
         type: 'bar',
         stack: 'total',
+        barMaxWidth: 28,
         data: critical,
         itemStyle: { color: '#F56C6C' }
       },
@@ -408,6 +438,7 @@ const renderTopNodesChart = (data) => {
         name: 'Warning',
         type: 'bar',
         stack: 'total',
+        barMaxWidth: 28,
         data: warning,
         itemStyle: { color: '#E6A23C' }
       },
@@ -415,6 +446,7 @@ const renderTopNodesChart = (data) => {
         name: '其他',
         type: 'bar',
         stack: 'total',
+        barMaxWidth: 28,
         data: total.map((t, i) => t - critical[i] - warning[i]),
         itemStyle: { color: '#409EFF' }
       }
@@ -422,6 +454,7 @@ const renderTopNodesChart = (data) => {
   }
   
   topNodesChart.setOption(option)
+  topNodesChart.resize()
 }
 
 // 窗口大小变化时重新渲染

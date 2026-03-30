@@ -71,6 +71,28 @@ CREATE TABLE IF NOT EXISTS `tasks` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务表';
 
 -- ============================================
+-- GPU HAS 自动化巡检记录表
+-- ============================================
+CREATE TABLE IF NOT EXISTS `gpu_inspection_records` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `instance_id` VARCHAR(100) NOT NULL UNIQUE COMMENT '实例ID',
+    `instance_name` VARCHAR(255) NOT NULL COMMENT '实例名称',
+    `gpu_card` VARCHAR(50) NOT NULL COMMENT 'GPU型号',
+    `internal_ip` VARCHAR(64) DEFAULT NULL COMMENT '内网IP',
+    `has_alive` VARCHAR(32) NOT NULL DEFAULT 'unknown' COMMENT 'HAS状态',
+    `region` VARCHAR(50) DEFAULT NULL COMMENT '区域',
+    `source_updated_at` DATETIME DEFAULT NULL COMMENT '源数据更新时间',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_instance_name` (`instance_name`),
+    INDEX `idx_internal_ip` (`internal_ip`),
+    INDEX `idx_gpu_card` (`gpu_card`),
+    INDEX `idx_has_alive` (`has_alive`),
+    INDEX `idx_region` (`region`),
+    INDEX `idx_status_card` (`has_alive`, `gpu_card`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='GPU HAS自动化巡检记录表';
+
+-- ============================================
 -- CMDB物理服务器表（完整版 - 145个字段）
 -- ============================================
 CREATE TABLE IF NOT EXISTS `iaas_servers` (

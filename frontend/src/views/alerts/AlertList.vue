@@ -409,7 +409,16 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="组件类型" prop="component">
-              <el-select v-model="editForm.component" placeholder="请选择组件类型" style="width: 100%" teleported popper-class="dialog-select-popper">
+              <el-select
+                v-model="editForm.component"
+                placeholder="请选择或输入组件类型"
+                style="width: 100%"
+                teleported
+                popper-class="dialog-select-popper"
+                filterable
+                allow-create
+                default-first-option
+              >
                 <el-option
                   v-for="comp in componentEnums"
                   :key="comp"

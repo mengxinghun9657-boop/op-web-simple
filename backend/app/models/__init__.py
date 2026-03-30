@@ -5,6 +5,7 @@ from app.models.user import User, UserNote, AuditLog, UserRole
 from app.models.task import Task, TaskStatus, ModuleType
 from app.models.iaas import IaasServer, IaasInstance
 from app.models.system_config import SystemConfig
+from app.models.gpu_monitoring import GPUInspectionRecord
 
 __all__ = [
     "ChatHistory",
@@ -18,4 +19,5 @@ __all__ = [
     "IaasServer",
     "IaasInstance",
     "SystemConfig",
+    "GPUInspectionRecord",
 ]

@@ -193,7 +193,7 @@ import { useUserStore } from '@/stores/user'
 import { themeManager } from '@/utils/themeManager'
 
 const isCollapsed = ref(false)
-const expandedGroups = ref(['硬件告警', '分析报告', '路由管理', '系统管理'])
+const expandedGroups = ref(['硬件告警', 'GPU 集群监控', '分析报告', '路由管理', '系统管理'])
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
@@ -230,6 +230,16 @@ const allMenuItems = [
       { name: '告警列表', path: '/alerts', icon: 'Bell' },
       { name: '告警统计', path: '/alerts/statistics', icon: 'DataLine' },
       { name: 'Webhook配置', path: '/alerts/webhooks', icon: 'Connection', roles: ['super_admin', 'admin'] },
+    ]
+  },
+
+  {
+    name: 'GPU 集群监控',
+    icon: 'Cpu',
+    children: [
+      { name: 'HAS自动化巡检', path: '/gpu-monitoring/has-inspection', icon: 'Bell' },
+      { name: 'Grafana监控仪表盘', path: '/gpu-monitoring/grafana-dashboard', icon: 'Monitor' },
+      { name: 'bottom卡时数据', path: '/gpu-monitoring/bottom-card-time', icon: 'DataLine' },
     ]
   },
 

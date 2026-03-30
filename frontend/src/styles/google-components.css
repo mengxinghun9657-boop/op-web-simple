@@ -271,6 +271,23 @@
   overflow: hidden !important;
 }
 
+.el-select-dropdown .el-scrollbar,
+.el-select-dropdown .el-scrollbar__wrap,
+.el-select-dropdown .el-scrollbar__view {
+  border-radius: inherit !important;
+  background: var(--bg-elevated) !important;
+}
+
+.el-select-dropdown .el-scrollbar__wrap,
+.el-select-dropdown .el-scrollbar__view {
+  overflow: hidden !important;
+}
+
+.el-select-dropdown__list {
+  padding: 0 !important;
+  background: var(--bg-elevated) !important;
+}
+
 /* select 聚焦时去掉 box-shadow 光晕，只保留边框颜色变化 */
 .el-select__wrapper.is-focused {
   border-color: var(--input-border-focus) !important;
@@ -282,6 +299,25 @@
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+.el-select__popper.el-popper,
+.el-dropdown__popper.el-popper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.el-select__popper.el-popper::before,
+.el-select__popper.el-popper::after,
+.el-dropdown__popper.el-popper::before,
+.el-dropdown__popper.el-popper::after {
+  display: none !important;
+}
+
+.el-select__popper .el-popper__arrow,
+.el-dropdown__popper .el-popper__arrow {
+  display: none !important;
 }
 
 .el-select-dropdown__item {
@@ -695,8 +731,8 @@
 }
 
 /* 确保弹出层不被其他元素遮挡 */
-.el-popper.is-pure:not(.el-dropdown__popper),
-.el-popper.is-light:not(.el-dropdown__popper) {
+.el-popper.is-pure:not(.el-dropdown__popper):not(.el-select__popper),
+.el-popper.is-light:not(.el-dropdown__popper):not(.el-select__popper) {
   background: var(--bg-elevated) !important;
   border: none !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-primary) !important;

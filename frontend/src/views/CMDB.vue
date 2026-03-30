@@ -478,6 +478,7 @@
                     class="modern-table"
                     size="small"
                     border
+                    scrollbar-always-on
                     style="width: 100%;"
                     :header-cell-style="{ whiteSpace: 'nowrap', fontSize: '12px', background: 'var(--bg-secondary, #f9fafb)', padding: '8px 4px' }"
                     :cell-style="{ padding: '8px 4px' }"
@@ -514,6 +515,7 @@
                     class="modern-table"
                     size="small"
                     border
+                    scrollbar-always-on
                     style="width: 100%;"
                     :header-cell-style="{ whiteSpace: 'nowrap', fontSize: '12px', background: 'var(--bg-secondary, #f9fafb)', padding: '8px 4px' }"
                     :cell-style="{ padding: '8px 4px' }"
@@ -1415,14 +1417,9 @@ onMounted(() => {
 
 /* 修复表头滚动条占位问题 - 关键修复 */
 /* Element Plus 表格在内容区域有水平滚动条时，表头右侧需要留出滚动条空间 */
-.table-wrapper :deep(.el-table__header-wrapper) {
-  overflow: hidden;
-}
-
-/* 为表头添加滚动条占位 - 与内容区域滚动条宽度一致 */
 .table-wrapper :deep(.el-table__header) {
   table-layout: fixed !important;
-  width: calc(100% - 8px) !important; /* 减去滚动条宽度 */
+  width: 100% !important;
 }
 
 .table-wrapper :deep(.el-table__body) {
@@ -1439,15 +1436,4 @@ onMounted(() => {
   position: relative;
 }
 
-/* 修复表头右侧滚动条占位 */
-.table-wrapper :deep(.el-table__header-wrapper)::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  background: var(--bg-secondary, #f9fafb);
-  border-left: 1px solid var(--border-primary, #e5e7eb);
-}
 </style>

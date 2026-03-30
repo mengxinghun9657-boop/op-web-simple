@@ -107,6 +107,17 @@ class Settings(BaseSettings):
     ERNIE_MODEL: str = "ernie-4.5-8k-preview"  # 模型名称
     ERNIE_TIMEOUT: int = 60  # API 超时时间（秒），默认 60 秒
 
+    # GPU 集群监控
+    GPU_GRAFANA_URL: str = "http://10.175.96.168:8090/d/advv4cr/gpu-e79b91-e68ea7-e4bbaa-e8a1a8-e79b98?orgId=1&from=now-1h&to=now&timezone=browser&var-gpu_type=$__all&var-instance_id=$__all"
+    GPU_GRAFANA_USERNAME: str = "admin"
+    GPU_GRAFANA_PASSWORD: str = "A7f@Q9mL2#Xp"
+    GPU_PROM_URL: str = "https://cprom.cd.baidubce.com/select/prometheus/api/v1/query_range"
+    GPU_PROM_TOKEN: str = ""
+    GPU_PROM_INSTANCE_ID: str = "cprom-j5i12oxuqj1z7"
+    GPU_PROM_CLUSTER_ID: str = "cce-xrg955qz"
+    GPU_PROM_STEP: str = "5m"
+    GPU_HAS_TARGET_GPU_TYPES: str = "H20,L20"
+
 
 # 创建全局配置实例
 settings = Settings()

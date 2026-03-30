@@ -224,6 +224,9 @@ const TASK_TYPE_MAP = {
   monitoring_bcc: 'BCC监控',
   monitoring_bos: 'BOS监控',
   monitoring_eip: 'EIP监控',
+  gpu_has_sync: 'GPU巡检同步',
+  gpu_has_collect: 'GPU巡检采集',
+  gpu_bottom_analysis: 'GPU卡时分析',
   eip: 'EIP分析',
   prometheus: '集群数据采集',
   prometheus_batch: '批量采集',
@@ -233,6 +236,9 @@ const TASK_TYPE_MAP = {
 const taskTypeColors = {
   operational: 'warning', resource: 'success', monitoring: '',
   monitoring_bcc: '', monitoring_bos: '', monitoring_eip: 'info',
+  gpu_has_sync: 'warning',
+  gpu_has_collect: 'warning',
+  gpu_bottom_analysis: 'success',
   eip: 'info', prometheus: 'danger', prometheus_batch: 'danger', prometheus_single: 'danger'
 }
 

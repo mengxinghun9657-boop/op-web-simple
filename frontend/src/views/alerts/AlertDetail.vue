@@ -53,6 +53,17 @@
                     {{ fault.device ? fault.device + '-' : '' }}{{ fault.alert_type }}
                   </el-tag>
                 </template>
+                <template v-else-if="parsedAlertTypes.length > 0">
+                  <el-tag
+                    v-for="(fault, index) in parsedAlertTypes"
+                    :key="index"
+                    :type="getFaultTagType(fault.severity)"
+                    size="small"
+                    class="alert-type-tag"
+                  >
+                    {{ fault.device ? fault.device + '-' : '' }}{{ fault.alert_type }}
+                  </el-tag>
+                </template>
                 <template v-else>
                   {{ alertData.alert.alert_type }}
                 </template>
@@ -239,7 +250,7 @@
             <div class="content-card-body">
               <!-- 多故障类型表格展示 -->
               <template v-if="alertData.diagnosis?.fault_items && alertData.diagnosis.fault_items.length > 0">
-                <el-table :data="alertData.diagnosis.fault_items" stripe border style="width: 100%">
+                <el-table :data="alertData.diagnosis.fault_items" stripe border style="width: 100%" class="manual-match-table" scrollbar-always-on>
                   <el-table-column prop="device" label="所属设备" min-width="120">
                     <template #default="{ row }">
                       <div class="device-info">
@@ -282,7 +293,16 @@
                   </el-table-column>
                   <el-table-column prop="manual_check" label="手动判断方法" min-width="200" show-overflow-tooltip>
                     <template #default="{ row }">
-                      <code class="manual-check-code">{{ row.manual_check || '-' }}</code>
+                      <div class="copyable-cell" @click.stop>
+                        <code class="manual-check-code">{{ row.manual_check || '-' }}</code>
+                        <el-icon
+                          v-if="row.manual_check"
+                          class="copy-icon"
+                          @click="copyToClipboard(row.manual_check, '手动判断方法')"
+                        >
+                          <DocumentCopy />
+                        </el-icon>
+                      </div>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -448,7 +468,8 @@ import {
   MagicStick,
   ArrowLeft,
   Loading,
-  Edit
+  Edit,
+  DocumentCopy
 } from '@element-plus/icons-vue'
 import { getAlertDetail, diagnoseAlert, updateAlertStatus } from '@/api/alerts'
 import { marked } from 'marked'
@@ -480,6 +501,14 @@ const rawDataCollapse = ref([])
 
 // ========== 新格式告警原始数据解析 ==========
 
+const normalizeRawValue = (value) => {
+  if (value === undefined || value === null) return null
+  if (typeof value === 'string' && (!value.trim() || value.trim() === 'None' || value.trim() === 'null')) {
+    return null
+  }
+  return value
+}
+
 // 获取原始数据中的字段
 const getRawDataField = (fieldName) => {
   if (!alertData.value?.alert?.raw_data) return null
@@ -490,13 +519,16 @@ const getRawDataField = (fieldName) => {
   if (rawData.error_types && Array.isArray(rawData.error_types) && rawData.error_types.length > 0) {
     const firstError = rawData.error_types[0]
     if (firstError.raw_data && firstError.raw_data[fieldName] !== undefined) {
-      return firstError.raw_data[fieldName]
+      return normalizeRawValue(firstError.raw_data[fieldName])
+    }
+    if (firstError[fieldName] !== undefined) {
+      return normalizeRawValue(firstError[fieldName])
     }
   }
 
   // 从 raw_data 直接获取（旧格式兼容）
   if (rawData[fieldName] !== undefined) {
-    return rawData[fieldName]
+    return normalizeRawValue(rawData[fieldName])
   }
 
   return null
@@ -541,6 +573,26 @@ const getAllErrorTypes = computed(() => {
     part_sn: error.part_sn || error.raw_data?.device_sn || '-',
     position: error.position || error.raw_data?.device_slot || '-'
   }))
+})
+
+const parsedAlertTypes = computed(() => {
+  const errorTypes = alertData.value?.alert?.raw_data?.error_types
+  if (!Array.isArray(errorTypes)) return []
+
+  const seen = new Set()
+  return errorTypes
+    .map(error => ({
+      device: error.device || error.raw_data?.device_id || '',
+      alert_type: error.alert_type || '',
+      severity: error.severity || 'ERROR'
+    }))
+    .filter(item => {
+      if (!item.alert_type) return false
+      const key = `${item.device}-${item.alert_type}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
 })
 
 // 获取告警详情
@@ -738,6 +790,32 @@ const formatDateTime = (dateStr) => {
     minute: '2-digit',
     second: '2-digit'
   })
+}
+
+const copyToClipboard = async (text, label = '内容') => {
+  if (!text) {
+    ElMessage.warning('内容为空，无法复制')
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(String(text))
+    ElMessage.success(`${label}已复制到剪贴板`)
+  } catch (err) {
+    const textarea = document.createElement('textarea')
+    textarea.value = String(text)
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    try {
+      document.execCommand('copy')
+      ElMessage.success(`${label}已复制到剪贴板`)
+    } catch (e) {
+      ElMessage.error('复制失败，请手动复制')
+    }
+    document.body.removeChild(textarea)
+  }
 }
 
 // ========== 处理备注编辑 ==========
@@ -993,6 +1071,36 @@ onMounted(() => {
   padding: 2px 4px;
   border-radius: 3px;
   color: var(--text-secondary);
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copyable-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.copy-icon {
+  opacity: 0;
+  cursor: pointer;
+  color: var(--color-primary, #409eff);
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.copyable-cell:hover .copy-icon {
+  opacity: 1;
+}
+
+.manual-match-table :deep(.el-table__header-wrapper),
+.manual-match-table :deep(.el-table__body-wrapper) {
+  overflow: auto;
 }
 
 /* 原始数据展开样式 */

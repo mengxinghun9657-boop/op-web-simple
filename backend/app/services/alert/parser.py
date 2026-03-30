@@ -136,8 +136,12 @@ class AlertParserService:
             node_type = 'cce'
             logger.debug(f"从文件名提取CCE集群ID: {cluster_id}")
         else:
-            # 检查是否是BCC实例 (格式: cdhmlcc001-bcc-cdonlinea-com-<instance_id>.cdhmlcc001)
-            bcc_pattern = r'cdhmlcc001-bcc-cdonlinea-com-(\d+)\.cdhmlcc001'
+            # 检查是否是BBC/BCC实例
+            # changan 目录中的样本同时存在 bbc 和 bcc 两种命名
+            # 例如:
+            # - cdhmlcc001-bbc-cdonlinea-com-1566995.cdhmlcc001
+            # - cdhmlcc001-bcc-cdonlinea-com-1569000.cdhmlcc001
+            bcc_pattern = r'cdhmlcc001-b[bc]c-cdonlinea-com-(\d+)\.cdhmlcc001'
             bcc_match = re.search(bcc_pattern, clean_name)
             if bcc_match:
                 instance_id = bcc_match.group(1)

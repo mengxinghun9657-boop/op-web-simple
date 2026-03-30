@@ -6,6 +6,7 @@ import logging
 import re
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.models.alert import FaultManual
 
 logger = logging.getLogger(__name__)
@@ -69,12 +70,13 @@ class ManualMatchService:
         """
         # 提取基础告警类型（去掉XID）
         base_alert_type = self._extract_base_alert_type(alert_type)
+        normalized_component = self._normalize_component(component)
         
         # 1. 精确匹配: category + alert_type
-        if component:
-            manual = self._exact_match(component, base_alert_type)
+        if normalized_component:
+            manual = self._exact_match(normalized_component, base_alert_type)
             if manual:
-                logger.info(f"精确匹配成功: {component} - {base_alert_type}")
+                logger.info(f"精确匹配成功: {normalized_component} - {base_alert_type}")
                 return self._format_result(manual)
         
         # 2. 模糊匹配: 仅 alert_type
@@ -120,18 +122,51 @@ class ManualMatchService:
     def _extract_base_alert_type(self, alert_type: str) -> str:
         """提取基础告警类型（去掉XID）"""
         return re.sub(r'_Xid\[[^\]]+\]$', '', alert_type)
+
+    def _normalize_component(self, component: Optional[str]) -> Optional[str]:
+        """标准化组件名，避免 GPU/gpu 这类大小写差异导致匹配失败"""
+        if not component:
+            return None
+
+        component_str = str(component).strip()
+        if not component_str:
+            return None
+
+        component_aliases = {
+            'gpu': 'GPU',
+            'vm_gpu': 'GPU',
+            'nic': 'Network',
+            'network': 'Network',
+            'cpu': 'CPU',
+            'memory': 'Memory',
+            'disk': 'Disk',
+        }
+
+        return component_aliases.get(component_str.lower(), component_str)
     
     def _exact_match(self, category: str, alert_type: str) -> Optional[FaultManual]:
         """精确匹配"""
+        normalized_category = category.strip().lower()
+        normalized_alert_type = alert_type.strip().lower()
+
         return self.db.query(FaultManual).filter(
-            FaultManual.category == category,
-            FaultManual.alert_type == alert_type
+            func.lower(func.trim(FaultManual.category)) == normalized_category,
+            func.lower(func.trim(FaultManual.alert_type)) == normalized_alert_type
         ).first()
     
     def _fuzzy_match(self, alert_type: str) -> Optional[FaultManual]:
         """模糊匹配"""
+        normalized_alert_type = alert_type.strip().lower()
+
+        manual = self.db.query(FaultManual).filter(
+            func.lower(func.trim(FaultManual.alert_type)) == normalized_alert_type
+        ).first()
+        if manual:
+            return manual
+
+        # 兜底：处理手册中存在前后缀或历史脏数据的情况
         return self.db.query(FaultManual).filter(
-            FaultManual.alert_type == alert_type
+            func.lower(func.trim(FaultManual.alert_type)).contains(normalized_alert_type)
         ).first()
     
     def _format_result(self, manual: FaultManual) -> Dict[str, Any]:
@@ -198,15 +233,46 @@ class ManualMatchService:
         customer_aware = False
         has_level = False
         manual_check = False
+        fault_items = []
+        seen_fault_keys = set()
         
-        for match_info in all_matches:
+        for idx, match_info in enumerate(all_matches):
             match = match_info['match']
             error_type = match_info['error_type']
             component = match_info.get('component', '')
+            error_data = error_types[idx] if idx < len(error_types) else {}
+            raw_data = error_data.get('raw_data', {}) or {}
+            device = error_data.get('device') or raw_data.get('device_id') or '-'
+            part_model = error_data.get('part_model') or raw_data.get('part_model') or raw_data.get('device_type') or ''
+            part_sn = error_data.get('part_sn') or raw_data.get('part_sn') or raw_data.get('device_sn') or ''
+            impact_description = match.get('impact', '')
+            solution = match.get('solution', '')
+            fault_name = match.get('name_zh', '') or error_type
+
+            fault_key = (device, error_type, part_sn)
+            if fault_key not in seen_fault_keys:
+                seen_fault_keys.add(fault_key)
+                fault_items.append({
+                    'device': device,
+                    'device_slot': error_data.get('position') or raw_data.get('device_slot') or '',
+                    'part_model': part_model,
+                    'part_sn': part_sn,
+                    'fault_name': fault_name,
+                    'alert_type': error_type,
+                    'severity': error_data.get('severity', 'ERROR'),
+                    'danger_level': match.get('danger_level', 'P2'),
+                    'customer_aware': match.get('customer_aware', False),
+                    'impact_description': impact_description,
+                    'solution': solution,
+                    'manual_check': match.get('manual_check', ''),
+                    'timestamp': error_data.get('timestamp').isoformat() if error_data.get('timestamp') else '',
+                    'source': error_data.get('source', '') or raw_data.get('source', '')
+                })
             
-            name_parts.append(f"[{component}] {error_type}: {match.get('name_zh', '')}")
-            solution_parts.append(f"**{error_type}**:\n{match.get('solution', '')}")
-            impact_parts.append(f"{error_type}: {match.get('impact', '')}")
+            concise_name = f"{device}: {fault_name}" if device and device != '-' else fault_name
+            name_parts.append(concise_name)
+            solution_parts.append(f"{device}: {solution}" if device and device != '-' else solution)
+            impact_parts.append(f"{device}: {error_type}，{impact_description}" if device and device != '-' else f"{error_type}: {impact_description}")
             danger_levels.append(match.get('danger_level', 'INFO'))
             customer_aware = customer_aware or match.get('customer_aware', False)
             has_level = has_level or match.get('has_level', False)
@@ -218,26 +284,31 @@ class ManualMatchService:
         
         # 构建AI解读用的完整prompt
         all_error_types_str = '\n'.join([
-            f"- {e.get('alert_type')} ({e.get('component')}, {e.get('severity')})"
+            f"- {e.get('device') or '-'}: {e.get('alert_type')} ({e.get('component')}, {e.get('severity')})"
             for e in error_types
         ])
+
+        unique_name_parts = list(dict.fromkeys([part for part in name_parts if part]))
+        unique_solution_parts = list(dict.fromkeys([part for part in solution_parts if part]))
+        unique_impact_parts = list(dict.fromkeys([part for part in impact_parts if part]))
         
         return {
             'matched': True,
-            'name_zh': ' | '.join(name_parts),
-            'solution': '\n\n'.join(solution_parts),
-            'impact': f"检测到 {len(error_types)} 种错误类型:\n" + '\n'.join(impact_parts),
-            'recovery': '\n\n'.join(solution_parts),
+            'name_zh': ' | '.join(unique_name_parts),
+            'solution': '\n'.join(unique_solution_parts),
+            'impact': f"检测到 {len(fault_items)} 个故障项:\n" + '\n'.join(unique_impact_parts),
+            'recovery': '\n'.join(unique_solution_parts),
             'danger_level': max_danger_level,
             'customer_aware': customer_aware,
             'has_level': has_level,
             'manual_check': manual_check,
             'error_count': len(error_types),
             'matched_count': len(all_matches),
+            'fault_items': fault_items,
             # AI解读用的完整信息
             'ai_prompt': {
                 'all_error_types': all_error_types_str,
-                'all_solutions': '\n\n'.join(solution_parts),
-                'all_impacts': '\n'.join(impact_parts)
+                'all_solutions': '\n'.join(unique_solution_parts),
+                'all_impacts': '\n'.join(unique_impact_parts)
             }
         }

@@ -274,6 +274,10 @@ app.include_router(config.router, prefix=settings.API_V1_PREFIX, tags=["系统�
 from app.api.v1 import pfs
 app.include_router(pfs.router, prefix=f"{settings.API_V1_PREFIX}/pfs", tags=["PFS 监控"])
 
+# GPU 集群监控路由
+from app.api.v1 import gpu_monitoring
+app.include_router(gpu_monitoring.router, prefix=settings.API_V1_PREFIX, tags=["GPU 集群监控"])
+
 # 硬件告警管理路由（统一注册）
 from app.api.v1.api import api_router
 app.include_router(api_router, prefix=settings.API_V1_PREFIX, tags=["硬件告警管理"])

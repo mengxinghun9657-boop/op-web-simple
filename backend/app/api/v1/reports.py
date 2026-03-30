@@ -14,7 +14,7 @@ from app.services.report_upload_service import get_report_upload_service
 router = APIRouter()
 
 ReportType = Literal['html', 'excel']
-ModuleType = Literal['bcc', 'bos', 'eip', 'resource', 'operational', 'prometheus']
+ModuleType = Literal['bcc', 'bos', 'eip', 'resource', 'operational', 'prometheus', 'gpu_bottom']
 
 
 @router.get("/proxy/{file_path:path}")
@@ -79,6 +79,7 @@ async def download_report(
     - resource: 资源综合分析
     - operational: 运营数据分析
     - prometheus: Prometheus批量采集
+    - gpu_bottom: GPU bottom卡时分析
 
     **报告类型**:
     - html: HTML报告
@@ -153,7 +154,8 @@ async def get_report_info(
             'eip': ['html'],
             'resource': ['html'],
             'operational': ['html'],
-            'prometheus': ['json']  # 特殊情况
+            'prometheus': ['json'],  # 特殊情况
+            'gpu_bottom': ['html', 'excel']
         }
 
         if module_type not in module_report_types:

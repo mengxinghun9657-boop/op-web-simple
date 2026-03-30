@@ -82,6 +82,22 @@ class AlertProcessor:
             return [self._make_json_serializable(item) for item in obj]
         else:
             return obj
+
+    def _parse_file_to_alert_records(self, file_path: str) -> Optional[list]:
+        """
+        解析文件并转换为告警记录列表。
+
+        当前解析器返回 ParsedAlert，处理器统一在这里转成旧流程可消费的字典列表。
+        """
+        parsed_alert = self.parser.parse_file(file_path)
+        if not parsed_alert:
+            return None
+
+        alerts_data = AlertParserService.convert_to_alert_records(parsed_alert)
+        if not alerts_data:
+            return None
+
+        return alerts_data
     
     async def process_alert_file(self, file_path: str) -> bool:
         """
@@ -142,7 +158,7 @@ class AlertProcessor:
                                 self.webhook_notifier = WebhookNotifier(db, redis_client=self.redis_client)
                             
                             # 解析文件
-                            alerts_data = self.parser.parse_file(file_path)
+                            alerts_data = self._parse_file_to_alert_records(file_path)
                             if not alerts_data:
                                 logger.warning(f"文件解析失败或无数据: {file_path}")
                                 return False
@@ -188,7 +204,7 @@ class AlertProcessor:
                 self.webhook_notifier = WebhookNotifier(db)
             
             # 4. 解析告警文件
-            alerts_data = self.parser.parse_file(file_path)
+            alerts_data = self._parse_file_to_alert_records(file_path)
             if not alerts_data:
                 logger.warning(f"文件解析失败或无数据: {file_path}")
                 return False
@@ -413,7 +429,14 @@ class AlertProcessor:
             print(f"DEBUG: 步骤3 - 匹配故障手册")
             # 3. 匹配故障手册
             logger.info(f"📋 开始匹配故障手册: alert_id={alert.id}")
-            diagnosis = await self._match_manual(alert, db)
+            fault_items = None
+            raw_data = alert_data.get('raw_data')
+            if isinstance(raw_data, dict):
+                candidate_fault_items = raw_data.get('error_types')
+                if isinstance(candidate_fault_items, list) and candidate_fault_items:
+                    fault_items = candidate_fault_items
+
+            diagnosis = await self._match_manual(alert, db, fault_items=fault_items)
             print(f"DEBUG: 手册匹配结果: diagnosis={diagnosis}")
             logger.info(f"📋 手册匹配完成: diagnosis={'成功' if diagnosis else '失败'}")
             
@@ -676,7 +699,6 @@ class AlertProcessor:
                 danger_level=match_result.get('danger_level'),
                 manual_solution=match_result.get('solution'),
                 manual_impact=match_result.get('impact'),
-                manual_recovery=match_result.get('recovery'),
                 customer_aware=match_result.get('customer_aware'),
                 fault_items=match_result.get('fault_items'),  # 多故障类型详情
                 source='manual' if match_result.get('matched') else 'none'

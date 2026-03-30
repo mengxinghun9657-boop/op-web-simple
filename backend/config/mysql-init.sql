@@ -384,7 +384,8 @@ CREATE TABLE IF NOT EXISTS `alert_records` (
     `resolved_by` VARCHAR(100) COMMENT '处理人',
     `resolved_at` DATETIME COMMENT '处理时间',
     `resolution_notes` TEXT COMMENT '处理备注',
-    
+    `resolution_result` TEXT COMMENT '处理结果（告警处理完毕后填写）',
+
     -- 是否CCE集群（用于区分处理流程）
     `is_cce_cluster` BOOLEAN DEFAULT FALSE COMMENT '是否CCE集群告警',
     
@@ -427,6 +428,9 @@ CREATE TABLE IF NOT EXISTS `diagnosis_results` (
     `manual_recovery` TEXT COMMENT '恢复方案',
     `danger_level` VARCHAR(50) COMMENT '危害等级（严重/中等/轻微）',
     `customer_aware` BOOLEAN COMMENT '是否客户有感',
+    
+    -- 多故障类型详情（JSON格式，用于前端表格展示）
+    `fault_items` JSON COMMENT '故障类型列表（包含设备、故障名、解决方案等）',
     
     -- ========== API诊断结果（仅CCE集群） ==========
     `api_task_id` VARCHAR(200) COMMENT 'API任务ID',

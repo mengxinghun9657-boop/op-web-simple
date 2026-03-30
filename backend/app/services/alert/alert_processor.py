@@ -627,13 +627,14 @@ class AlertProcessor:
                 diagnosis.api_abnormal_count = existing.api_abnormal_count
         logger.info(f"🔄 复用诊断: {len(alert_diagnosis_list)} 条告警 → task_id={existing.api_task_id}")
     
-    async def _match_manual(self, alert: AlertRecord, db: Session) -> Optional[DiagnosisResult]:
+    async def _match_manual(self, alert: AlertRecord, db: Session, fault_items: list = None) -> Optional[DiagnosisResult]:
         """
-        匹配故障手册
+        匹配故障手册（支持多故障类型）
         
         Args:
             alert: 告警记录
             db: 数据库Session
+            fault_items: 故障类型列表（可选，用于多故障类型场景）
             
         Returns:
             诊断结果
@@ -646,25 +647,39 @@ class AlertProcessor:
                 logger.error(f"❌ manual_matcher未初始化: alert_id={alert.id}")
                 raise Exception("manual_matcher未初始化")
             
-            logger.info(f"📋 调用手册匹配: alert_type={alert.alert_type}, component={alert.component}")
+            # 多故障类型匹配
+            if fault_items and len(fault_items) > 0:
+                logger.info(f"📋 多故障类型匹配: 共 {len(fault_items)} 个故障项")
+                match_result = self.manual_matcher.match_multiple(fault_items)
+            else:
+                logger.info(f"📋 单故障类型匹配: alert_type={alert.alert_type}, component={alert.component}")
+                manual = self.manual_matcher.match(alert.alert_type, alert.component)
+                match_result = {
+                    'matched': manual is not None,
+                    'name_zh': manual.get('name_zh') if manual else None,
+                    'danger_level': manual.get('danger_level') if manual else None,
+                    'solution': manual.get('solution') if manual else None,
+                    'impact': manual.get('impact') if manual else None,
+                    'recovery': manual.get('recovery') if manual else None,
+                    'customer_aware': manual.get('customer_aware') if manual else None,
+                    'fault_items': None
+                }
             
-            # 匹配手册
-            manual = self.manual_matcher.match(alert.alert_type, alert.component)
-            
-            logger.info(f"📋 手册匹配结果: manual={'找到' if manual else '未找到'}")
+            logger.info(f"📋 手册匹配结果: matched={match_result.get('matched', False)}")
             
             # 创建诊断结果
             logger.info(f"💾 创建诊断结果: alert_id={alert.id}")
             diagnosis = DiagnosisResult(
                 alert_id=alert.id,
-                manual_matched=manual is not None,
-                manual_name_zh=manual.get('name_zh') if manual else None,
-                danger_level=manual.get('danger_level') if manual else None,
-                manual_solution=manual.get('solution') if manual else None,
-                manual_impact=manual.get('impact') if manual else None,
-                manual_recovery=manual.get('recovery') if manual else None,
-                customer_aware=manual.get('customer_aware') if manual else None,
-                source='manual' if manual else 'none'
+                manual_matched=match_result.get('matched', False),
+                manual_name_zh=match_result.get('name_zh'),
+                danger_level=match_result.get('danger_level'),
+                manual_solution=match_result.get('solution'),
+                manual_impact=match_result.get('impact'),
+                manual_recovery=match_result.get('recovery'),
+                customer_aware=match_result.get('customer_aware'),
+                fault_items=match_result.get('fault_items'),  # 多故障类型详情
+                source='manual' if match_result.get('matched') else 'none'
             )
             
             logger.info(f"💾 保存诊断结果到数据库: alert_id={alert.id}")
@@ -674,10 +689,10 @@ class AlertProcessor:
             
             logger.info(f"✅ 诊断结果创建成功: diagnosis_id={diagnosis.id}, alert_id={alert.id}")
             
-            if manual:
-                logger.info(f"✅ 手册匹配成功: 告警ID={alert.id}, 类型={alert.alert_type}, 手册={manual.get('name_zh')}")
-                logger.debug(f"   影响: {manual.get('impact', 'N/A')[:50]}...")
-                logger.debug(f"   恢复: {manual.get('recovery', 'N/A')[:50]}...")
+            if match_result.get('matched'):
+                logger.info(f"✅ 手册匹配成功: 告警ID={alert.id}, 类型={alert.alert_type}")
+                if match_result.get('fault_items'):
+                    logger.info(f"   匹配到 {len(match_result['fault_items'])} 个故障项")
             else:
                 logger.warning(f"⚠️ 未找到匹配的手册: 告警ID={alert.id}, 类型={alert.alert_type}")
             

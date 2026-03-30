@@ -51,6 +51,7 @@ class AlertRecord(Base):
     resolved_by = Column(String(100), comment='处理人')
     resolved_at = Column(DateTime, comment='处理时间')
     resolution_notes = Column(Text, comment='处理备注')
+    resolution_result = Column(Text, comment='处理结果（告警处理完毕后填写）')
     
     # 是否CCE集群（用于区分处理流程）
     is_cce_cluster = Column(Boolean, default=False, index=True, comment='是否CCE集群告警')
@@ -97,9 +98,12 @@ class DiagnosisResult(Base):
     manual_name_zh = Column(String(500), comment='故障中文名称（预留足够长度）')
     manual_solution = Column(Text, comment='手册解决方案（完整文本）')
     manual_impact = Column(Text, comment='影响描述')
-    manual_recovery = Column(Text, comment='恢复方案')
+    # manual_recovery 已合并到 manual_solution，保留字段名兼容历史数据
     danger_level = Column(String(50), index=True, comment='危害等级（严重/中等/轻微）')
     customer_aware = Column(Boolean, comment='是否客户有感')
+    
+    # 多故障类型详情（JSON格式，用于前端表格展示）
+    fault_items = Column(JSON, comment='故障类型列表（包含设备、故障名、解决方案等）')
     
     # ========== API诊断结果（仅CCE集群） ==========
     api_task_id = Column(String(200), comment='API任务ID')

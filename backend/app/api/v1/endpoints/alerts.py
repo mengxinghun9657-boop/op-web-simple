@@ -342,12 +342,24 @@ async def get_alert_detail(
         alert_dict['severity'] = severity_mapped
         
         diagnosis_data = DiagnosisResultResponse.from_orm(diagnosis) if diagnosis else None
-        
+
+        # 构建诊断数据，合并解决方案和恢复方案
+        diagnosis_dict = None
+        if diagnosis_data:
+            diagnosis_dict = diagnosis_data.dict()
+            # 合并 manual_solution 和 manual_recovery 为 suggested_solution
+            # 优先使用 manual_solution，如果不存在则使用 manual_recovery
+            solution = diagnosis_dict.get('manual_solution') or diagnosis_dict.get('manual_recovery') or ''
+            diagnosis_dict['suggested_solution'] = solution
+            # 移除旧的字段（可选，为了兼容性可以保留）
+            # diagnosis_dict.pop('manual_solution', None)
+            # diagnosis_dict.pop('manual_recovery', None)
+
         return APIResponse(
             success=True,
             data={
                 "alert": alert_dict,
-                "diagnosis": diagnosis_data.dict() if diagnosis_data else None
+                "diagnosis": diagnosis_dict
             },
             message="获取成功"
         )
@@ -671,29 +683,39 @@ async def update_alert_status(
             )
         
         # 验证请求参数
-        if not status_update.status and not status_update.resolution_notes:
+        has_updates = any([
+            status_update.status,
+            status_update.resolution_notes is not None,
+            status_update.resolution_result is not None
+        ])
+        if not has_updates:
             return APIResponse(
                 success=False,
                 error="参数错误",
-                message="必须提供status或resolution_notes中的至少一个"
+                message="必须提供status、resolution_notes或resolution_result中的至少一个"
             )
-        
-        # 如果只更新备注
-        if not status_update.status and status_update.resolution_notes is not None:
-            alert.resolution_notes = status_update.resolution_notes
-            logger.info(f"告警备注更新: ID={alert.id}, 操作人=系统管理员")
-            
+
+        # 如果只更新备注或处理结果（不更新状态）
+        if not status_update.status:
+            if status_update.resolution_notes is not None:
+                alert.resolution_notes = status_update.resolution_notes
+            if status_update.resolution_result is not None:
+                alert.resolution_result = status_update.resolution_result
+
+            logger.info(f"告警信息更新: ID={alert.id}, 操作人=系统管理员")
+
             db.commit()
             db.refresh(alert)
-            
+
             return APIResponse(
                 success=True,
                 data={
                     "id": alert.id,
                     "status": alert.status,
-                    "resolution_notes": alert.resolution_notes
+                    "resolution_notes": alert.resolution_notes,
+                    "resolution_result": alert.resolution_result
                 },
-                message="备注更新成功"
+                message="信息更新成功"
             )
         
         # 验证状态值
@@ -714,6 +736,8 @@ async def update_alert_status(
             alert.resolved_at = datetime.now()
             if status_update.resolution_notes:
                 alert.resolution_notes = status_update.resolution_notes
+            if status_update.resolution_result:
+                alert.resolution_result = status_update.resolution_result
             # TODO: 从当前用户获取处理人信息
             alert.resolved_by = "系统管理员"  # 暂时使用默认值
         elif status_update.status == 'pending':
@@ -721,6 +745,7 @@ async def update_alert_status(
             alert.resolved_at = None
             alert.resolved_by = None
             alert.resolution_notes = None
+            alert.resolution_result = None
         
         # 记录状态变更日志
         logger.info(f"告警状态手动更新: ID={alert.id}, {old_status} → {status_update.status}, 操作人=系统管理员")
@@ -737,7 +762,8 @@ async def update_alert_status(
                 "status": alert.status,
                 "resolved_by": alert.resolved_by,
                 "resolved_at": alert.resolved_at.isoformat() if alert.resolved_at else None,
-                "resolution_notes": alert.resolution_notes
+                "resolution_notes": alert.resolution_notes,
+                "resolution_result": alert.resolution_result
             },
             message="状态更新成功"
         )

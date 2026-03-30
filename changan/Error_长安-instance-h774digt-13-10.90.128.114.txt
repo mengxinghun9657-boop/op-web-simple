@@ -1,0 +1,25 @@
+[
+  {
+    "detail": [
+      {
+        "case_info": "ERROR#eth4_None-NetLinkDown&VYXEBCL011T&C4_70_BD_F7_61_A2",
+        "create_time": "2026-03-26 16:36:42",
+        "device_id": "eth4",
+        "device_slot": "None",
+        "device_sn": "C4_70_BD_F7_61_A2",
+        "device_type": "nic",
+        "error_time": "2026-03-26 16:36:35",
+        "handler": "error_pool",
+        "hostname": "instance-h774digt-13",
+        "hostsn": "219597551644",
+        "id": 62992798,
+        "racksn": "None",
+        "reason": "NetLinkDown",
+        "source": "BBC-HAS",
+        "update_time": "2026-03-26 16:36:42"
+      }
+    ],
+    "hostsn": "219597551644",
+    "num": 1
+  }
+]

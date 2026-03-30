@@ -40,8 +40,23 @@
             <el-descriptions-item label="告警ID">
               {{ alertData.alert.id }}
             </el-descriptions-item>
-            <el-descriptions-item label="告警类型">
-              {{ alertData.alert.alert_type }}
+            <el-descriptions-item label="告警类型" :span="1">
+              <div class="alert-types-container">
+                <template v-if="alertData.diagnosis && alertData.diagnosis.fault_items && alertData.diagnosis.fault_items.length > 0">
+                  <el-tag
+                    v-for="(fault, index) in getUniqueFaultTypes(alertData.diagnosis.fault_items)"
+                    :key="index"
+                    :type="getFaultTagType(fault.severity)"
+                    size="small"
+                    class="alert-type-tag"
+                  >
+                    {{ fault.device ? fault.device + '-' : '' }}{{ fault.alert_type }}
+                  </el-tag>
+                </template>
+                <template v-else>
+                  {{ alertData.alert.alert_type }}
+                </template>
+              </div>
             </el-descriptions-item>
             <el-descriptions-item label="组件类型">
               <el-tag :type="getComponentTagType(alertData.alert.component)">
@@ -82,13 +97,120 @@
             <el-descriptions-item label="文件路径" :span="2">
               <span class="file-path">{{ alertData.alert.file_path || '-' }}</span>
             </el-descriptions-item>
+
+            <!-- 原始数据展开 - 新格式告警详情 -->
+            <el-descriptions-item label="原始数据" :span="2">
+              <el-collapse v-if="hasRawDataDetails" v-model="rawDataCollapse">
+                <el-collapse-item title="查看详细硬件信息" name="rawData">
+                  <el-descriptions :column="2" border size="small">
+                    <!-- 设备信息 -->
+                    <el-descriptions-item label="设备ID" v-if="getRawDataField('device_id')">
+                      {{ getRawDataField('device_id') }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="设备槽位" v-if="getRawDataField('device_slot') && getRawDataField('device_slot') !== 'None'">
+                      {{ getRawDataField('device_slot') }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="设备类型" v-if="getRawDataField('device_type')">
+                      <el-tag size="small">{{ getRawDataField('device_type') }}</el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="设备SN" v-if="getRawDataField('device_sn')">
+                      {{ getRawDataField('device_sn') }}
+                    </el-descriptions-item>
+
+                    <!-- 主机信息 -->
+                    <el-descriptions-item label="主机SN" v-if="getRawDataField('hostsn')">
+                      {{ getRawDataField('hostsn') }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="机架SN" v-if="getRawDataField('racksn') && getRawDataField('racksn') !== 'None'">
+                      {{ getRawDataField('racksn') }}
+                    </el-descriptions-item>
+
+                    <!-- 部件信息 -->
+                    <el-descriptions-item label="部件型号" v-if="getRawDataField('part_model')">
+                      {{ getRawDataField('part_model') }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="部件SN" v-if="getRawDataField('part_sn')">
+                      {{ getRawDataField('part_sn') }}
+                    </el-descriptions-item>
+
+                    <!-- 告警信息 -->
+                    <el-descriptions-item label="告警来源" v-if="getRawDataField('source')">
+                      <el-tag type="info" size="small">{{ getRawDataField('source') }}</el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="处理类型" v-if="getRawDataField('handler')">
+                      <el-tag type="warning" size="small">{{ getRawDataField('handler') }}</el-tag>
+                    </el-descriptions-item>
+
+                    <!-- case_info 原始信息 -->
+                    <el-descriptions-item label="原始case_info" :span="2" v-if="getRawDataField('case_info')">
+                      <code class="case-info-code">{{ getRawDataField('case_info') }}</code>
+                    </el-descriptions-item>
+                  </el-descriptions>
+
+                  <!-- 多错误类型展示 -->
+                  <div v-if="hasMultipleErrorTypes" class="error-types-section">
+                    <div class="section-title">所有错误类型 ({{ getErrorTypesCount }}个)</div>
+                    <el-table :data="getAllErrorTypes" size="small" border>
+                      <el-table-column prop="device" label="设备" width="100" />
+                      <el-table-column prop="alert_type" label="告警类型" width="150" />
+                      <el-table-column prop="severity" label="级别" width="80">
+                        <template #default="{ row }">
+                          <el-tag :type="getSeverityTagType(row.severity)" size="small">{{ row.severity }}</el-tag>
+                        </template>
+                      </el-table-column>
+                      <el-table-column prop="component" label="组件" width="100" />
+                      <el-table-column prop="part_sn" label="部件SN" min-width="150" show-overflow-tooltip />
+                    </el-table>
+                  </div>
+                </el-collapse-item>
+              </el-collapse>
+              <span v-else class="no-data">-</span>
+            </el-descriptions-item>
+
+            <!-- 处理备注 - 可编辑 -->
+            <el-descriptions-item label="处理备注" :span="2">
+              <div class="editable-field">
+                <div v-if="!editingNotes" class="resolution-notes" @click="startEditNotes">
+                  {{ alertData.alert.resolution_notes || '点击添加备注...' }}
+                  <el-icon class="edit-icon"><Edit /></el-icon>
+                </div>
+                <div v-else class="edit-form">
+                  <el-input
+                    v-model="editingNotesValue"
+                    type="textarea"
+                    :rows="3"
+                    placeholder="请输入处理备注"
+                  />
+                  <div class="edit-actions">
+                    <el-button type="primary" size="small" @click="saveNotes" :loading="savingNotes">保存</el-button>
+                    <el-button size="small" @click="cancelEditNotes">取消</el-button>
+                  </div>
+                </div>
+              </div>
+            </el-descriptions-item>
+            <!-- 处理结果 - 仅已处理状态显示，可编辑 -->
             <el-descriptions-item 
-              v-if="alertData.alert.resolution_notes" 
-              label="处理备注" 
+              v-if="alertData.alert.status === 'resolved' || alertData.alert.resolution_result" 
+              label="处理结果" 
               :span="2"
             >
-              <div class="resolution-notes">
-                {{ alertData.alert.resolution_notes }}
+              <div class="editable-field">
+                <div v-if="!editingResult" class="resolution-result" @click="startEditResult">
+                  {{ alertData.alert.resolution_result || '点击添加处理结果...' }}
+                  <el-icon class="edit-icon"><Edit /></el-icon>
+                </div>
+                <div v-else class="edit-form">
+                  <el-input
+                    v-model="editingResultValue"
+                    type="textarea"
+                    :rows="3"
+                    placeholder="请输入处理结果（如：更换GPU后告警消除）"
+                  />
+                  <div class="edit-actions">
+                    <el-button type="primary" size="small" @click="saveResult" :loading="savingResult">保存</el-button>
+                    <el-button size="small" @click="cancelEditResult">取消</el-button>
+                  </div>
+                </div>
               </div>
             </el-descriptions-item>
           </el-descriptions>
@@ -98,39 +220,101 @@
         <!-- 诊断结果 -->
         <template v-if="alertData.diagnosis">
           <!-- 手册匹配结果 -->
-          <div v-if="alertData.diagnosis.manual_matched" class="content-card">
+          <div class="content-card">
             <div class="content-card-header">
               <div class="content-card-title">
-                <el-icon color="#67C23A"><CircleCheck /></el-icon>
+                <el-icon :color="alertData.diagnosis?.manual_matched ? '#67C23A' : '#909399'">
+                  <CircleCheck v-if="alertData.diagnosis?.manual_matched" />
+                  <Document v-else />
+                </el-icon>
                 手册匹配结果
+                <el-tag v-if="alertData.diagnosis?.manual_matched" type="success" size="small" style="margin-left: 8px;">
+                  已匹配
+                </el-tag>
+                <el-tag v-else type="info" size="small" style="margin-left: 8px;">
+                  未匹配
+                </el-tag>
               </div>
             </div>
             <div class="content-card-body">
-
-            <el-descriptions :column="1" border>
-              <el-descriptions-item label="故障名称">
-                {{ alertData.diagnosis.manual_name_zh }}
-              </el-descriptions-item>
-              <el-descriptions-item label="危害等级">
-                <el-tag :type="getDangerLevelTagType(alertData.diagnosis.danger_level)">
-                  {{ alertData.diagnosis.danger_level }}
-                </el-tag>
-              </el-descriptions-item>
-              <el-descriptions-item label="客户有感">
-                <el-tag :type="alertData.diagnosis.customer_aware ? 'danger' : 'success'">
-                  {{ alertData.diagnosis.customer_aware ? '是' : '否' }}
-                </el-tag>
-              </el-descriptions-item>
-              <el-descriptions-item label="影响描述">
-                <div class="text-content">{{ alertData.diagnosis.manual_impact || '-' }}</div>
-              </el-descriptions-item>
-              <el-descriptions-item label="解决方案">
-                <div class="text-content">{{ alertData.diagnosis.manual_solution || '-' }}</div>
-              </el-descriptions-item>
-              <el-descriptions-item label="恢复方案">
-                <div class="text-content">{{ alertData.diagnosis.manual_recovery || '-' }}</div>
-              </el-descriptions-item>
-            </el-descriptions>
+              <!-- 多故障类型表格展示 -->
+              <template v-if="alertData.diagnosis?.fault_items && alertData.diagnosis.fault_items.length > 0">
+                <el-table :data="alertData.diagnosis.fault_items" stripe border style="width: 100%">
+                  <el-table-column prop="device" label="所属设备" min-width="120">
+                    <template #default="{ row }">
+                      <div class="device-info">
+                        <div class="device-name">{{ row.device || '-' }}</div>
+                        <div class="device-model" v-if="row.part_model">{{ row.part_model }}</div>
+                      </div>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="fault_name" label="故障名称" min-width="150">
+                    <template #default="{ row }">
+                      <el-tag :type="getFaultTagType(row.severity)" size="small">
+                        {{ row.alert_type }}
+                      </el-tag>
+                      <div class="fault-name">{{ row.fault_name }}</div>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="danger_level" label="危害等级" width="100" align="center">
+                    <template #default="{ row }">
+                      <el-tag :type="getDangerLevelTagType(row.danger_level)" size="small">
+                        {{ row.danger_level || 'P2' }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="customer_aware" label="客户有感" width="100" align="center">
+                    <template #default="{ row }">
+                      <el-tag :type="row.customer_aware ? 'danger' : 'success'" size="small">
+                        {{ row.customer_aware ? '是' : '否' }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="impact_description" label="影响描述" min-width="200" show-overflow-tooltip>
+                    <template #default="{ row }">
+                      {{ row.impact_description || '-' }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="solution" label="建议解决方案" min-width="250" show-overflow-tooltip>
+                    <template #default="{ row }">
+                      {{ row.solution || '-' }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="manual_check" label="手动判断方法" min-width="200" show-overflow-tooltip>
+                    <template #default="{ row }">
+                      <code class="manual-check-code">{{ row.manual_check || '-' }}</code>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </template>
+              <!-- 单故障类型兼容旧数据 -->
+              <template v-else-if="alertData.diagnosis?.manual_matched">
+                <el-descriptions :column="1" border>
+                  <el-descriptions-item label="故障名称">
+                    {{ alertData.diagnosis.manual_name_zh }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="危害等级">
+                    <el-tag :type="getDangerLevelTagType(alertData.diagnosis.danger_level)">
+                      {{ alertData.diagnosis.danger_level }}
+                    </el-tag>
+                  </el-descriptions-item>
+                  <el-descriptions-item label="客户有感">
+                    <el-tag :type="alertData.diagnosis.customer_aware ? 'danger' : 'success'">
+                      {{ alertData.diagnosis.customer_aware ? '是' : '否' }}
+                    </el-tag>
+                  </el-descriptions-item>
+                  <el-descriptions-item label="影响描述">
+                    <div class="text-content">{{ alertData.diagnosis.manual_impact || '-' }}</div>
+                  </el-descriptions-item>
+                  <el-descriptions-item label="建议解决方案">
+                    <div class="text-content">{{ alertData.diagnosis.suggested_solution || alertData.diagnosis.manual_solution || '-' }}</div>
+                  </el-descriptions-item>
+                </el-descriptions>
+              </template>
+              <!-- 未匹配到手册 -->
+              <template v-else>
+                <el-empty description="暂无匹配结果" />
+              </template>
             </div>
           </div>
 
@@ -251,7 +435,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -263,9 +447,10 @@ import {
   WarningFilled,
   MagicStick,
   ArrowLeft,
-  Loading
+  Loading,
+  Edit
 } from '@element-plus/icons-vue'
-import { getAlertDetail, diagnoseAlert } from '@/api/alerts'
+import { getAlertDetail, diagnoseAlert, updateAlertStatus } from '@/api/alerts'
 import { marked } from 'marked'
 
 const route = useRoute()
@@ -281,6 +466,82 @@ const loading = ref(false)
 const diagnosing = ref(false)
 const alertData = ref(null)
 const activeCollapse = ref(['errors', 'warnings'])
+
+// 编辑状态
+const editingNotes = ref(false)
+const editingNotesValue = ref('')
+const savingNotes = ref(false)
+const editingResult = ref(false)
+const editingResultValue = ref('')
+const savingResult = ref(false)
+
+// 原始数据展开状态
+const rawDataCollapse = ref([])
+
+// ========== 新格式告警原始数据解析 ==========
+
+// 获取原始数据中的字段
+const getRawDataField = (fieldName) => {
+  if (!alertData.value?.alert?.raw_data) return null
+
+  const rawData = alertData.value.alert.raw_data
+
+  // 优先从 error_types[0].raw_data 获取（新格式）
+  if (rawData.error_types && Array.isArray(rawData.error_types) && rawData.error_types.length > 0) {
+    const firstError = rawData.error_types[0]
+    if (firstError.raw_data && firstError.raw_data[fieldName] !== undefined) {
+      return firstError.raw_data[fieldName]
+    }
+  }
+
+  // 从 raw_data 直接获取（旧格式兼容）
+  if (rawData[fieldName] !== undefined) {
+    return rawData[fieldName]
+  }
+
+  return null
+}
+
+// 是否有原始数据详情
+const hasRawDataDetails = computed(() => {
+  if (!alertData.value?.alert?.raw_data) return false
+  const rawData = alertData.value.alert.raw_data
+
+  // 检查是否有新格式的 error_types
+  if (rawData.error_types && Array.isArray(rawData.error_types) && rawData.error_types.length > 0) {
+    return true
+  }
+
+  // 检查是否有旧格式的关键字段
+  const keyFields = ['device_id', 'device_type', 'hostsn', 'case_info', 'source', 'handler']
+  return keyFields.some(field => rawData[field] !== undefined)
+})
+
+// 是否有多个错误类型
+const hasMultipleErrorTypes = computed(() => {
+  if (!alertData.value?.alert?.raw_data?.error_types) return false
+  return alertData.value.alert.raw_data.error_types.length > 1
+})
+
+// 获取错误类型数量
+const getErrorTypesCount = computed(() => {
+  if (!alertData.value?.alert?.raw_data?.error_types) return 0
+  return alertData.value.alert.raw_data.error_types.length
+})
+
+// 获取所有错误类型（用于表格展示）
+const getAllErrorTypes = computed(() => {
+  if (!alertData.value?.alert?.raw_data?.error_types) return []
+
+  return alertData.value.alert.raw_data.error_types.map(error => ({
+    device: error.device || error.raw_data?.device_id || '-',
+    alert_type: error.alert_type || '-',
+    severity: error.severity || 'ERROR',
+    component: error.component || error.raw_data?.device_type || '-',
+    part_sn: error.part_sn || error.raw_data?.device_sn || '-',
+    position: error.position || error.raw_data?.device_slot || '-'
+  }))
+})
 
 // 获取告警详情
 const fetchAlertDetail = async () => {
@@ -439,7 +700,31 @@ const getApiStatusText = (status) => {
     timeout: '超时',
     unknown: '未知'
   }
-  return textMap[status] || status || '未知'
+  return textMap[status] || status
+}
+
+// 获取唯一的故障类型列表（去重）
+const getUniqueFaultTypes = (faultItems) => {
+  if (!faultItems || !Array.isArray(faultItems)) return []
+  
+  const seen = new Set()
+  return faultItems.filter(item => {
+    const key = `${item.device || ''}-${item.alert_type}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+// 获取故障标签类型
+const getFaultTagType = (severity) => {
+  const typeMap = {
+    'FAIL': 'danger',
+    'ERROR': 'warning',
+    'WARN': 'info',
+    'GOOD': 'success'
+  }
+  return typeMap[severity] || ''
 }
 
 const formatDateTime = (dateStr) => {
@@ -453,6 +738,68 @@ const formatDateTime = (dateStr) => {
     minute: '2-digit',
     second: '2-digit'
   })
+}
+
+// ========== 处理备注编辑 ==========
+const startEditNotes = () => {
+  editingNotesValue.value = alertData.value.alert.resolution_notes || ''
+  editingNotes.value = true
+}
+
+const cancelEditNotes = () => {
+  editingNotes.value = false
+  editingNotesValue.value = ''
+}
+
+const saveNotes = async () => {
+  savingNotes.value = true
+  try {
+    const response = await updateAlertStatus(alertData.value.alert.id, {
+      resolution_notes: editingNotesValue.value
+    })
+    if (response.success) {
+      ElMessage.success('备注更新成功')
+      alertData.value.alert.resolution_notes = editingNotesValue.value
+      editingNotes.value = false
+    } else {
+      ElMessage.error(response.message || '更新失败')
+    }
+  } catch (error) {
+    ElMessage.error('更新失败')
+  } finally {
+    savingNotes.value = false
+  }
+}
+
+// ========== 处理结果编辑 ==========
+const startEditResult = () => {
+  editingResultValue.value = alertData.value.alert.resolution_result || ''
+  editingResult.value = true
+}
+
+const cancelEditResult = () => {
+  editingResult.value = false
+  editingResultValue.value = ''
+}
+
+const saveResult = async () => {
+  savingResult.value = true
+  try {
+    const response = await updateAlertStatus(alertData.value.alert.id, {
+      resolution_result: editingResultValue.value
+    })
+    if (response.success) {
+      ElMessage.success('处理结果更新成功')
+      alertData.value.alert.resolution_result = editingResultValue.value
+      editingResult.value = false
+    } else {
+      ElMessage.error(response.message || '更新失败')
+    }
+  } catch (error) {
+    ElMessage.error('更新失败')
+  } finally {
+    savingResult.value = false
+  }
 }
 
 onMounted(() => {
@@ -531,6 +878,58 @@ onMounted(() => {
   line-height: 1.6;
   color: var(--primary);
   white-space: pre-wrap;
+  cursor: pointer;
+  position: relative;
+}
+
+.resolution-notes:hover {
+  background-color: rgba(26, 115, 232, 0.15);
+}
+
+.resolution-result {
+  padding: var(--space-3);
+  background-color: rgba(103, 194, 58, 0.1);
+  border-left: 4px solid var(--success);
+  border-radius: var(--radius-md);
+  line-height: 1.6;
+  color: var(--success);
+  white-space: pre-wrap;
+  cursor: pointer;
+  position: relative;
+}
+
+.resolution-result:hover {
+  background-color: rgba(103, 194, 58, 0.15);
+}
+
+.editable-field {
+  position: relative;
+}
+
+.edit-icon {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.resolution-notes:hover .edit-icon,
+.resolution-result:hover .edit-icon {
+  opacity: 1;
+}
+
+.edit-form {
+  padding: var(--space-3);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.edit-actions {
+  margin-top: var(--space-3);
+  display: flex;
+  gap: var(--space-2);
 }
 
 .diagnosis-processing {
@@ -550,5 +949,79 @@ onMounted(() => {
 
 .diagnosis-error {
   padding: var(--space-4);
+}
+
+/* 告警类型标签容器 */
+.alert-types-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  max-width: 100%;
+}
+
+.alert-type-tag {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* 手册匹配表格样式 */
+.device-info {
+  line-height: 1.4;
+}
+
+.device-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.device-model {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.fault-name {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.manual-check-code {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  background-color: var(--bg-secondary);
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: var(--text-secondary);
+}
+
+/* 原始数据展开样式 */
+.case-info-code {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  background-color: var(--bg-tertiary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  display: block;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.error-types-section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-color);
+}
+
+.error-types-section .section-title {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+  font-size: 14px;
+}
+
+.no-data {
+  color: var(--text-tertiary);
 }
 </style>

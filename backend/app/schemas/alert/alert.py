@@ -34,6 +34,7 @@ class AlertRecordResponse(AlertRecordBase):
     resolved_by: Optional[str] = Field(None, description="处理人")
     resolved_at: Optional[datetime] = Field(None, description="处理时间")
     resolution_notes: Optional[str] = Field(None, description="处理备注")
+    resolution_result: Optional[str] = Field(None, description="处理结果")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
     has_diagnosis: bool = Field(False, description="是否有诊断结果")
@@ -73,11 +74,13 @@ class AlertStatusUpdate(BaseModel):
     """更新告警状态或备注"""
     status: Optional[str] = Field(None, description="新状态(pending/processing/diagnosed/notified/failed/resolved)")
     resolution_notes: Optional[str] = Field(None, description="处理备注")
-    
+    resolution_result: Optional[str] = Field(None, description="处理结果")
+
     class Config:
         json_schema_extra = {
             "example": {
                 "status": "resolved",
-                "resolution_notes": "已联系运维团队更换硬件"
+                "resolution_notes": "已联系运维团队更换硬件",
+                "resolution_result": "更换GPU后告警消除"
             }
         }

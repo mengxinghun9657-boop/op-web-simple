@@ -1,566 +1,603 @@
 """
-告警文件解析服务
+告警文件解析服务 - 优化版
+支持多错误类型合并解析，支持新旧两种文件格式
 """
 import ast
+import json
 import re
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
+from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class ParsedAlert:
+    """解析后的告警数据结构"""
+    # 基础信息（从文件名提取，所有错误类型共享）
+    ip: str
+    cluster_id: Optional[str]
+    is_cce_cluster: bool
+    file_path: str
+    
+    # 错误类型列表（一个文件可能包含多种错误）
+    error_types: List[Dict[str, Any]] = field(default_factory=list)
+    
+    # 原始数据（用于调试）
+    raw_data: List[Dict] = field(default_factory=list)
+    
+    def add_error_type(self, error_info: Dict[str, Any]):
+        """添加错误类型"""
+        self.error_types.append(error_info)
+    
+    def get_all_alert_types(self) -> List[str]:
+        """获取所有告警类型列表"""
+        return [e['alert_type'] for e in self.error_types]
+    
+    def get_primary_alert_type(self) -> str:
+        """获取主告警类型（第一个）"""
+        if self.error_types:
+            return self.error_types[0]['alert_type']
+        return 'Unknown'
+    
+    def get_severity(self) -> str:
+        """获取最高严重程度"""
+        severity_priority = {'FAIL': 4, 'ERROR': 3, 'WARN': 2, 'GOOD': 1}
+        max_severity = 'GOOD'
+        max_priority = 0
+        
+        for error in self.error_types:
+            sev = error.get('severity', 'ERROR')
+            priority = severity_priority.get(sev, 0)
+            if priority > max_priority:
+                max_priority = priority
+                max_severity = sev
+        
+        return max_severity
+    
+    def get_earliest_timestamp(self) -> datetime:
+        """获取最早的时间戳"""
+        timestamps = [e['timestamp'] for e in self.error_types if 'timestamp' in e]
+        return min(timestamps) if timestamps else datetime.now()
+
+
 class AlertParserService:
-    """告警解析服务"""
+    """告警解析服务 - 优化版"""
+    
+    # 已知的所有字段映射（固化）
+    FIELD_MAPPINGS = {
+        # 基础字段
+        'alert_type': ['reason', '项目', '中文', 'alert_type', 'type', 'name', 'key_name'],
+        'severity': ['case_type', 'HAS级别', 'severity', 'level', 'priority'],
+        'component': ['device_type', 'case_dev', '类别', 'component', 'category', 'device'],
+        'timestamp': ['error_time', 'case_start_time', 'timestamp', 'time', 'created_at', 'create_time'],
+        'ip': ['ip', 'IP', 'host', 'node'],
+        'hostname': ['hostname', 'case_dev_name', 'host'],
+        'instance_id': ['instance_id', 'instanceId', 'id', 'uuid', 'case_key'],
+        'device': ['device', 'devslot', 'device_id', 'device_slot'],
+        'position': ['position', 'device_slot'],
+        'hostsn': ['hostsn', 'host_sn', 'server_sn'],
+        'part_model': ['part_model', 'partModel', 'gpu_model', 'device_model'],
+        'part_sn': ['part_sn', 'partSn', 'device_sn', 'gpu_sn'],
+        'recommend_op_type': ['recommend_op_type', 'recommendOpType', 'op_type'],
+        'source': ['source', 'alarm_source'],
+        'zone_info': ['zone_info', 'zone', 'region'],
+        'warehouse': ['warehouse', 'idc', 'datacenter'],
+        
+        # 新格式专用字段
+        'case_info': ['case_info'],
+        'create_time': ['create_time', 'created_at'],
+        'update_time': ['update_time', 'updated_at'],
+        'handler': ['handler', 'handle_type', 'handler_type'],
+        'racksn': ['racksn', 'rack_sn'],
+    }
     
     @staticmethod
     def extract_node_info_from_filename(file_path: str) -> Optional[Dict[str, str]]:
         """
-        从文件名提取节点信息（cluster_id + ip）
+        从文件名提取节点信息（支持新旧格式）
         
-        文件名格式：长安-cce-xrg955qz-ghy9yll6-10.90.0.245.txt
+        支持格式：
+        - 旧格式: 长安-cce-uk1zi507-05tberpr-10.90.1.4.txt
+        - 旧格式: 长安-FAIL-cce-uk1zi507-05tberpr-10.90.1.4.txt
+        - 新格式: Error_长安-cdhmlcc001-bbc-cdonlinea-com-1566995.cdhmlcc001-10.90.128.114.txt
         
-        Args:
-            file_path: 文件路径
-            
         Returns:
-            {'cluster_id': 'cce-xrg955qz', 'ip': '10.90.0.245'} 或 None（物理机）
+            {'cluster_id': 'cce-uk1zi507', 'ip': '10.90.1.4', 'is_cce': True}
         """
         filename = Path(file_path).name
         
-        # 提取cluster_id（CCE集群）
-        cce_pattern = r'cce-([a-z0-9]+)'
-        match = re.search(cce_pattern, filename)
-        cluster_id = f"cce-{match.group(1)}" if match else None
+        # 移除 Error_ 前缀（新格式）
+        clean_name = re.sub(r'^Error_', '', filename)
         
-        # 提取IP
+        # 移除 FAIL 前缀（旧格式）
+        clean_name = re.sub(r'-FAIL-', '-', clean_name)
+        
+        # 提取IP（最可靠）
         ip_pattern = r'\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b'
-        match = re.search(ip_pattern, filename)
-        ip = match.group(1) if match else None
+        ip_match = re.search(ip_pattern, clean_name)
+        ip = ip_match.group(1) if ip_match else None
         
-        if cluster_id and ip:
-            logger.debug(f"从文件名提取节点信息: cluster_id={cluster_id}, ip={ip}")
-            return {'cluster_id': cluster_id, 'ip': ip}
-        elif ip:
-            logger.debug(f"从文件名提取物理机IP: ip={ip}")
-            return {'cluster_id': None, 'ip': ip}
+        # 提取集群ID（改进正则）
+        # 匹配 cce-[8位随机字符] 格式，排除 ig/ld 等前缀
+        cluster_id = None
+        is_cce = False
+        node_type = 'unknown'
+        
+        # 先尝试匹配标准CCE格式（8位字符）
+        cce_pattern = r'cce-([a-z0-9]{8})'
+        match = re.search(cce_pattern, clean_name)
+        if match:
+            cluster_id = f"cce-{match.group(1)}"
+            is_cce = True
+            node_type = 'cce'
+            logger.debug(f"从文件名提取CCE集群ID: {cluster_id}")
         else:
-            logger.warning(f"无法从文件名提取节点信息: {filename}")
-            return None
+            # 检查是否是BCC实例 (格式: cdhmlcc001-bcc-cdonlinea-com-<instance_id>.cdhmlcc001)
+            bcc_pattern = r'cdhmlcc001-bcc-cdonlinea-com-(\d+)\.cdhmlcc001'
+            bcc_match = re.search(bcc_pattern, clean_name)
+            if bcc_match:
+                instance_id = bcc_match.group(1)
+                cluster_id = f"bcc-{instance_id}"
+                node_type = 'bcc'
+                logger.debug(f"从文件名提取BCC实例ID: {cluster_id}")
+            # 检查是否是物理机 (格式: instance-<id>-<number>)
+            elif 'instance-' in clean_name:
+                instance_pattern = r'instance-([a-z0-9]+)-(\d+)'
+                instance_match = re.search(instance_pattern, clean_name)
+                if instance_match:
+                    cluster_id = f"instance-{instance_match.group(1)}-{instance_match.group(2)}"
+                    node_type = 'physical'
+                    logger.debug(f"从文件名提取物理机ID: {cluster_id}")
+                else:
+                    cluster_id = 'physical'
+                    node_type = 'physical'
+                    logger.debug(f"判定为物理机: {filename}")
+            else:
+                logger.warning(f"无法识别的节点类型: {filename}")
+        
+        return {
+            'cluster_id': cluster_id,
+            'ip': ip,
+            'is_cce': is_cce
+        }
     
     @staticmethod
-    def parse_file(file_path: str) -> List[Dict[str, Any]]:
+    def _get_field_value(data: Dict, field_name: str) -> Any:
         """
-        解析告警文件
+        根据字段名获取值（支持字段映射）
         
-        支持两种格式：
-        1. 单行格式：[{...}]
-        2. 多行格式：
-           [{...}]  # 第一行：case信息
-           [{...}]  # 第二行：detail信息（可选）
+        Args:
+            data: 原始数据字典
+            field_name: 目标字段名
+            
+        Returns:
+            字段值或None
+        """
+        if field_name not in AlertParserService.FIELD_MAPPINGS:
+            return data.get(field_name)
+        
+        # 尝试所有可能的字段名
+        for possible_name in AlertParserService.FIELD_MAPPINGS[field_name]:
+            if possible_name in data and data[possible_name] is not None:
+                return data[possible_name]
+        
+        return None
+    
+    @staticmethod
+    def parse_file(file_path: str) -> Optional[ParsedAlert]:
+        """
+        解析告警文件（支持新旧格式）
+        
+        新格式: JSON 格式，包含 data 数组
+        旧格式: Python 列表格式，直接是数组
+        
+        一个文件 = 一个节点的一条告警记录
+        该记录可能包含多种错误类型
         
         Args:
             file_path: 文件路径
             
         Returns:
-            解析后的告警记录列表
+            ParsedAlert 对象或 None
         """
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
+            # 1. 从文件名提取节点信息
+            node_info = AlertParserService.extract_node_info_from_filename(file_path)
+            if not node_info or not node_info['ip']:
+                logger.error(f"无法从文件名提取节点信息: {file_path}")
+                return None
             
-            # 解析每一行（每行都是一个独立的JSON数组）
-            all_data = []
+            # 2. 读取文件内容
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            if not content.strip():
+                logger.error(f"文件为空: {file_path}")
+                return None
+            
+            # 3. 判断文件格式并解析
+            # 新格式1: 以 【Error接口数据】开头，包含 JSON 对象
+            # 新格式2: 文件名以 Error_ 开头，纯 JSON 数组
+            # 旧格式: Python 列表格式
+            filename = Path(file_path).name
+            if '【Error接口数据】' in content:
+                logger.info(f"检测到新格式文件(带标记): {file_path}")
+                parsed_data = AlertParserService._parse_new_format_with_header(content, file_path)
+            elif filename.startswith('Error_'):
+                logger.info(f"检测到新格式文件(纯JSON): {file_path}")
+                parsed_data = AlertParserService._parse_new_format_pure_json(content, file_path)
+            else:
+                logger.info(f"检测到旧格式文件: {file_path}")
+                parsed_data = AlertParserService._parse_old_format(content, file_path)
+            
+            if not parsed_data:
+                return None
+            
+            # 4. 创建告警对象
+            alert = ParsedAlert(
+                ip=node_info['ip'],
+                cluster_id=node_info['cluster_id'],
+                is_cce_cluster=node_info['is_cce'],
+                file_path=file_path,
+                raw_data=parsed_data.get('raw_data', [])
+            )
+            
+            # 5. 提取所有错误类型
+            for error_data in parsed_data.get('errors', []):
+                error_info = AlertParserService._parse_error_type(error_data)
+                if error_info:
+                    alert.add_error_type(error_info)
+            
+            if not alert.error_types:
+                logger.error(f"文件解析后无有效错误类型: {file_path}")
+                return None
+            
+            logger.info(f"文件解析完成: {file_path}, 共 {len(alert.error_types)} 种错误类型")
+            return alert
+            
+        except Exception as e:
+            logger.error(f"解析文件失败: {file_path}, 错误: {e}")
+            return None
+    
+    @staticmethod
+    def _parse_new_format_with_header(content: str, file_path: str) -> Optional[Dict]:
+        """
+        解析新格式文件（带【Error接口数据】标记的JSON格式）
+        
+        格式示例:
+        【Error接口数据】
+        {
+          "data": [
+            {
+              "detail": [...],
+              "hostsn": "xxx",
+              "num": 1
+            }
+          ],
+          "num": 1,
+          "status": 200
+        }
+        """
+        try:
+            # 提取 JSON 部分（去掉开头的标记）
+            json_start = content.find('{')
+            if json_start == -1:
+                logger.error(f"新格式文件未找到JSON内容: {file_path}")
+                return None
+            
+            json_content = content[json_start:]
+            data = json.loads(json_content)
+            
+            if 'data' not in data or not isinstance(data['data'], list):
+                logger.error(f"新格式文件缺少data字段: {file_path}")
+                return None
+            
+            errors = []
+            raw_data = []
+            
+            for item in data['data']:
+                if 'detail' in item and isinstance(item['detail'], list):
+                    for detail in item['detail']:
+                        errors.append(detail)
+                        raw_data.append(detail)
+            
+            return {'errors': errors, 'raw_data': raw_data}
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"新格式文件JSON解析失败: {file_path}, 错误: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"解析新格式文件失败: {file_path}, 错误: {e}")
+            return None
+    
+    @staticmethod
+    def _parse_new_format_pure_json(content: str, file_path: str) -> Optional[Dict]:
+        """
+        解析新格式文件（纯JSON数组格式，文件名以Error_开头）
+        
+        格式示例:
+        [
+          {
+            "detail": [
+              {"case_info": "ERROR#gpu1-DriverError", ...},
+              {"case_info": "ERROR#gpu2-DriverError", ...}
+            ],
+            "hostsn": "xxx",
+            "num": 8
+          }
+        ]
+        """
+        try:
+            # 直接解析 JSON 数组
+            data = json.loads(content)
+            
+            if not isinstance(data, list):
+                logger.error(f"纯JSON格式文件不是数组: {file_path}")
+                return None
+            
+            errors = []
+            raw_data = []
+            
+            for item in data:
+                if isinstance(item, dict) and 'detail' in item and isinstance(item['detail'], list):
+                    for detail in item['detail']:
+                        errors.append(detail)
+                        raw_data.append(detail)
+            
+            return {'errors': errors, 'raw_data': raw_data}
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"纯JSON格式文件解析失败: {file_path}, 错误: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"解析纯JSON格式文件失败: {file_path}, 错误: {e}")
+            return None
+    
+    @staticmethod
+    def _parse_old_format(content: str, file_path: str) -> Optional[Dict]:
+        """
+        解析旧格式文件（Python列表格式）
+        
+        格式示例:
+        [{'detail': [...], 'hostsn': 'xxx', 'num': 1}]
+        """
+        try:
+            lines = content.strip().split('\n')
+            errors = []
+            raw_data = []
+            
             for line_num, line in enumerate(lines, 1):
                 line = line.strip()
                 if not line:
                     continue
                 
                 try:
-                    # 使用 ast.literal_eval 安全解析 Python 列表
+                    # 旧格式使用 ast.literal_eval 解析
                     line_data = ast.literal_eval(line)
                     
                     if not isinstance(line_data, list):
                         logger.warning(f"第 {line_num} 行不是列表: {file_path}")
                         continue
                     
-                    all_data.extend(line_data)
+                    for item in line_data:
+                        if isinstance(item, dict):
+                            # 检查是否为嵌套格式（包含detail数组）
+                            if 'detail' in item and isinstance(item['detail'], list):
+                                for detail_item in item['detail']:
+                                    errors.append(detail_item)
+                                    raw_data.append(detail_item)
+                            else:
+                                errors.append(item)
+                                raw_data.append(item)
+                                    
                 except Exception as e:
                     logger.warning(f"解析第 {line_num} 行失败: {file_path}, 错误: {e}")
                     continue
             
-            if not all_data:
-                logger.error(f"文件内容为空或解析失败: {file_path}")
-                return []
-            
-            # 合并多行数据（如果第二行是detail信息）
-            alert_list = all_data
-            
-            # 解析每条告警
-            records = []
-            for alert_data in alert_list:
-                try:
-                    # 检查是否为嵌套格式（包含detail数组）
-                    if isinstance(alert_data, dict) and 'detail' in alert_data:
-                        # 新格式：{'detail': [...], 'hostsn': '...', 'num': 1}
-                        detail_list = alert_data.get('detail', [])
-                        for detail_item in detail_list:
-                            # 合并外层和内层数据
-                            merged_data = {**alert_data, **detail_item}
-                            parsed_records = AlertParserService._parse_alert(merged_data, file_path)
-                            if parsed_records:
-                                # _parse_alert 返回列表，需要展平
-                                records.extend(parsed_records)
-                    else:
-                        # 旧格式：直接解析
-                        parsed_records = AlertParserService._parse_alert(alert_data, file_path)
-                        if parsed_records:
-                            # _parse_alert 返回列表，需要展平
-                            records.extend(parsed_records)
-                except Exception as e:
-                    logger.warning(f"解析告警失败: {e}, 数据: {alert_data}")
-                    continue
-            
-            logger.info(f"文件解析完成: {file_path}, 共 {len(records)} 条记录")
-            return records
+            return {'errors': errors, 'raw_data': raw_data}
             
         except Exception as e:
-            logger.error(f"解析文件失败: {file_path}, 错误: {e}")
-            return []
+            logger.error(f"解析旧格式文件失败: {file_path}, 错误: {e}")
+            return None
     
     @staticmethod
-    def _parse_alert(alert_data: Any, file_path: str) -> Optional[List[Dict[str, Any]]]:
+    def _parse_error_type(data: Dict) -> Optional[Dict[str, Any]]:
         """
-        解析单条告警数据
-        
-        支持多xid告警的拆分：
-        - 如果告警包含 Xid[48,63,94,154]，则为每个xid创建一条告警
+        解析单个错误类型
         
         Args:
-            alert_data: 原始告警数据
-            file_path: 源文件路径
+            data: 原始数据
             
         Returns:
-            解析后的告警记录列表（支持多xid拆分）
+            错误类型信息字典
         """
-        if not isinstance(alert_data, dict):
+        try:
+            # 提取告警类型
+            alert_type = AlertParserService._extract_alert_type(data)
+            if not alert_type:
+                logger.warning(f"无法提取告警类型: {data}")
+                return None
+            
+            # 提取其他字段
+            severity = AlertParserService._extract_severity(data)
+            component = AlertParserService._extract_component(data)
+            timestamp = AlertParserService._extract_timestamp(data)
+            device = AlertParserService._get_field_value(data, 'device')
+            position = AlertParserService._get_field_value(data, 'position')
+            hostsn = AlertParserService._get_field_value(data, 'hostsn')
+            part_model = AlertParserService._get_field_value(data, 'part_model')
+            part_sn = AlertParserService._get_field_value(data, 'part_sn')
+            recommend_op = AlertParserService._get_field_value(data, 'recommend_op_type')
+            source = AlertParserService._get_field_value(data, 'source')
+            zone_info = AlertParserService._get_field_value(data, 'zone_info')
+            warehouse = AlertParserService._get_field_value(data, 'warehouse')
+            
+            # 提取XID列表
+            xid_list = AlertParserService._extract_xid_list(alert_type)
+            
+            return {
+                'alert_type': alert_type,
+                'severity': severity,
+                'component': component,
+                'timestamp': timestamp,
+                'device': device,
+                'position': position,
+                'hostsn': hostsn,
+                'part_model': part_model,
+                'part_sn': part_sn,
+                'recommend_op_type': recommend_op,
+                'source': source,
+                'zone_info': zone_info,
+                'warehouse': warehouse,
+                'xid_list': xid_list,
+                'raw_data': data
+            }
+            
+        except Exception as e:
+            logger.warning(f"解析错误类型失败: {e}")
             return None
-        
-        # 提取告警类型
-        alert_type = AlertParserService._extract_alert_type(alert_data)
-        if not alert_type:
-            return None
-        
-        # 提取xid列表（如果存在）
-        xid_list = AlertParserService._extract_xid_list(alert_type)
-        
-        # 提取集群ID（传入file_path用于从文件名提取）
-        cluster_id = AlertParserService._extract_cluster_id(alert_data, file_path)
-        
-        # 提取IP地址（优先从文件名提取，确保是真实IP而不是hostname）
-        ip_address = AlertParserService._extract_ip(alert_data, file_path)
-        
-        # 验证IP格式（必须是x.x.x.x格式，不能是hostname）
-        if ip_address:
-            import re
-            ip_pattern = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$'
-            if not re.match(ip_pattern, ip_address):
-                # 不是有效IP格式，清空
-                ip_address = None
-        
-        # 如果没有有效IP但有hostname，使用hostname作为节点标识（仅用于显示，不用于诊断API）
-        if not ip_address and 'hostname' in alert_data and alert_data['hostname']:
-            hostname_value = str(alert_data['hostname']).strip()
-            # 再次验证：如果hostname恰好是IP格式，则使用
-            import re
-            ip_pattern = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$'
-            if re.match(ip_pattern, hostname_value):
-                ip_address = hostname_value
-        
-        # 如果没有IP但有case_dev_name，尝试从中提取（CCE集群的备用方案）
-        if not ip_address and 'case_dev_name' in alert_data and alert_data['case_dev_name']:
-            case_dev_name = str(alert_data['case_dev_name']).strip()
-            # 尝试从case_dev_name中提取IP（如果文件名中有IP）
-            if file_path:
-                filename = Path(file_path).name
-                ip_pattern = r'\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b'
-                match = re.search(ip_pattern, filename)
-                if match:
-                    ip_address = match.group(1)
-        
-        # 判断是否为CCE集群（必须有cluster_id且以cce-开头）
-        is_cce = cluster_id is not None and cluster_id.startswith('cce-')
-        
-        # 基础记录
-        base_record = {
-            'alert_type': alert_type,
-            'ip': ip_address,
-            'instance_id': AlertParserService._extract_instance_id(alert_data),
-            'cluster_id': cluster_id,  # CCE集群ID或None（物理机）
-            'is_cce_cluster': is_cce,  # 是否为CCE集群
-            'component': AlertParserService._extract_component(alert_data),
-            'severity': AlertParserService._extract_severity(alert_data),
-            'timestamp': AlertParserService._extract_timestamp(alert_data, file_path),
-            'file_path': file_path,
-            'raw_data': alert_data,
-            'status': 'pending'
-        }
-        
-        # 如果有多个xid，为每个xid创建一条告警
-        if xid_list and len(xid_list) > 1:
-            records = []
-            for xid in xid_list:
-                record = base_record.copy()
-                # 修改alert_type，添加xid标识
-                record['alert_type'] = f"{alert_type.split('_Xid')[0]}_Xid[{xid}]"
-                record['xid'] = xid  # 添加xid字段用于追踪
-                records.append(record)
-            return records
-        else:
-            # 单个xid或无xid，返回单条记录
-            return [base_record]
     
     @staticmethod
     def _extract_alert_type(data: Dict) -> Optional[str]:
-        """
-        提取告警类型（标准化格式）
-        
-        策略：
-        1. 如果包含 Xid[xxx]，提取为 xidxxx
-        2. 如果是复合类型（包含_），提取第一个组件
-        3. 否则直接使用原始类型
-        
-        例如：
-        - "DriverError_EccError_GSPError_Xid[48]" → "xid48"
-        - "RemappedPending_Xid[63]" → "xid63"
-        - "DriverError_EccError" → "DriverError"
-        - "NetLinkDown" → "NetLinkDown"
-        """
-        # 新格式：从 'reason' 字段提取
-        raw_type = None
-        if 'reason' in data and data['reason']:
-            raw_type = str(data['reason']).strip()
-        # 兼容旧格式：从 '项目' 字段提取
-        elif '项目' in data and data['项目']:
-            raw_type = str(data['项目']).strip()
-        # 其次从 '中文' 字段提取
-        elif '中文' in data and data['中文']:
-            raw_type = str(data['中文']).strip()
-        # 尝试从其他可能的字段提取
-        else:
-            for key in ['alert_type', 'type', 'name', 'key_name']:
-                if key in data and data[key]:
-                    raw_type = str(data[key]).strip()
-                    break
-        
+        """提取告警类型"""
+        raw_type = AlertParserService._get_field_value(data, 'alert_type')
         if not raw_type:
             return None
         
-        # 标准化告警类型
-        return AlertParserService._normalize_alert_type(raw_type)
+        return AlertParserService._normalize_alert_type(str(raw_type))
     
     @staticmethod
     def _normalize_alert_type(raw_type: str) -> str:
-        """
-        标准化告警类型
-        
-        策略：
-        1. 如果包含 Xid[xxx]，提取为 xidxxx（优先级最高）
-        2. 如果是复合类型（包含_），提取第一个有意义的组件
-        3. 否则直接使用原始类型
-        
-        Args:
-            raw_type: 原始告警类型
-            
-        Returns:
-            标准化后的告警类型
-        """
-        import re
-        
-        # 1. 优先提取XID（如果存在）
+        """标准化告警类型"""
+        # 优先提取XID
         xid_match = re.search(r'Xid\[(\d+)\]', raw_type)
         if xid_match:
-            xid_number = xid_match.group(1)
-            return f"xid{xid_number}"
+            return f"xid{xid_match.group(1)}"
         
-        # 2. 处理复合类型（包含_）
+        # 处理复合类型
         if '_' in raw_type:
-            # 拆分组件
             parts = raw_type.split('_')
-            
-            # 过滤掉太短或无意义的部分
             meaningful_parts = [p for p in parts if len(p) >= 3 and not p.startswith('Xid')]
-            
             if meaningful_parts:
-                # 使用第一个有意义的组件
                 return meaningful_parts[0]
         
-        # 3. 直接使用原始类型
         return raw_type
     
     @staticmethod
-    def _extract_xid_list(alert_type: str) -> Optional[list]:
-        """
-        从告警类型中提取xid列表
-        
-        例如：
-        - "EccError_RemappedPending_Xid[48,63,94,154]" -> [48, 63, 94, 154]
-        - "BWDrop_Xid[43]" -> [43]
-        - "NoXid" -> None
-        
-        Args:
-            alert_type: 告警类型字符串
-            
-        Returns:
-            xid列表或None
-        """
-        import re
-        
-        # 匹配 Xid[...] 模式
+    def _extract_xid_list(alert_type: str) -> Optional[List[int]]:
+        """提取XID列表"""
         match = re.search(r'Xid\[([^\]]+)\]', alert_type)
         if not match:
             return None
-        
-        # 提取xid值并转换为整数列表
         xid_str = match.group(1)
         try:
-            xid_list = [int(x.strip()) for x in xid_str.split(',')]
-            return xid_list
+            return [int(x.strip()) for x in xid_str.split(',')]
         except ValueError:
             return None
     
     @staticmethod
-    def _extract_ip(data: Dict, file_path: str = None) -> Optional[str]:
-        """提取IP地址"""
-        # 1. 尝试从常见字段提取
-        for key in ['ip', 'IP', 'host', 'node']:
-            if key in data and data[key]:
-                value = str(data[key])
-                # 验证IP格式
-                if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', value):
-                    return value
+    def _extract_severity(data: Dict) -> str:
+        """提取严重程度"""
+        # 新格式：从 case_info 提取
+        case_info = AlertParserService._get_field_value(data, 'case_info')
+        if case_info:
+            case_info_str = str(case_info).upper()
+            if case_info_str.startswith('FAIL'):
+                return 'FAIL'
+            elif case_info_str.startswith('ERROR'):
+                return 'ERROR'
+            elif case_info_str.startswith('WARN'):
+                return 'WARN'
         
-        # 2. 从文件名提取IP（优先级高）
-        if file_path:
-            filename = Path(file_path).name
-            # 匹配IP格式：xxx.xxx.xxx.xxx
-            ip_pattern = r'\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b'
-            match = re.search(ip_pattern, filename)
-            if match:
-                ip = match.group(1)
-                logger.debug(f"从文件名提取IP: {ip}")
-                return ip
+        # 旧格式：从 case_type 提取
+        case_type = AlertParserService._get_field_value(data, 'severity')
+        if case_type:
+            level = str(case_type).strip().upper()
+            if level in ['FAIL', 'ERROR', 'WARN', 'GOOD']:
+                return level
         
-        # 3. 尝试从整个数据中查找IP模式
-        data_str = str(data)
-        ip_pattern = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
-        match = re.search(ip_pattern, data_str)
-        if match:
-            return match.group()
-        
-        return None
-    
-    @staticmethod
-    def _extract_instance_id(data: Dict) -> Optional[str]:
-        """提取实例ID"""
-        for key in ['instance_id', 'instanceId', 'id', 'uuid']:
-            if key in data and data[key]:
-                return str(data[key]).strip()
-        return None
-    
-    @staticmethod
-    def _extract_cluster_id(data: Dict, file_path: str = None) -> Optional[str]:
-        """
-        提取集群ID（仅CCE集群）
-        
-        优先级：
-        1. 从文件名提取（如：长安-cce-uk1zi507-xxx.txt → cce-uk1zi507）
-        2. 从 hostname 字段提取（如：cce-uk1zi507-05tberpr → cce-uk1zi507）
-        
-        Args:
-            data: 告警数据
-            file_path: 文件路径
-            
-        Returns:
-            集群ID（仅CCE集群），物理机返回 None
-        """
-        # 1. 从文件名提取（最可靠）
-        if file_path:
-            filename = Path(file_path).name
-            # 匹配 cce-xxxxxxxx 格式
-            cce_pattern = r'cce-([a-z0-9]+)'
-            match = re.search(cce_pattern, filename)
-            if match:
-                cluster_id = f"cce-{match.group(1)}"
-                logger.debug(f"从文件名提取集群ID: {cluster_id}")
-                return cluster_id
-        
-        # 2. 从 hostname 提取（新格式）
-        if 'hostname' in data and data['hostname']:
-            hostname = str(data['hostname']).strip()
-            parts = hostname.split('-')
-            if len(parts) >= 2 and parts[0] == 'cce':
-                cluster_id = f"{parts[0]}-{parts[1]}"
-                logger.debug(f"从hostname提取集群ID: {cluster_id}")
-                return cluster_id
-        
-        # 3. 从 case_dev_name 提取（旧格式）
-        if 'case_dev_name' in data and data['case_dev_name']:
-            dev_name = str(data['case_dev_name']).strip()
-            parts = dev_name.split('-')
-            if len(parts) >= 2 and parts[0] == 'cce':
-                cluster_id = f"{parts[0]}-{parts[1]}"
-                logger.debug(f"从case_dev_name提取集群ID: {cluster_id}")
-                return cluster_id
-        
-        # 物理机（cdhmlcc001、instance-等）返回 None
-        logger.debug(f"未找到CCE集群ID，判定为物理机")
-        return None
-    
-    @staticmethod
-    def is_cce_cluster(data: Dict, file_path: str = None) -> bool:
-        """
-        判断是否为CCE集群节点
-        
-        Args:
-            data: 告警数据
-            file_path: 文件路径
-            
-        Returns:
-            是否为CCE集群节点
-        """
-        cluster_id = AlertParserService._extract_cluster_id(data, file_path)
-        return cluster_id is not None and cluster_id.startswith('cce-')
+        return 'ERROR'
     
     @staticmethod
     def _extract_component(data: Dict) -> Optional[str]:
         """提取组件类型"""
-        # 新格式：从 'device_type' 字段提取
-        if 'device_type' in data and data['device_type']:
-            return str(data['device_type']).strip()
-        
-        # 旧格式：从 'case_dev' 字段提取
-        if 'case_dev' in data and data['case_dev']:
-            return str(data['case_dev']).strip()
-        
-        # 兼容旧格式：从 '类别' 字段提取
-        if '类别' in data and data['类别']:
-            return str(data['类别']).strip()
-        
-        for key in ['component', 'category', 'type', 'device']:
-            if key in data and data[key]:
-                return str(data[key]).strip()
-        
-        return None
+        return AlertParserService._get_field_value(data, 'component')
     
     @staticmethod
-    def _extract_severity(data: Dict) -> str:
-        """提取严重程度"""
-        # 新格式：从 case_info 中提取（ERROR#...）
-        if 'case_info' in data and data['case_info']:
-            case_info = str(data['case_info']).upper()
-            if case_info.startswith('ERROR'):
-                return 'ERROR'
-            elif case_info.startswith('FAIL'):
-                return 'FAIL'
-            elif case_info.startswith('WARN'):
-                return 'WARN'
-        
-        # 旧格式：从 'case_type' 字段提取
-        if 'case_type' in data and data['case_type']:
-            level = str(data['case_type']).strip().upper()
-            if level in ['FAIL', 'ERROR', 'WARN', 'GOOD']:
-                return level
-        
-        # 兼容旧格式：从 'HAS级别' 字段提取
-        if 'HAS级别' in data and data['HAS级别']:
-            level = str(data['HAS级别']).strip().upper()
-            if level in ['FAIL', 'ERROR', 'WARN', 'GOOD']:
-                return level
-        
-        # 从其他字段提取
-        for key in ['severity', 'level', 'priority']:
-            if key in data and data[key]:
-                level = str(data[key]).strip().upper()
-                if level in ['FAIL', 'ERROR', 'WARN', 'GOOD']:
-                    return level
-        
-        # 默认为 ERROR
-        return 'ERROR'
-    
-    @staticmethod
-    def _extract_timestamp(data: Dict, file_path: str) -> datetime:
+    def _extract_timestamp(data: Dict) -> datetime:
         """提取时间戳"""
-        # 新格式：从 'error_time' 字段提取（字符串格式）
-        if 'error_time' in data and data['error_time']:
+        # 新格式：error_time（字符串）
+        error_time = AlertParserService._get_field_value(data, 'timestamp')
+        if error_time:
             try:
-                # 格式: '2026-02-09 20:08:22'
-                return datetime.strptime(str(data['error_time']), '%Y-%m-%d %H:%M:%S')
+                return datetime.strptime(str(error_time), '%Y-%m-%d %H:%M:%S')
             except:
                 pass
         
-        # 旧格式：从 'case_start_time' 字段提取（Unix时间戳）
-        if 'case_start_time' in data and data['case_start_time']:
+        # 旧格式：case_start_time（Unix时间戳）
+        case_start_time = data.get('case_start_time')
+        if case_start_time:
             try:
-                timestamp = int(data['case_start_time'])
-                return datetime.fromtimestamp(timestamp)
+                return datetime.fromtimestamp(int(case_start_time))
             except:
                 pass
         
-        # 尝试从数据中提取
-        for key in ['timestamp', 'time', 'created_at', 'date', 'create_time']:
-            if key in data and data[key]:
-                try:
-                    if isinstance(data[key], datetime):
-                        return data[key]
-                    # 尝试解析字符串
-                    time_str = str(data[key])
-                    # 尝试多种格式
-                    for fmt in ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d']:
-                        try:
-                            return datetime.strptime(time_str, fmt)
-                        except:
-                            continue
-                except:
-                    pass
-        
-        # 尝试从文件名提取日期
-        filename = Path(file_path).stem
-        # 匹配 YYYYMMDD 或 YYYY-MM-DD 格式
-        date_pattern = r'(\d{4})[-_]?(\d{2})[-_]?(\d{2})'
-        match = re.search(date_pattern, filename)
-        if match:
-            try:
-                year, month, day = match.groups()
-                return datetime(int(year), int(month), int(day))
-            except:
-                pass
-        
-        # 默认使用当前时间
+        # 默认当前时间
         return datetime.now()
     
     @staticmethod
-    def validate_record(record: Dict[str, Any]) -> bool:
+    def convert_to_alert_records(parsed_alert: ParsedAlert) -> List[Dict[str, Any]]:
         """
-        验证记录是否有效
+        将解析后的告警转换为数据库记录格式
+        
+        策略：
+        - 一个文件生成一条主告警记录
+        - 包含所有错误类型的信息
         
         Args:
-            record: 告警记录
+            parsed_alert: 解析后的告警对象
             
         Returns:
-            是否有效
+            告警记录列表（通常只有一条）
         """
-        # 必需字段检查
-        required_fields = ['alert_type', 'severity', 'timestamp']
-        for field in required_fields:
-            if field not in record or not record[field]:
-                logger.warning(f"记录缺少必需字段: {field}")
-                return False
+        if not parsed_alert or not parsed_alert.error_types:
+            return []
         
-        # 严重程度验证
-        if record['severity'] not in ['FAIL', 'ERROR', 'WARN', 'GOOD']:
-            logger.warning(f"无效的严重程度: {record['severity']}")
-            return False
+        # 构建主告警记录
+        primary_error = parsed_alert.error_types[0]
         
-        return True
+        record = {
+            'alert_type': primary_error['alert_type'],
+            'ip': parsed_alert.ip,
+            'cluster_id': parsed_alert.cluster_id,
+            'is_cce_cluster': parsed_alert.is_cce_cluster,
+            'instance_id': None,
+            'hostname': None,
+            'component': primary_error['component'],
+            'severity': parsed_alert.get_severity(),
+            'timestamp': parsed_alert.get_earliest_timestamp(),
+            'file_path': parsed_alert.file_path,
+            'raw_data': {
+                'error_types': parsed_alert.error_types,
+                'all_alert_types': parsed_alert.get_all_alert_types()
+            },
+            'status': 'pending'
+        }
+        
+        # 尝试从第一个错误提取instance_id和hostname
+        if parsed_alert.error_types:
+            first_error = parsed_alert.error_types[0]
+            raw_data = first_error.get('raw_data', {})
+            
+            if 'case_key' in raw_data:
+                record['instance_id'] = raw_data['case_key']
+            
+            hostname = AlertParserService._get_field_value(raw_data, 'hostname')
+            if hostname:
+                record['hostname'] = hostname
+        
+        return [record]

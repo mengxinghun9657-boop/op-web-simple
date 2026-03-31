@@ -58,7 +58,7 @@ import { Monitor, TopRight } from '@element-plus/icons-vue'
 import { getGrafanaInfo } from '@/api/gpuMonitoring'
 
 const grafanaUrl = ref('')
-const grafanaProxyUrl = ref('')
+const grafanaProxyUrl = ref('/grafana/')
 
 const fetchGrafanaInfo = async () => {
   try {
@@ -67,7 +67,6 @@ const fetchGrafanaInfo = async () => {
       throw new Error(response.error || response.message || '获取失败')
     }
     grafanaUrl.value = response.data.url || ''
-    grafanaProxyUrl.value = response.data.proxy_url || ''
   } catch (error) {
     ElMessage.error(error.message || '获取 Grafana 地址失败')
   }

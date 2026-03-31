@@ -250,62 +250,70 @@
             <div class="content-card-body">
               <!-- 多故障类型表格展示 -->
               <template v-if="alertData.diagnosis?.fault_items && alertData.diagnosis.fault_items.length > 0">
-                <el-table :data="alertData.diagnosis.fault_items" stripe border style="width: 100%" class="manual-match-table" scrollbar-always-on>
-                  <el-table-column prop="device" label="所属设备" min-width="120">
-                    <template #default="{ row }">
-                      <div class="device-info">
-                        <div class="device-name">{{ row.device || '-' }}</div>
-                        <div class="device-model" v-if="row.part_model">{{ row.part_model }}</div>
-                      </div>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="fault_name" label="故障名称" min-width="150">
-                    <template #default="{ row }">
-                      <el-tag :type="getFaultTagType(row.severity)" size="small">
-                        {{ row.alert_type }}
-                      </el-tag>
-                      <div class="fault-name">{{ row.fault_name }}</div>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="danger_level" label="危害等级" width="100" align="center">
-                    <template #default="{ row }">
-                      <el-tag :type="getDangerLevelTagType(row.danger_level)" size="small">
-                        {{ row.danger_level || 'P2' }}
-                      </el-tag>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="customer_aware" label="客户有感" width="100" align="center">
-                    <template #default="{ row }">
-                      <el-tag :type="row.customer_aware ? 'danger' : 'success'" size="small">
-                        {{ row.customer_aware ? '是' : '否' }}
-                      </el-tag>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="impact_description" label="影响描述" min-width="200" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      {{ row.impact_description || '-' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="solution" label="建议解决方案" min-width="250" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      {{ row.solution || '-' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="manual_check" label="手动判断方法" min-width="200" show-overflow-tooltip>
-                    <template #default="{ row }">
-                      <div class="copyable-cell" @click.stop>
-                        <code class="manual-check-code">{{ row.manual_check || '-' }}</code>
-                        <el-icon
-                          v-if="row.manual_check"
-                          class="copy-icon"
-                          @click="copyToClipboard(row.manual_check, '手动判断方法')"
-                        >
-                          <DocumentCopy />
-                        </el-icon>
-                      </div>
-                    </template>
-                  </el-table-column>
-                </el-table>
+                <div class="native-table-wrapper">
+                  <table class="native-detail-table">
+                    <colgroup>
+                      <col style="width: 140px">
+                      <col style="width: 190px">
+                      <col style="width: 110px">
+                      <col style="width: 110px">
+                      <col style="width: 260px">
+                      <col style="width: 320px">
+                      <col style="width: 260px">
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>所属设备</th>
+                        <th>故障名称</th>
+                        <th>危害等级</th>
+                        <th>客户有感</th>
+                        <th>影响描述</th>
+                        <th>建议解决方案</th>
+                        <th>手动判断方法</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(row, index) in alertData.diagnosis.fault_items" :key="`${row.device}-${row.alert_type}-${index}`">
+                        <td>
+                          <div class="device-info">
+                            <div class="device-name">{{ row.device || '-' }}</div>
+                            <div class="device-model" v-if="row.part_model">{{ row.part_model }}</div>
+                          </div>
+                        </td>
+                        <td>
+                          <el-tag :type="getFaultTagType(row.severity)" size="small">
+                            {{ row.alert_type }}
+                          </el-tag>
+                          <div class="fault-name">{{ row.fault_name }}</div>
+                        </td>
+                        <td class="cell-center">
+                          <el-tag :type="getDangerLevelTagType(row.danger_level)" size="small">
+                            {{ row.danger_level || 'P2' }}
+                          </el-tag>
+                        </td>
+                        <td class="cell-center">
+                          <el-tag :type="row.customer_aware ? 'danger' : 'success'" size="small">
+                            {{ row.customer_aware ? '是' : '否' }}
+                          </el-tag>
+                        </td>
+                        <td class="cell-wrap">{{ row.impact_description || '-' }}</td>
+                        <td class="cell-wrap">{{ row.solution || '-' }}</td>
+                        <td>
+                          <div class="copyable-cell" @click.stop>
+                            <code class="manual-check-code">{{ row.manual_check || '-' }}</code>
+                            <el-icon
+                              v-if="row.manual_check"
+                              class="copy-icon"
+                              @click="copyToClipboard(row.manual_check, '手动判断方法')"
+                            >
+                              <DocumentCopy />
+                            </el-icon>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </template>
               <!-- 单故障类型兼容旧数据 -->
               <template v-else-if="alertData.diagnosis?.manual_matched">
@@ -616,6 +624,7 @@ const fetchAlertDetail = async () => {
     loading.value = false
   }
 }
+
 
 // 重新诊断
 const handleDiagnose = async () => {
@@ -1098,9 +1107,60 @@ onMounted(() => {
   opacity: 1;
 }
 
-.manual-match-table :deep(.el-table__header-wrapper),
-.manual-match-table :deep(.el-table__body-wrapper) {
-  overflow: auto;
+.native-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.native-detail-table {
+  width: 100%;
+  min-width: 1390px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: var(--bg-primary);
+}
+
+.native-detail-table th,
+.native-detail-table td {
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px 14px;
+  vertical-align: top;
+  box-sizing: border-box;
+}
+
+.native-detail-table th:last-child,
+.native-detail-table td:last-child {
+  border-right: none;
+}
+
+.native-detail-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.native-detail-table th {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.native-detail-table td {
+  color: var(--text-primary);
+  line-height: 1.7;
+}
+
+.cell-center {
+  text-align: center;
+  vertical-align: middle !important;
+}
+
+.cell-wrap {
+  white-space: normal;
+  word-break: break-word;
 }
 
 /* 原始数据展开样式 */

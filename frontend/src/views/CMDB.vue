@@ -472,35 +472,26 @@
               <div class="drawer-sub-section">
                 <div class="drawer-sub-title">BCC 实例 <span class="drawer-sub-count">{{ bceContext.bcc_instances?.length || 0 }}</span></div>
                 <div class="table-wrapper" v-if="bceContext.bcc_instances?.length">
-                  <el-table
-                    :data="bceContext.bcc_instances"
-                    max-height="280"
-                    class="modern-table"
-                    size="small"
-                    border
-                    scrollbar-always-on
-                    style="width: 100%;"
-                    :header-cell-style="{ whiteSpace: 'nowrap', fontSize: '12px', background: 'var(--bg-secondary, #f9fafb)', padding: '8px 4px' }"
-                    :cell-style="{ padding: '8px 4px' }"
-                  >
-                    <el-table-column
-                      v-for="col in bccColumns"
-                      :key="col"
-                      :prop="col"
-                      :label="col"
-                      :min-width="bceColWidth(col)"
-                      show-overflow-tooltip
-                      resizable
-                    >
-                      <template #default="{ row }">
-                        <div v-if="row[col] && row[col] !== 'None'" class="copyable-cell" @click.stop>
-                          <span class="bce-cell-text">{{ row[col] }}</span>
-                          <el-icon class="copy-icon" @click="copyToClipboard(row[col], col)"><DocumentCopy /></el-icon>
-                        </div>
-                        <span v-else style="color: var(--text-tertiary, #9ca3af);">-</span>
-                      </template>
-                    </el-table-column>
-                  </el-table>
+                  <div class="native-table-scroll">
+                    <table class="native-drawer-table">
+                      <thead>
+                        <tr>
+                          <th v-for="col in bccColumns" :key="col" :style="{ minWidth: bceColWidth(col) + 'px' }">{{ col }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(row, rowIndex) in bceContext.bcc_instances" :key="`bcc-${rowIndex}`">
+                          <td v-for="col in bccColumns" :key="`${rowIndex}-${col}`" :style="{ minWidth: bceColWidth(col) + 'px' }">
+                            <div v-if="row[col] && row[col] !== 'None'" class="copyable-cell" @click.stop>
+                              <span class="bce-cell-text">{{ row[col] }}</span>
+                              <el-icon class="copy-icon" @click="copyToClipboard(row[col], col)"><DocumentCopy /></el-icon>
+                            </div>
+                            <span v-else style="color: var(--text-tertiary, #9ca3af);">-</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
                 <div v-else class="bce-empty-tip">无 BCC 关联记录</div>
               </div>
@@ -509,35 +500,26 @@
               <div class="drawer-sub-section">
                 <div class="drawer-sub-title">CCE 节点 <span class="drawer-sub-count">{{ bceContext.cce_nodes?.length || 0 }}</span></div>
                 <div class="table-wrapper" v-if="bceContext.cce_nodes?.length">
-                  <el-table
-                    :data="bceContext.cce_nodes"
-                    max-height="280"
-                    class="modern-table"
-                    size="small"
-                    border
-                    scrollbar-always-on
-                    style="width: 100%;"
-                    :header-cell-style="{ whiteSpace: 'nowrap', fontSize: '12px', background: 'var(--bg-secondary, #f9fafb)', padding: '8px 4px' }"
-                    :cell-style="{ padding: '8px 4px' }"
-                  >
-                    <el-table-column
-                      v-for="col in cceColumns"
-                      :key="col"
-                      :prop="col"
-                      :label="col"
-                      :min-width="bceColWidth(col)"
-                      show-overflow-tooltip
-                      resizable
-                    >
-                      <template #default="{ row }">
-                        <div v-if="row[col] && row[col] !== 'None'" class="copyable-cell" @click.stop>
-                          <span class="bce-cell-text">{{ row[col] }}</span>
-                          <el-icon class="copy-icon" @click="copyToClipboard(row[col], col)"><DocumentCopy /></el-icon>
-                        </div>
-                        <span v-else style="color: var(--text-tertiary, #9ca3af);">-</span>
-                      </template>
-                    </el-table-column>
-                  </el-table>
+                  <div class="native-table-scroll">
+                    <table class="native-drawer-table">
+                      <thead>
+                        <tr>
+                          <th v-for="col in cceColumns" :key="col" :style="{ minWidth: bceColWidth(col) + 'px' }">{{ col }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(row, rowIndex) in bceContext.cce_nodes" :key="`cce-${rowIndex}`">
+                          <td v-for="col in cceColumns" :key="`${rowIndex}-${col}`" :style="{ minWidth: bceColWidth(col) + 'px' }">
+                            <div v-if="row[col] && row[col] !== 'None'" class="copyable-cell" @click.stop>
+                              <span class="bce-cell-text">{{ row[col] }}</span>
+                              <el-icon class="copy-icon" @click="copyToClipboard(row[col], col)"><DocumentCopy /></el-icon>
+                            </div>
+                            <span v-else style="color: var(--text-tertiary, #9ca3af);">-</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
                 <div v-else class="bce-empty-tip">无 CCE 关联记录</div>
               </div>
@@ -559,7 +541,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElLoading } from 'element-plus'
 import { Monitor, Cpu, Odometer, Coin, Search, Upload, Refresh, Delete, Grid, DocumentCopy, Setting, Tools, FolderOpened, ArrowDown, Connection } from '@element-plus/icons-vue'
@@ -1344,96 +1326,51 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.table-wrapper :deep(.el-table) {
-  border: none;
-  width: 100% !important;
+.native-table-scroll {
+  width: 100%;
+  max-height: 280px;
+  overflow: auto;
 }
 
-/* 修复表头和内容列对齐问题 - 关键：使用相同的滚动容器 */
-.table-wrapper :deep(.el-table__header-wrapper) {
-  overflow: hidden;
+.native-drawer-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: var(--bg-primary);
 }
 
-.table-wrapper :deep(.el-table__body-wrapper) {
-  overflow-x: auto;
-  overflow-y: auto;
-}
-
-/* 统一表头和单元格样式 */
-.table-wrapper :deep(.el-table__header th) {
+.native-drawer-table th,
+.native-drawer-table td {
   border-right: 1px solid var(--border-primary, #e5e7eb);
   border-bottom: 1px solid var(--border-primary, #e5e7eb);
+  padding: 8px 10px;
+  box-sizing: border-box;
+  vertical-align: top;
+}
+
+.native-drawer-table th {
   background: var(--bg-secondary, #f9fafb);
-  padding: 8px 4px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
 }
 
-.table-wrapper :deep(.el-table__header th:last-child) {
+.native-drawer-table th:last-child,
+.native-drawer-table td:last-child {
   border-right: none;
 }
 
-.table-wrapper :deep(.el-table__body td) {
-  border-right: 1px solid var(--border-primary, #e5e7eb);
-  border-bottom: 1px solid var(--border-primary, #e5e7eb);
-  padding: 8px 4px;
-}
-
-.table-wrapper :deep(.el-table__body td:last-child) {
-  border-right: none;
-}
-
-.table-wrapper :deep(.el-table__body tr:last-child td) {
+.native-drawer-table tbody tr:last-child td {
   border-bottom: none;
 }
 
-/* 修复表格单元格内容溢出 */
-.table-wrapper :deep(.el-table .cell) {
+.native-drawer-table td {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0 4px;
   line-height: 1.5;
-}
-
-/* 修复第一列对齐问题 */
-.table-wrapper :deep(.el-table__header th:first-child),
-.table-wrapper :deep(.el-table__body td:first-child) {
-  border-left: none;
-}
-
-/* 修复滚动条导致的对齐问题 - 关键修复 */
-.table-wrapper :deep(.el-table__body-wrapper::-webkit-scrollbar) {
-  height: 8px;
-  width: 8px;
-}
-
-.table-wrapper :deep(.el-table__body-wrapper::-webkit-scrollbar-thumb) {
-  background: var(--scrollbar-thumb, rgba(0, 0, 0, 0.15));
-  border-radius: 4px;
-}
-
-.table-wrapper :deep(.el-table__body-wrapper::-webkit-scrollbar-track) {
-  background: var(--scrollbar-track, transparent);
-}
-
-/* 修复表头滚动条占位问题 - 关键修复 */
-/* Element Plus 表格在内容区域有水平滚动条时，表头右侧需要留出滚动条空间 */
-.table-wrapper :deep(.el-table__header) {
-  table-layout: fixed !important;
-  width: 100% !important;
-}
-
-.table-wrapper :deep(.el-table__body) {
-  table-layout: fixed !important;
-}
-
-/* 修复固定列宽导致的对齐问题 */
-.table-wrapper :deep(.el-table colgroup col) {
-  min-width: 60px;
-}
-
-/* 确保表格容器正确计算宽度 */
-.table-wrapper :deep(.el-table__inner-wrapper) {
-  position: relative;
 }
 
 </style>

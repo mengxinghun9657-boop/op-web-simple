@@ -36,6 +36,7 @@ class TaskType(str, enum.Enum):
     GPU_HAS_SYNC = "gpu_has_sync"            # GPU HAS巡检数据同步
     GPU_HAS_COLLECT = "gpu_has_collect"      # GPU HAS巡检采集
     GPU_BOTTOM_ANALYSIS = "gpu_bottom_analysis"  # GPU bottom卡时分析
+    APISERVER_ALERT_ANALYSIS = "apiserver_alert_analysis"  # APIServer监控告警分析
     # PFS监控
     PFS_EXPORT = "pfs_export"                # PFS数据导出
 

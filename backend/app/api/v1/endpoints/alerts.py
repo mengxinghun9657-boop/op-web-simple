@@ -778,6 +778,37 @@ async def update_alert_status(
         )
 
 
+@router.put("/alerts/batch/status", response_model=APIResponse)
+async def batch_update_alert_status(
+    payload: dict,
+    db: Session = Depends(get_db),
+):
+    """批量修改硬件告警状态"""
+    alert_ids = payload.get("alert_ids", [])
+    new_status = payload.get("status")
+    if not alert_ids or not new_status:
+        return APIResponse(success=False, error="参数错误", message="alert_ids 和 status 不能为空")
+
+    valid_statuses = ["processing", "resolved", "closed"]
+    if new_status not in valid_statuses:
+        return APIResponse(success=False, error="无效的状态值", message=f"状态必须是: {', '.join(valid_statuses)}")
+
+    records = db.query(AlertRecord).filter(AlertRecord.id.in_(alert_ids)).all()
+    now = datetime.now()
+    for record in records:
+        old_status = record.status
+        record.status = new_status
+        if new_status == "resolved":
+            record.resolved_at = now
+            record.resolved_by = payload.get("resolved_by", "系统管理员")
+        elif new_status == "processing":
+            record.resolved_at = None
+            record.resolved_by = None
+        logger.info(f"批量告警状态更新: ID={record.id}, {old_status} → {new_status}")
+    db.commit()
+    return APIResponse(success=True, data={"updated": len(records)}, message=f"已批量更新 {len(records)} 条记录")
+
+
 @router.post("/alerts/correct-filenames", response_model=APIResponse)
 async def correct_alert_filenames(
     dry_run: bool = Query(True, description="是否为试运行模式"),
@@ -904,7 +935,7 @@ async def create_icafe_card(
 ):
     """
     为指定告警创建 iCafe 卡片
-    
+
     Args:
         alert_id: 告警ID
         card_data: 卡片数据
@@ -912,6 +943,9 @@ async def create_icafe_card(
             - subcategory: 细分分类
             - work_hours: 工时
             - plan: 所属计划
+            - card_type: 卡片类型，'Bug' 或 'Task'（默认 Bug）
+            - direction: 方向大类（Task类型用，默认'硬件'）
+            - category: 汇总分类（Task类型用，默认'运维事件'）
     """
     try:
         # 查询告警信息
@@ -978,14 +1012,19 @@ async def create_icafe_card(
         title = icafe_service.generate_card_title(alert_data)
         detail = icafe_service.generate_card_detail(alert_data, diagnosis_data)
         
+        # 获取卡片类型（默认 Bug）
+        card_type = card_data.get('card_type', 'Bug')
+        if card_type not in ['Bug', 'Task']:
+            card_type = 'Bug'
+
         # 构建卡片字段
-        fields = icafe_service.build_card_fields(card_data)
-        
+        fields = icafe_service.build_card_fields(card_data, card_type)
+
         # 创建卡片
         create_data = {
             'title': title,
             'detail': detail,
-            'type': 'Bug',  # 使用 Bug 类型（与 HMLCC 空间自定义字段匹配）
+            'type': card_type,  # 使用指定的卡片类型
             'fields': fields,
             'creator': icafe_config.get('username', ''),
             'comment': f'由告警系统自动创建，告警ID: {alert_id}'

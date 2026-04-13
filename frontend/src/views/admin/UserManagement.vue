@@ -169,8 +169,8 @@ const fetchUsers = async () => {
   try {
     const response = await axios.get('/api/v1/users', {
       params: {
-        skip: 0,
-        limit: 1000 // 获取所有用户用于前端筛选
+        page: 1,
+        page_size: 200  // 用户数量通常较少，一次获取全量用于前端筛选
       }
     })
     

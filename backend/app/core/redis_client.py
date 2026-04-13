@@ -26,7 +26,7 @@ class RedisClient:
             db=self.db,
             decode_responses=True,
             socket_connect_timeout=5,
-            socket_timeout=5,
+            socket_timeout=None,      # brpop 是长轮询，不能设 socket 读超时
             retry_on_timeout=True
         )
 
@@ -179,6 +179,32 @@ class RedisClient:
         except Exception as e:
             logger.error(f"Redis delete 失败: {key}, 错误: {e}")
             return False
+
+    def lpush(self, key: str, value: Any) -> bool:
+        """左侧推入列表，用于任务队列"""
+        if not self.client:
+            logger.warning("Redis未连接，跳过队列写入")
+            return False
+        try:
+            payload = json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
+            self.client.lpush(key, payload)
+            return True
+        except Exception as e:
+            logger.error(f"Redis lpush 失败: {key}, 错误: {e}")
+            return False
+
+    def brpop(self, keys, timeout: int = 5):
+        """阻塞式右侧出队，timeout 秒内无消息返回 None（正常情况，非错误）"""
+        if not self.client:
+            return None
+        try:
+            return self.client.brpop(keys, timeout=timeout)
+        except redis.exceptions.TimeoutError:
+            # brpop timeout 到期，队列为空，属于正常情况
+            return None
+        except Exception as e:
+            logger.error(f"Redis brpop 失败: {keys}, 错误: {e}")
+            return None
 
 
 # 全局Redis客户端实例

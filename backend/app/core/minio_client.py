@@ -163,6 +163,14 @@ class MinIOClient:
             logger.error(f"❌ 对象删除失败: {object_name}, 错误: {e}")
             raise
 
+    def object_exists(self, object_name: str) -> bool:
+        """检查对象是否存在"""
+        try:
+            self.client.stat_object(self.bucket, object_name)
+            return True
+        except S3Error:
+            return False
+
     def list_objects(self, prefix: str = '') -> list:
         """列出对象"""
         try:

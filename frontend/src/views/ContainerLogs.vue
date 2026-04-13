@@ -26,6 +26,15 @@
             </span>
           </template>
         </el-tab-pane>
+        <el-tab-pane label="后端 Worker" name="backend_worker">
+          <template #label>
+            <span class="tab-label">
+              <el-icon><Monitor /></el-icon>
+              后端 Worker
+              <el-tag v-if="isConnected && activeContainer === 'backend_worker'" type="success" size="small" effect="dark" class="live-tag">LIVE</el-tag>
+            </span>
+          </template>
+        </el-tab-pane>
         <el-tab-pane label="MySQL" name="mysql">
           <template #label>
             <span class="tab-label">
@@ -150,7 +159,8 @@ import {
 
 // 容器名称映射
 const containerNames = {
-  backend: '后端服务 (cluster-backend)',
+  backend: '后端服务 (cluster-backend-api)',
+  backend_worker: '后端 Worker (cluster-backend-worker)',
   mysql: 'MySQL (cluster-mysql)',
   redis: 'Redis (cluster-redis)',
   minio: 'MinIO (cluster-minio)',

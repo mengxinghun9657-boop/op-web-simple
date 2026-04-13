@@ -159,46 +159,27 @@ docker compose -f docker-compose.prod.yml build --no-cache
 # 验证构建的镜像
 echo ""
 echo "🔍 验证构建的镜像..."
-echo "检查本地源文件..."
-if grep -q "is_cce = alert.is_cce_cluster" backend/app/services/alert/alert_processor.py; then
-    echo -e "${GREEN}✓ 本地源文件正确${NC}"
-else
-    echo -e "${RED}✗ 本地源文件错误！${NC}"
-    echo "请检查 backend/app/services/alert/alert_processor.py 文件"
-    exit 1
-fi
-
-# 验证构建的镜像内容
-echo ""
-echo "� 验证构建的镜像内容..."
 docker run --rm op-web-backend:latest python3 -c "
 import sys
-with open('/app/app/services/alert/alert_processor.py', 'r') as f:
-    content = f.read()
-    if 'is_cce = alert.is_cce_cluster' in content:
-        print('✅ 镜像中的代码正确')
-        sys.exit(0)
+# 验证 worker.py 和 task_queue_service 存在
+import os
+checks = [
+    '/app/worker.py',
+    '/app/app/services/task_queue_service.py',
+    '/app/app/api/v1/cce_monitoring.py',
+    '/app/app/api/v1/apiserver_alerts.py',
+]
+all_ok = True
+for path in checks:
+    if os.path.exists(path):
+        print(f'✅ {path}')
     else:
-        print('❌ 镜像中的代码错误！')
-        print('显示错误的代码行：')
-        for i, line in enumerate(content.split('\n'), 1):
-            if 'is_cce' in line and '=' in line and 'alert' in line:
-                print(f'  Line {i}: {line.strip()}')
-        sys.exit(1)
+        print(f'❌ 缺失: {path}')
+        all_ok = False
+sys.exit(0 if all_ok else 1)
 " || {
     echo ""
-    echo -e "${RED}✗ 镜像验证失败！${NC}"
-    echo ""
-    echo "可能原因："
-    echo "  1. Docker构建上下文问题"
-    echo "  2. .dockerignore 排除了文件"
-    echo "  3. 文件系统缓存问题"
-    echo ""
-    echo "建议操作："
-    echo "  1. 检查 backend/.dockerignore 文件"
-    echo "  2. 手动检查: docker run --rm op-web-backend:latest cat /app/app/services/alert/alert_processor.py | grep 'is_cce ='"
-    echo "  3. 尝试清理系统缓存: sync && echo 3 > /proc/sys/vm/drop_caches"
-    echo ""
+    echo -e "${RED}✗ 镜像验证失败，关键文件缺失！${NC}"
     exit 1
 }
 
@@ -238,45 +219,22 @@ docker compose -f docker-compose.prod.yml ps
 echo ""
 echo "🏥 检查服务健康状态..."
 sleep 5
-BACKEND_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' cluster-backend 2>/dev/null || echo "unknown")
+BACKEND_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' cluster-backend-api 2>/dev/null || echo "unknown")
+WORKER_STATUS=$(docker inspect --format='{{.State.Status}}' cluster-backend-worker 2>/dev/null || echo "unknown")
 MYSQL_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' cluster-mysql 2>/dev/null || echo "unknown")
 REDIS_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' cluster-redis 2>/dev/null || echo "unknown")
 
-echo "  Backend: $BACKEND_HEALTH"
+echo "  Backend API: $BACKEND_HEALTH"
+echo "  Backend Worker: $WORKER_STATUS"
 echo "  MySQL: $MYSQL_HEALTH"
 echo "  Redis: $REDIS_HEALTH"
 
-# 最终验证：检查运行中容器的代码
-echo ""
-echo "🔍 最终验证：检查运行中容器的代码..."
-sleep 10  # 等待容器完全启动
-docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
-import sys
-with open('/app/app/services/alert/alert_processor.py', 'r') as f:
-    content = f.read()
-    if 'is_cce = alert.is_cce_cluster' in content:
-        print('✅ 运行中容器的代码正确')
-        sys.exit(0)
-    else:
-        print('❌ 运行中容器的代码错误！')
-        print('显示错误的代码行：')
-        for i, line in enumerate(content.split('\n'), 1):
-            if 'is_cce' in line and '=' in line and 'alert' in line:
-                print(f'  Line {i}: {line.strip()}')
-        sys.exit(1)
-" || {
+# 检查 Worker 是否正常运行
+if [ "$WORKER_STATUS" != "running" ]; then
     echo ""
-    echo -e "${RED}✗ 运行中容器验证失败！${NC}"
-    echo ""
-    echo "这是一个严重问题，说明："
-    echo "  1. 镜像构建正确，但容器启动时使用了错误的镜像"
-    echo "  2. 或者有volume挂载覆盖了代码"
-    echo ""
-    echo "检查步骤："
-    echo "  1. docker compose -f docker-compose.prod.yml config | grep -A 5 backend"
-    echo "  2. docker inspect cluster-backend | grep -A 10 Mounts"
-    echo ""
-}
+    echo -e "${YELLOW}⚠️  警告：Backend Worker 状态异常 ($WORKER_STATUS)${NC}"
+    echo "   请检查 worker 日志：docker compose -f docker-compose.prod.yml logs backend-worker --tail=50"
+fi
 
 # 初始化系统配置
 echo ""
@@ -285,7 +243,7 @@ echo "⚙️  初始化系统配置..."
 # 先复制配置文件到容器
 if [ -f "backend/config/default_instance_ids.json" ]; then
     echo "📋 复制默认配置文件..."
-    BACKEND_CONTAINER=$(docker compose -f docker-compose.prod.yml ps -q backend)
+    BACKEND_CONTAINER=$(docker compose -f docker-compose.prod.yml ps -q backend-api)
 
     if [ -z "$BACKEND_CONTAINER" ]; then
         echo -e "${RED}❌ 错误: Backend容器未运行${NC}"
@@ -297,7 +255,7 @@ if [ -f "backend/config/default_instance_ids.json" ]; then
         echo -e "${GREEN}✓ 配置文件复制成功${NC}"
 
         # 验证文件是否存在
-        if docker compose -f docker-compose.prod.yml exec -T backend test -f /app/config/default_instance_ids.json; then
+        if docker compose -f docker-compose.prod.yml exec -T backend-api test -f /app/config/default_instance_ids.json; then
             echo -e "${GREEN}✓ 验证配置文件存在于容器内${NC}"
         else
             echo -e "${YELLOW}⚠️  警告: 配置文件复制后验证失败${NC}"
@@ -318,12 +276,12 @@ sleep 10
 
 # 执行初始化
 echo "🔧 执行系统配置初始化..."
-if docker compose -f docker-compose.prod.yml exec -T backend python3 init_system_configs.py; then
+if docker compose -f docker-compose.prod.yml exec -T backend-api python3 init_system_configs.py; then
     echo -e "${GREEN}✓ 系统配置初始化成功${NC}"
 else
     echo -e "${RED}❌ 系统配置初始化失败${NC}"
     echo -e "${YELLOW}   请查看详细日志:${NC}"
-    echo -e "${YELLOW}   docker compose -f docker-compose.prod.yml logs backend --tail=100 | grep -i 'init_system\\|系统配置'${NC}"
+    echo -e "${YELLOW}   docker compose -f docker-compose.prod.yml logs backend-api --tail=100 | grep -i 'init_system\\|系统配置'${NC}"
     exit 1
 fi
 
@@ -331,7 +289,7 @@ fi
 echo ""
 echo "📚 导入故障手册..."
 # 1. 在容器内创建knowledge目录
-docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /app/knowledge 2>/dev/null || true
+docker compose -f docker-compose.prod.yml exec -T backend-api mkdir -p /app/knowledge 2>/dev/null || true
 
 # 2. 复制故障手册文件到容器（优先CSV）
 CSV_FILE="knowledge/故障维修手册.csv"
@@ -339,11 +297,11 @@ MD_FILE="knowledge/故障维修手册.md"
 
 if [ -f "$CSV_FILE" ]; then
     echo "  ✅ 发现CSV格式手册，优先使用..."
-    docker cp "$CSV_FILE" $(docker compose -f docker-compose.prod.yml ps -q backend):/app/knowledge/故障维修手册.csv
+    docker cp "$CSV_FILE" $(docker compose -f docker-compose.prod.yml ps -q backend-api):/app/knowledge/故障维修手册.csv
     echo "  ✓ CSV文件已复制"
 elif [ -f "$MD_FILE" ]; then
     echo "  ⚠️  仅发现MD格式手册，使用降级方案..."
-    docker cp "$MD_FILE" $(docker compose -f docker-compose.prod.yml ps -q backend):/app/knowledge/故障维修手册.md
+    docker cp "$MD_FILE" $(docker compose -f docker-compose.prod.yml ps -q backend-api):/app/knowledge/故障维修手册.md
     echo "  ✓ MD文件已复制"
 else
     echo -e "${YELLOW}⚠️  未找到故障手册文件${NC}"
@@ -352,13 +310,13 @@ fi
 
 # 3. 复制导入脚本到容器并执行
 if [ -f "backend/scripts/import_fault_manual.py" ]; then
-    docker compose -f docker-compose.prod.yml exec -T backend mkdir -p /app/scripts 2>/dev/null || true
-    docker cp backend/scripts/import_fault_manual.py $(docker compose -f docker-compose.prod.yml ps -q backend):/app/scripts/
+    docker compose -f docker-compose.prod.yml exec -T backend-api mkdir -p /app/scripts 2>/dev/null || true
+    docker cp backend/scripts/import_fault_manual.py $(docker compose -f docker-compose.prod.yml ps -q backend-api):/app/scripts/
     echo "  ✓ 导入脚本已复制"
 
     # 4. 调用导入脚本（从/app目录执行）
     echo "  导入手册数据到数据库..."
-    docker compose -f docker-compose.prod.yml exec -T backend python3 /app/scripts/import_fault_manual.py && \
+    docker compose -f docker-compose.prod.yml exec -T backend-api python3 /app/scripts/import_fault_manual.py && \
     echo -e "${GREEN}✓ 故障手册导入成功${NC}" || \
     echo -e "${YELLOW}⚠️  故障手册导入失败，请手动导入${NC}"
     
@@ -366,7 +324,7 @@ if [ -f "backend/scripts/import_fault_manual.py" ]; then
     if [ $? -eq 0 ]; then
         echo ""
         echo "  重新匹配已有告警的手册..."
-        docker compose -f docker-compose.prod.yml exec -T backend python3 -c "
+        docker compose -f docker-compose.prod.yml exec -T backend-api python3 -c "
 import sys
 sys.path.insert(0, '/app')
 from app.core.deps import SessionLocal
@@ -496,7 +454,8 @@ echo "📝 默认账号: admin / admin123"
 echo ""
 echo "📝 管理命令:"
 echo "   查看日志: docker compose -f docker-compose.prod.yml logs -f"
-echo "   查看后端: docker compose -f docker-compose.prod.yml logs -f backend"
+echo "   查看后端API: docker compose -f docker-compose.prod.yml logs -f backend-api"
+echo "   查看后端Worker: docker compose -f docker-compose.prod.yml logs -f backend-worker"
 echo "   查看状态: docker compose -f docker-compose.prod.yml ps"
 echo "   重启服务: docker compose -f docker-compose.prod.yml restart"
 echo "   停止服务: docker compose -f docker-compose.prod.yml down"

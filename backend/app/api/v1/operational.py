@@ -6,7 +6,7 @@
 支持 Excel 上传分析和 API 查询分析
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Literal
 import uuid
@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 
 from app.core.config import settings
 from app.services.operational_service import analyze_operational_file, analyze_api_data
+from app.services.task_queue_service import task_queue_service
 from loguru import logger
 
 router = APIRouter(prefix="/operational", tags=["运营数据分析"])
@@ -333,7 +334,6 @@ async def process_api_analysis(task_id: str, request: AnalyzeAPIRequest):
 
 @router.post("/analyze", response_model=TaskResponse)
 async def analyze_operational_data(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(..., description="运营数据Excel文件")
 ):
     """
@@ -386,8 +386,12 @@ async def analyze_operational_data(
         except Exception as e:
             logger.warning(f"保存任务到MySQL失败: {e}")
         
-        # 添加后台任务
-        background_tasks.add_task(process_analysis, task_id, file_path, file.filename)
+        # 提交到 worker 队列
+        task_queue_service.enqueue("operational_excel_analysis", {
+            "task_id": task_id,
+            "file_path": file_path,
+            "file_name": file.filename,
+        })
         
         return TaskResponse(
             task_id=task_id,
@@ -404,7 +408,6 @@ async def analyze_operational_data(
 
 @router.post("/analyze-api", response_model=TaskResponse)
 async def analyze_api_query(
-    background_tasks: BackgroundTasks,
     request: AnalyzeAPIRequest
 ):
     """
@@ -467,8 +470,16 @@ async def analyze_api_query(
         except Exception as e:
             logger.warning(f"保存任务到MySQL失败: {e}")
         
-        # 添加后台任务
-        background_tasks.add_task(process_api_analysis, task_id, actual_request)
+        # 提交到 worker 队列（序列化请求对象）
+        task_queue_service.enqueue("operational_api_analysis", {
+            "task_id": task_id,
+            "spacecode": actual_request.spacecode,
+            "username": actual_request.username,
+            "password": actual_request.password,
+            "iql": actual_request.iql,
+            "page": actual_request.page,
+            "pgcount": actual_request.pgcount,
+        })
         
         return TaskResponse(
             task_id=task_id,

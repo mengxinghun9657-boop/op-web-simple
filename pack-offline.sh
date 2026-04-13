@@ -339,10 +339,10 @@ echo "等待 MySQL 完全初始化..."
 sleep 30
 
 # 步骤3: 等待后端容器完全启动
-echo "等待后端容器启动..."
+echo "等待后端 API 容器启动..."
 for i in {1..30}; do
-    if docker compose -f docker-compose.prod.yml exec -T backend python3 --version >/dev/null 2>&1; then
-        echo "✓ 后端容器已启动 (用时 $((i*2)) 秒)"
+    if docker compose -f docker-compose.prod.yml exec -T backend-api python3 --version >/dev/null 2>&1; then
+        echo "✓ 后端 API 容器已启动 (用时 $((i*2)) 秒)"
         break
     fi
     
@@ -354,11 +354,11 @@ for i in {1..30}; do
 done
 
 # 步骤4: 验证后端容器可以连接数据库（修复版 - 单行Python）
-echo "验证后端数据库连接..."
+echo "验证后端 API 数据库连接..."
 DB_PASSWORD="$MYSQL_ROOT_PASSWORD"  # 预展开变量，避免转义问题
 
 for i in {1..10}; do
-    if docker compose -f docker-compose.prod.yml exec -T backend python3 -c \
+    if docker compose -f docker-compose.prod.yml exec -T backend-api python3 -c \
         "import pymysql,sys; \
         try: \
             conn=pymysql.connect(host='mysql',port=3306,user='root',password='$DB_PASSWORD',database='cluster_management',connect_timeout=10); \
@@ -385,21 +385,142 @@ echo ""
 echo "📊 5. 检查服务状态..."
 docker compose -f docker-compose.prod.yml ps
 
+# 检查 Worker 是否正常运行
+WORKER_STATUS=$(docker inspect --format='{{.State.Status}}' cluster-backend-worker 2>/dev/null || echo "unknown")
+if [ "$WORKER_STATUS" != "running" ]; then
+    echo ""
+    echo "⚠️  警告：Backend Worker 状态异常 ($WORKER_STATUS)"
+    echo "   请检查 worker 日志：docker compose -f docker-compose.prod.yml logs backend-worker --tail=50"
+fi
+
 echo ""
 echo "🗄️ 6. 初始化数据库和配置..."
+
+# 升级模式：补建缺失的新表（保留数据时执行）
+if [ "$clean_volumes" != "2" ]; then
+    echo ""
+    echo "🔧 检查并补建缺失的数据库表（升级模式）..."
+
+    # 用 Python 脚本检查并创建缺失的表，避免 SQL heredoc 转义问题
+    docker compose -f docker-compose.prod.yml exec -T backend-api python3 - << 'PYEOF'
+import sys
+import time
+import pymysql
+import os
+
+host = os.environ.get("MYSQL_HOST", "mysql")
+port = int(os.environ.get("MYSQL_PORT", 3306))
+user = os.environ.get("MYSQL_USER", "root")
+password = os.environ.get("MYSQL_PASSWORD", os.environ.get("MYSQL_ROOT_PASSWORD", ""))
+database = os.environ.get("MYSQL_DATABASE", "cluster_management")
+
+# 等待 MySQL 就绪
+conn = None
+for attempt in range(10):
+    try:
+        conn = pymysql.connect(host=host, port=port, user=user, password=password,
+                               database=database, connect_timeout=10,
+                               charset="utf8mb4")
+        break
+    except Exception as e:
+        if attempt < 9:
+            print("  等待 MySQL... (%d/10)" % (attempt + 1))
+            time.sleep(3)
+        else:
+            print("❌ 无法连接 MySQL: %s" % e)
+            sys.exit(1)
+
+cursor = conn.cursor()
+
+# 查询当前已有的表
+cursor.execute("SHOW TABLES")
+existing = {row[0] for row in cursor.fetchall()}
+print("当前已有表: %s" % sorted(existing))
+
+# 定义需要补建的表（只在不存在时创建）
+tables = {
+    "chat_history": """
+        CREATE TABLE `chat_history` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `user_id` INT NOT NULL COMMENT '用户ID',
+            `role` VARCHAR(20) NOT NULL COMMENT 'user/assistant/system',
+            `content` TEXT NOT NULL COMMENT '消息内容',
+            `context_data` TEXT NULL COMMENT 'JSON格式上下文数据',
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+            INDEX `idx_chat_history_user_id` (`user_id`),
+            INDEX `idx_chat_history_created_at` (`created_at`),
+            CONSTRAINT `fk_chat_history_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话历史'
+    """,
+    "user_notes": """
+        CREATE TABLE `user_notes` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `user_id` INT NOT NULL UNIQUE COMMENT '用户ID',
+            `content` TEXT DEFAULT '' COMMENT '备忘内容',
+            `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+            CONSTRAINT `fk_user_notes_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户备忘'
+    """,
+    "instance_config": """
+        CREATE TABLE `instance_config` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
+            `config_type` VARCHAR(50) NOT NULL UNIQUE COMMENT '配置类型',
+            `instance_ids` TEXT NOT NULL COMMENT '实例ID列表（JSON数组格式）',
+            `description` VARCHAR(500) NULL COMMENT '配置说明',
+            `created_by` VARCHAR(100) NULL COMMENT '创建者',
+            `updated_by` VARCHAR(100) NULL COMMENT '更新者',
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+            `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实例配置表'
+    """,
+}
+
+created = []
+skipped = []
+failed = []
+
+for table_name, ddl in tables.items():
+    if table_name in existing:
+        skipped.append(table_name)
+        print("  ⏭  %s 已存在，跳过" % table_name)
+    else:
+        try:
+            cursor.execute(ddl.strip())
+            conn.commit()
+            created.append(table_name)
+            print("  ✅ %s 创建成功" % table_name)
+        except Exception as e:
+            failed.append(table_name)
+            print("  ❌ %s 创建失败: %s" % (table_name, e))
+
+cursor.close()
+conn.close()
+
+print("")
+print("补表完成: 新建 %d 张，跳过 %d 张，失败 %d 张" % (len(created), len(skipped), len(failed)))
+if failed:
+    sys.exit(1)
+PYEOF
+
+    if [ $? -eq 0 ]; then
+        echo "✓ 数据库表检查完成"
+    else
+        echo "⚠️  补表过程中出现错误，请检查日志后继续"
+    fi
+fi
 
 # 导入故障手册函数
 import_fault_manual() {
     local file_path="$1"
     local file_name=$(basename "$file_path")
-    
+
     echo "📚 导入故障手册（${file_name}）..."
     
     # 确保容器内目录存在
-    docker exec cluster-backend mkdir -p /app/knowledge /app/backend/scripts 2>/dev/null || true
+    docker exec cluster-backend-api mkdir -p /app/knowledge /app/backend/scripts 2>/dev/null || true
 
     # 复制故障手册文件到容器内
-    if docker cp "$file_path" "cluster-backend:/app/knowledge/${file_name}"; then
+    if docker cp "$file_path" "cluster-backend-api:/app/knowledge/${file_name}"; then
         echo "✓ 故障手册文件已复制到容器"
     else
         echo "❌ 故障手册文件复制失败"
@@ -408,7 +529,7 @@ import_fault_manual() {
 
     # 复制导入脚本到容器内
     if [ -f "backend-scripts/import_fault_manual.py" ]; then
-        if docker cp "backend-scripts/import_fault_manual.py" "cluster-backend:/app/backend/scripts/import_fault_manual.py"; then
+        if docker cp "backend-scripts/import_fault_manual.py" "cluster-backend-api:/app/backend/scripts/import_fault_manual.py"; then
             echo "✓ 导入脚本已复制到容器"
         else
             echo "❌ 导入脚本复制失败"
@@ -420,14 +541,14 @@ import_fault_manual() {
     fi
     
     # 执行导入（使用正确的路径）
-    if docker compose -f docker-compose.prod.yml exec -T backend bash -c "cd /app && python3 backend/scripts/import_fault_manual.py" 2>/dev/null; then
+    if docker compose -f docker-compose.prod.yml exec -T backend-api bash -c "cd /app && python3 backend/scripts/import_fault_manual.py" 2>/dev/null; then
         echo "✓ 故障手册导入成功"
 
         # 重新匹配已有告警（带连接重试，避免导入后MySQL短暂不可用）
         echo "  重新匹配已有告警的手册..."
         echo "  等待 MySQL 处理完导入（20秒）..."
         sleep 20  # 增加等待时间，给MySQL足够时间处理292条记录的写入
-        docker compose -f docker-compose.prod.yml exec -T backend python3 -c '
+        docker compose -f docker-compose.prod.yml exec -T backend-api python3 -c '
 import sys, time
 sys.path.insert(0, "/app")
 import logging
@@ -501,7 +622,7 @@ finally:
         else
             echo "⚠️  重新匹配失败（不影响部署）"
             echo "   可稍后手动重新匹配："
-            echo "   docker compose -f docker-compose.prod.yml exec backend bash -c \"cd /app && python3 backend/scripts/rematch_fault_manual.py\""
+            echo "   docker compose -f docker-compose.prod.yml exec backend-api bash -c \"cd /app && python3 backend/scripts/rematch_fault_manual.py\""
         fi
 
         return 0
@@ -546,11 +667,11 @@ if [ -f "knowledge/故障维修手册.csv" ]; then
             echo ""
             echo "请使用以下命令手动导入（推荐）："
             echo ""
-            echo "  docker compose -f docker-compose.prod.yml exec -T backend bash -c \"cd /app && python3 backend/scripts/import_fault_manual.py\""
+            echo "  docker compose -f docker-compose.prod.yml exec -T backend-api bash -c \"cd /app && python3 backend/scripts/import_fault_manual.py\""
             echo ""
             echo "或者进入容器后执行："
             echo ""
-            echo "  docker compose -f docker-compose.prod.yml exec backend bash"
+            echo "  docker compose -f docker-compose.prod.yml exec backend-api bash"
             echo "  cd /app"
             echo "  python3 backend/scripts/import_fault_manual.py"
             echo ""
@@ -564,12 +685,12 @@ if [ -f "knowledge/故障维修手册.csv" ]; then
             if [ "$manual_import" = "yes" ]; then
                 echo ""
                 echo "🔄 正在手动导入故障手册..."
-                if docker compose -f docker-compose.prod.yml exec -T backend bash -c "cd /app && python3 backend/scripts/import_fault_manual.py"; then
+                if docker compose -f docker-compose.prod.yml exec -T backend-api bash -c "cd /app && python3 backend/scripts/import_fault_manual.py"; then
                     echo "✅ 手动导入成功"
                 else
                     echo "❌ 手动导入也失败了"
                     echo "   请查看后端日志排查问题："
-                    echo "   docker compose -f docker-compose.prod.yml logs backend --tail=50"
+                    echo "   docker compose -f docker-compose.prod.yml logs backend-api --tail=50"
                 fi
             else
                 echo "⏭️  已跳过手动导入，可稍后执行"
@@ -584,7 +705,7 @@ if [ -f "knowledge/故障维修手册.csv" ]; then
         echo ""
         echo "请稍后（等待服务完全启动后）手动执行："
         echo ""
-        echo "  docker compose -f docker-compose.prod.yml exec -T backend bash -c \"cd /app && python3 backend/scripts/import_fault_manual.py\""
+        echo "  docker compose -f docker-compose.prod.yml exec -T backend-api bash -c \"cd /app && python3 backend/scripts/import_fault_manual.py\""
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
@@ -612,11 +733,11 @@ if [ -f "init_system_configs.py" ]; then
 
     # 复制 default_instance_ids.json
     if [ -f "backend-config/default_instance_ids.json" ]; then
-        if docker cp backend-config/default_instance_ids.json "cluster-backend:/app/config/default_instance_ids.json"; then
+        if docker cp backend-config/default_instance_ids.json "cluster-backend-api:/app/config/default_instance_ids.json"; then
             echo "✓ default_instance_ids.json 复制成功"
 
             # 验证文件是否存在
-            if docker compose -f docker-compose.prod.yml exec -T backend test -f /app/config/default_instance_ids.json; then
+            if docker compose -f docker-compose.prod.yml exec -T backend-api test -f /app/config/default_instance_ids.json; then
                 echo "✓ 验证配置文件存在于容器内"
             else
                 echo "❌ 警告: 配置文件复制后验证失败"
@@ -634,7 +755,7 @@ if [ -f "init_system_configs.py" ]; then
 
     # 复制 prometheus_config.json（包含 Cookie）
     if [ -f "backend-config/prometheus_config.json" ]; then
-        if docker cp backend-config/prometheus_config.json "cluster-backend:/app/config/prometheus_config.json"; then
+        if docker cp backend-config/prometheus_config.json "cluster-backend-api:/app/config/prometheus_config.json"; then
             echo "✓ prometheus_config.json 复制成功（包含 Prometheus Cookie）"
         else
             echo "⚠️  警告: prometheus_config.json 复制失败，Prometheus 查询将使用空 Cookie"
@@ -646,12 +767,12 @@ if [ -f "init_system_configs.py" ]; then
 
     # 执行初始化
     echo "🔧 执行系统配置初始化..."
-    if docker compose -f docker-compose.prod.yml exec -T backend python3 init_system_configs.py; then
+    if docker compose -f docker-compose.prod.yml exec -T backend-api python3 init_system_configs.py; then
         echo "✓ 系统配置初始化成功"
     else
         echo "❌ 系统配置初始化失败"
         echo "   请查看详细日志:"
-        echo "   docker compose -f docker-compose.prod.yml logs backend --tail=100 | grep -i 'init_system\\|系统配置'"
+        echo "   docker compose -f docker-compose.prod.yml logs backend-api --tail=100 | grep -i 'init_system\\|系统配置'"
         exit 1
     fi
 else
@@ -670,7 +791,8 @@ echo "默认账号: admin / admin123"
 echo ""
 echo "📝 管理命令:"
 echo "  查看日志: docker compose -f docker-compose.prod.yml logs -f"
-echo "  查看后端: docker compose -f docker-compose.prod.yml logs -f backend"
+echo "  查看后端API: docker compose -f docker-compose.prod.yml logs -f backend-api"
+echo "  查看后端Worker: docker compose -f docker-compose.prod.yml logs -f backend-worker"
 echo "  查看状态: docker compose -f docker-compose.prod.yml ps"
 echo "  重启服务: docker compose -f docker-compose.prod.yml restart"
 echo "  停止服务: docker compose -f docker-compose.prod.yml down"

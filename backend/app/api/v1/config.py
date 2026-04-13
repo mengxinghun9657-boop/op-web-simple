@@ -28,13 +28,13 @@ router = APIRouter(prefix="/config", tags=["系统配置管理"])
 
 class ConfigSaveRequest(BaseModel):
     """配置保存请求"""
-    module: str = Field(..., description="模块名称: cmdb, monitoring, analysis, pfs, icafe")
+    module: str = Field(..., description="模块名称: cmdb, monitoring, analysis, pfs, prometheus_runtime, apiserver, icafe")
     config: Dict[str, Any] = Field(..., description="配置内容（JSON对象）")
     
     @validator('module')
     def validate_module(cls, v):
         """验证模块名称"""
-        allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'icafe', 'bce_sync']
+        allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'prometheus_runtime', 'apiserver', 'icafe', 'bce_sync']
         if v not in allowed_modules:
             raise ValueError(f'无效的模块名称：{v}，允许的值：{", ".join(allowed_modules)}')
         return v
@@ -193,7 +193,7 @@ async def load_config(
     - icafe: iCafe配置
     """
     # 验证模块名称
-    allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'icafe', 'bce_sync']
+    allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'prometheus_runtime', 'apiserver', 'icafe', 'bce_sync']
     if module not in allowed_modules:
         raise HTTPException(
             status_code=400,

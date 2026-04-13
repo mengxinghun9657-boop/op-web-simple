@@ -1,10 +1,11 @@
+import os
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import jwt
 from passlib.context import CryptContext
 
 PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = "CHANGE_THIS_SECRET_KEY"  # 生产环境请使用环境变量
+SECRET_KEY = os.getenv("SECRET_KEY", "CHANGE_THIS_SECRET_KEY_IN_PRODUCTION")
 ALGORITHM = "HS256"
 
 def verify_password(plain_password, hashed_password):

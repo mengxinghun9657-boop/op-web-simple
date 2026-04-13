@@ -191,12 +191,21 @@ def update_user(
     """更新用户信息"""
     if current_user.role not in [UserRole.SUPER_ADMIN.value, UserRole.ADMIN.value]:
         raise HTTPException(status_code=403, detail="权限不足")
-    
+
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
-    
+
+    # admin 不能修改 super_admin 的信息
+    if current_user.role == UserRole.ADMIN.value and user.role == UserRole.SUPER_ADMIN.value:
+        raise HTTPException(status_code=403, detail="管理员无权修改超级管理员")
+
     update_data = user_data.dict(exclude_unset=True)
+
+    # admin 不能将用户角色提升为 super_admin
+    if current_user.role == UserRole.ADMIN.value and update_data.get("role") == UserRole.SUPER_ADMIN.value:
+        raise HTTPException(status_code=403, detail="管理员无权将用户设置为超级管理员")
+
     for field, value in update_data.items():
         setattr(user, field, value)
     
@@ -230,7 +239,10 @@ def delete_user(
     """删除用户"""
     if current_user.role != UserRole.SUPER_ADMIN.value:
         raise HTTPException(status_code=403, detail="仅超级管理员可以删除用户")
-    
+
+    if current_user.id == user_id:
+        raise HTTPException(status_code=400, detail="不能删除自己的账号")
+
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
@@ -261,15 +273,19 @@ def reset_password(
 ):
     """
     重置用户密码
-    
+
     - **new_password**: 新密码（至少6位）
     """
     if current_user.role not in [UserRole.SUPER_ADMIN.value, UserRole.ADMIN.value]:
         raise HTTPException(status_code=403, detail="权限不足")
-    
+
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
+
+    # admin 不能重置 super_admin 的密码
+    if current_user.role == UserRole.ADMIN.value and user.role == UserRole.SUPER_ADMIN.value:
+        raise HTTPException(status_code=403, detail="管理员无权重置超级管理员密码")
     
     new_password = password_data.get('new_password')
     if not new_password or len(new_password) < 6:

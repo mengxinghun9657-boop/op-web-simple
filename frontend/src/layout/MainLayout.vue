@@ -184,7 +184,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   ArrowDown, SwitchButton, TopRight, Bell,
-  DataAnalysis, Odometer, Grid, TrendCharts, Cpu, Monitor, Connection,
+  DataAnalysis, Odometer, Grid, TrendCharts, Cpu, Monitor, Connection, Warning,
   Clock, User, Document, Link, Expand, Fold, Setting,
   DataLine, ArrowRight
 } from '@element-plus/icons-vue'
@@ -193,7 +193,7 @@ import { useUserStore } from '@/stores/user'
 import { themeManager } from '@/utils/themeManager'
 
 const isCollapsed = ref(false)
-const expandedGroups = ref(['硬件告警', 'GPU 集群监控', '分析报告', '路由管理', '系统管理'])
+const expandedGroups = ref(['硬件告警', 'GPU 集群监控', 'CCE集群监控', '分析报告', '路由管理', '系统管理'])
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
@@ -240,6 +240,17 @@ const allMenuItems = [
       { name: 'HAS自动化巡检', path: '/gpu-monitoring/has-inspection', icon: 'Bell' },
       { name: 'Grafana监控仪表盘', path: '/gpu-monitoring/grafana-dashboard', icon: 'Monitor' },
       { name: 'bottom卡时数据', path: '/gpu-monitoring/bottom-card-time', icon: 'DataLine' },
+    ]
+  },
+
+  {
+    name: 'CCE集群监控',
+    icon: 'Monitor',
+    children: [
+      { name: 'APIServer配置', path: '/apiserver/config', icon: 'Setting' },
+      { name: 'APIServer监控', path: '/apiserver/monitoring', icon: 'DataLine' },
+      { name: 'APIServer告警', path: '/apiserver/alerts', icon: 'Warning' },
+      { name: '集群实时监控', path: '/cce-monitoring/dashboard', icon: 'Cpu' },
     ]
   },
 
@@ -571,7 +582,6 @@ onMounted(() => {
   border-bottom: 1px solid var(--border-secondary);
   flex-shrink: 0;
   position: relative;
-  z-index: 100;
 }
 
 .header-left {

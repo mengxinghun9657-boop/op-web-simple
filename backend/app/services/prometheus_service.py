@@ -34,23 +34,25 @@ class PrometheusService:
             查询结果值，失败返回None
         """
         try:
-            url = f"{self.config.get_base_url()}/api/datasources/proxy/{self.config.get_datasource_id()}/api/v1/query"
+            if self.config.use_direct_api():
+                url = f"{self.config.get_base_url().rstrip('/')}/api/v1/query"
+            else:
+                url = f"{self.config.get_base_url()}/api/datasources/proxy/{self.config.get_datasource_id()}/api/v1/query"
 
             params = {
                 'query': query,
                 'time': query_time or int(time.time())
             }
 
-            # 检查Cookie配置
             cookies = self.config.get_cookies()
-            if not cookies:
+            if not self.config.use_direct_api() and not cookies:
                 logger.warning("⚠️  Prometheus Cookie 未配置，请在资源分析页面配置 Cookie")
                 return None
 
             response = requests.get(
                 url,
                 headers=self.config.get_headers(),
-                cookies=cookies,
+                cookies=cookies if not self.config.use_direct_api() else None,
                 params=params,
                 timeout=30,
                 verify=False  # 内网环境跳过SSL证书验证

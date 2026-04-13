@@ -3,7 +3,7 @@
 """
 监控分析API
 """
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -45,7 +45,6 @@ class TaskResponse(BaseModel):
 @router.post("/bcc/analyze", response_model=TaskResponse)
 async def analyze_bcc(
     request: BCCAnalysisRequest,
-    background_tasks: BackgroundTasks
 ):
     """
     启动BCC监控分析
@@ -97,7 +96,6 @@ async def analyze_bcc(
 @router.post("/bos/analyze", response_model=TaskResponse)
 async def analyze_bos(
     request: BOSAnalysisRequest,
-    background_tasks: BackgroundTasks
 ):
     """
     启动BOS存储分析

@@ -227,6 +227,7 @@ const TASK_TYPE_MAP = {
   gpu_has_sync: 'GPU巡检同步',
   gpu_has_collect: 'GPU巡检采集',
   gpu_bottom_analysis: 'GPU卡时分析',
+  apiserver_alert_analysis: 'APIServer告警分析',
   eip: 'EIP分析',
   prometheus: '集群数据采集',
   prometheus_batch: '批量采集',
@@ -239,6 +240,7 @@ const taskTypeColors = {
   gpu_has_sync: 'warning',
   gpu_has_collect: 'warning',
   gpu_bottom_analysis: 'success',
+  apiserver_alert_analysis: 'danger',
   eip: 'info', prometheus: 'danger', prometheus_batch: 'danger', prometheus_single: 'danger'
 }
 

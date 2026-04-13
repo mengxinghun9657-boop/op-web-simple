@@ -18,7 +18,8 @@ router = APIRouter(prefix="/logs", tags=["容器日志"])
 
 # 允许的容器名称映射
 ALLOWED_CONTAINERS = {
-    "backend": "cluster-backend",
+    "backend": "cluster-backend-api",
+    "backend_worker": "cluster-backend-worker",
     "mysql": "cluster-mysql",
     "redis": "cluster-redis",
     "minio": "cluster-minio",
@@ -187,6 +188,7 @@ def get_container_description(container_key: str) -> str:
     """获取容器描述"""
     descriptions = {
         "backend": "后端 API 服务日志",
+        "backend_worker": "后端 Worker 服务日志",
         "mysql": "MySQL 数据库日志",
         "redis": "Redis 缓存日志",
         "minio": "MinIO 对象存储日志",

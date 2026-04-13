@@ -3,7 +3,7 @@
 """
 Prometheus配置和集群监控API
 """
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
@@ -18,6 +18,7 @@ from app.models.task import TaskType, TaskStatus
 from app.utils.task_manager import get_task_status as redis_get_task_status
 from app.core.logger import logger
 from app.core.config import settings
+from app.services.task_queue_service import task_queue_service
 
 router = APIRouter()
 
@@ -270,7 +271,6 @@ async def get_cluster_metrics(request: ClusterMetricsRequest):
 @router.post("/cluster/metrics/batch", response_model=BatchClusterMetricsResponse, summary="批量获取集群指标（异步）")
 async def get_batch_cluster_metrics(
     request: BatchClusterMetricsRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -296,12 +296,11 @@ async def get_batch_cluster_metrics(
             message="任务已创建，等待开始..."
         )
 
-        # 添加后台任务（后台任务会创建自己的数据库会话）
-        background_tasks.add_task(
-            batch_fetch_cluster_metrics,
-            task_id,
-            request.cluster_ids
-        )
+        # 提交到 worker 队列（worker 进程会创建自己的数据库会话）
+        task_queue_service.enqueue("prometheus_batch_collect", {
+            "task_id": task_id,
+            "cluster_ids": request.cluster_ids,
+        })
 
         logger.info(f"✅ 批量采集任务已创建: {task_id}, 集群数: {len(request.cluster_ids)}")
 

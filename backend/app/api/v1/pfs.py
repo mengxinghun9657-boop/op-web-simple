@@ -4,7 +4,7 @@
 PFS 监控 API
 提供 PFS 指标查询、对比分析、数据导出等功能
 """
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
@@ -15,6 +15,7 @@ from datetime import datetime
 from app.core.deps import get_db, get_current_user, SessionLocal
 from app.services.pfs_service import PFSService
 from app.services.pfs_task_service import PFSTaskService
+from app.services.task_queue_service import task_queue_service
 from app.models.pfs import (
     PFSQueryRequest,
     PFSCompareRequest,
@@ -189,7 +190,6 @@ async def compare_metrics(
 @router.post("/export", response_model=ExportTaskResponse, summary="导出数据（异步任务）")
 async def export_data(
     request: PFSExportRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -229,13 +229,12 @@ async def export_data(
         )
         
         # 添加后台任务
-        background_tasks.add_task(
-            process_pfs_export_task,
-            task_id=task_id,
-            request=request,
-            user_id=current_user.id,
-            username=current_user.username
-        )
+        task_queue_service.enqueue("pfs_export", {
+            "task_id": task_id,
+            "request": request.dict(),
+            "user_id": current_user.id,
+            "username": current_user.username,
+        })
         
         logger.info(f"✅ PFS 导出任务已创建：{task_id}")
         

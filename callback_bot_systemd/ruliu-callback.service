@@ -1,0 +1,24 @@
+[Unit]
+Description=如流机器人回调服务
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/data/ruliu_callback
+Environment="RULIU_TOKEN=T2yJvnNier"
+Environment="RULIU_ENCODING_AES_KEY=VrBuaSxT9P5Z6bfdHneKv0"
+Environment="MYSQL_HOST=localhost"
+Environment="MYSQL_PORT=3307"
+Environment="MYSQL_USER=root"
+Environment="MYSQL_PASSWORD=Zhang~~1"
+Environment="MYSQL_DATABASE=cluster_management"
+Environment="RULIU_PORT=8120"
+ExecStart=/data/ruliu_callback/venv/bin/python /data/ruliu_callback/ruliu_callback.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

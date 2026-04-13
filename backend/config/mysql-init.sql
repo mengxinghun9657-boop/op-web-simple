@@ -93,6 +93,41 @@ CREATE TABLE IF NOT EXISTS `gpu_inspection_records` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='GPU HAS自动化巡检记录表';
 
 -- ============================================
+-- APIServer 监控告警记录表
+-- ============================================
+CREATE TABLE IF NOT EXISTS `apiserver_alert_records` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `fingerprint` VARCHAR(255) NOT NULL UNIQUE COMMENT '告警指纹',
+    `cluster_id` VARCHAR(200) NOT NULL COMMENT '集群ID',
+    `metric_key` VARCHAR(100) NOT NULL COMMENT '指标键',
+    `metric_label` VARCHAR(200) NOT NULL COMMENT '指标名称',
+    `severity` VARCHAR(50) NOT NULL DEFAULT 'warning' COMMENT '严重程度',
+    `status` VARCHAR(50) NOT NULL DEFAULT 'active' COMMENT '状态',
+    `current_value` DOUBLE NOT NULL DEFAULT 0 COMMENT '当前值',
+    `warning_threshold` DOUBLE DEFAULT NULL COMMENT '警告阈值',
+    `critical_threshold` DOUBLE DEFAULT NULL COMMENT '严重阈值',
+    `unit` VARCHAR(50) DEFAULT NULL COMMENT '单位',
+    `window_minutes` VARCHAR(50) DEFAULT NULL COMMENT '统计窗口',
+    `promql` TEXT COMMENT 'PromQL',
+    `description` TEXT COMMENT '影响描述',
+    `suggestion` TEXT COMMENT '建议动作',
+    `labels` JSON DEFAULT NULL COMMENT '附加标签',
+    `source` VARCHAR(50) NOT NULL DEFAULT 'prometheus' COMMENT '来源',
+    `notified` VARCHAR(10) NOT NULL DEFAULT 'false' COMMENT '是否已通知',
+    `notified_at` DATETIME DEFAULT NULL COMMENT '通知时间',
+    `last_seen_at` DATETIME DEFAULT NULL COMMENT '最近检测时间',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `resolved_at` DATETIME DEFAULT NULL COMMENT '恢复时间',
+    `resolved_by` VARCHAR(100) DEFAULT NULL COMMENT '处理人',
+    `resolution_notes` TEXT DEFAULT NULL COMMENT '处理备注',
+    `resolution_result` VARCHAR(50) DEFAULT NULL COMMENT '处理结果',
+    `icafe_card_id` VARCHAR(100) DEFAULT NULL COMMENT '关联 iCafe 卡片ID',
+    INDEX `idx_apiserver_cluster_status` (`cluster_id`, `status`),
+    INDEX `idx_apiserver_metric_status` (`metric_key`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='APIServer 监控告警记录表';
+
+-- ============================================
 -- CMDB物理服务器表（完整版 - 145个字段）
 -- ============================================
 CREATE TABLE IF NOT EXISTS `iaas_servers` (
@@ -682,3 +717,44 @@ ON DUPLICATE KEY UPDATE `enabled`=`enabled`;
 SELECT '✅ 文件监控路径配置表初始化完成！' AS monitor_paths_message;
 
 -- ============================================
+-- ============================================
+-- AI 对话历史表
+-- ============================================
+CREATE TABLE IF NOT EXISTS `chat_history` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT NOT NULL COMMENT '用户ID',
+    `role` VARCHAR(20) NOT NULL COMMENT 'user/assistant/system',
+    `content` TEXT NOT NULL COMMENT '消息内容',
+    `context_data` TEXT NULL COMMENT 'JSON格式上下文数据',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX `idx_chat_history_user_id` (`user_id`),
+    INDEX `idx_chat_history_created_at` (`created_at`),
+    CONSTRAINT `fk_chat_history_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话历史';
+
+-- ============================================
+-- 用户备忘表
+-- ============================================
+CREATE TABLE IF NOT EXISTS `user_notes` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT NOT NULL UNIQUE COMMENT '用户ID',
+    `content` TEXT DEFAULT '' COMMENT '备忘内容',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    CONSTRAINT `fk_user_notes_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户备忘';
+
+-- ============================================
+-- 实例配置表
+-- ============================================
+CREATE TABLE IF NOT EXISTS `instance_config` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
+    `config_type` VARCHAR(50) NOT NULL UNIQUE COMMENT '配置类型',
+    `instance_ids` TEXT NOT NULL COMMENT '实例ID列表（JSON数组格式）',
+    `description` VARCHAR(500) NULL COMMENT '配置说明',
+    `created_by` VARCHAR(100) NULL COMMENT '创建者',
+    `updated_by` VARCHAR(100) NULL COMMENT '更新者',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实例配置表';
+
+SELECT '✅ 新增表初始化完成！(chat_history, user_notes, instance_config)' AS new_tables_message;

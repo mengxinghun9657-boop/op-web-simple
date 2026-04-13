@@ -36,8 +36,9 @@ RUN install -m 0755 -d /etc/apt/keyrings \
 # 复制依赖文件
 COPY requirements.txt .
 
-# 安装 Python 依赖（使用清华源加速）
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# 安装 Python 依赖（优先清华源，失败时回退官方 PyPI）
+RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple \
+    || pip install --no-cache-dir -r requirements.txt -i https://pypi.org/simple
 
 # 复制应用代码
 COPY . .

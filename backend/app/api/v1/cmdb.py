@@ -872,10 +872,14 @@ async def test_bce_connection(
                 message="BCE 连接测试成功"
             )
         else:
+            error_msg = result.get('error', '连接失败')
+            raw = result.get('raw', '')
+            if raw:
+                error_msg = f"{error_msg}（响应内容：{raw[:100]}）"
             return APIResponse(
                 success=False,
-                error=result.get('error', '连接失败'),
-                message="BCE 连接测试失败"
+                error=error_msg,
+                message="BCE 连接测试失败：Cookie 可能已过期或 region 配置错误，请重新从百度云控制台获取 Cookie"
             )
 
     except Exception as e:
@@ -994,6 +998,21 @@ async def update_bce_sync_config(
             db.add(row)
 
         db.commit()
+
+        # 实时更新调度器（复用 CMDB 同步逻辑）
+        try:
+            from app.core.scheduler import scheduler
+            if current.get('enabled'):
+                interval_hours = max(1, current.get('sync_interval', 3600) // 3600)
+                auto_sync_bcc = current.get('auto_sync_bcc', True)
+                auto_sync_cce = current.get('auto_sync_cce', True)
+                scheduler.add_bce_sync_job(interval_hours, auto_sync_bcc, auto_sync_cce)
+                logger.info(f"BCE 定时同步任务已更新: 间隔 {interval_hours} 小时")
+            else:
+                scheduler.remove_bce_sync_job()
+                logger.info("BCE 定时同步任务已禁用")
+        except Exception as e:
+            logger.error(f"更新 BCE 调度器失败: {e}")
 
         return APIResponse(
             success=True,

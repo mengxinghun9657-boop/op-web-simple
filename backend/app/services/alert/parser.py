@@ -226,14 +226,31 @@ class AlertParserService:
             # 3. 判断文件格式并解析
             # 新格式1: 以 【Error接口数据】开头，包含 JSON 对象
             # 新格式2: 文件名以 Error_ 开头，纯 JSON 数组
+            # 新格式3: 文件名以 Fail_ 开头，纯 JSON 数组（直接是告警列表，无 detail 嵌套）
             # 旧格式: Python 列表格式
             filename = Path(file_path).name
+            content_stripped = content.strip()
+            
             if '【Error接口数据】' in content:
                 logger.info(f"检测到新格式文件(带标记): {file_path}")
                 parsed_data = AlertParserService._parse_new_format_with_header(content, file_path)
             elif filename.startswith('Error_'):
                 logger.info(f"检测到新格式文件(纯JSON): {file_path}")
                 parsed_data = AlertParserService._parse_new_format_pure_json(content, file_path)
+            elif filename.startswith('Fail_') or filename.startswith('FAIL_'):
+                logger.info(f"检测到新格式文件(Fail前缀): {file_path}")
+                parsed_data = AlertParserService._parse_fail_format(content, file_path)
+            elif content_stripped.startswith('[') and content_stripped.endswith(']'):
+                # 尝试解析为 JSON 数组（可能是新格式但没有 Error_/Fail_ 前缀）
+                try:
+                    parsed_data = AlertParserService._parse_new_format_pure_json(content, file_path)
+                    if parsed_data:
+                        logger.info(f"检测到 JSON 数组格式: {file_path}")
+                    else:
+                        raise ValueError("JSON解析结果为空")
+                except:
+                    logger.info(f"检测到旧格式文件: {file_path}")
+                    parsed_data = AlertParserService._parse_old_format(content, file_path)
             else:
                 logger.info(f"检测到旧格式文件: {file_path}")
                 parsed_data = AlertParserService._parse_old_format(content, file_path)
@@ -360,7 +377,62 @@ class AlertParserService:
         except Exception as e:
             logger.error(f"解析纯JSON格式文件失败: {file_path}, 错误: {e}")
             return None
-    
+
+    @staticmethod
+    def _parse_fail_format(content: str, file_path: str) -> Optional[Dict]:
+        """
+        解析 Fail_ 前缀的新格式文件
+
+        格式示例:
+        [
+          {
+            "id": 6731973,
+            "key_name": "FAIL#0000_92_00-0_2-PciHeader&7450 PRO NVMe SSD&0000:92:00.0",
+            "case_key": "1568909",
+            "case_dev": "不明确故障",
+            "case_dev_name": "cdhmlcc001-bcc-cdonlinea-com-1568909.cdhmlcc001",
+            "case_type": "FAIL",
+            "case_start_time": 1775090216,
+            "device": "0000_92_00-0",
+            "devslot": "2",
+            "hostsn": "s5s0md0002s8",
+            "part_model": "7450 PRO NVMe SSD",
+            "part_sn": "0000:92:00.0",
+            "position": "0000_92_00-0_2",
+            "reason": "PciHeader",
+            "recommend_op_type": "offline",
+            "source": "PUBLICCLOUD_HAS",
+            ...
+          }
+        ]
+        """
+        try:
+            # 直接解析 JSON 数组
+            data = json.loads(content)
+
+            if not isinstance(data, list):
+                logger.error(f"Fail格式文件不是数组: {file_path}")
+                return None
+
+            errors = []
+            raw_data = []
+
+            for item in data:
+                if isinstance(item, dict):
+                    # 直接将每个 item 作为错误类型
+                    errors.append(item)
+                    raw_data.append(item)
+
+            logger.info(f"Fail格式解析成功: {file_path}, 共 {len(errors)} 个错误")
+            return {'errors': errors, 'raw_data': raw_data}
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Fail格式文件JSON解析失败: {file_path}, 错误: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"解析Fail格式文件失败: {file_path}, 错误: {e}")
+            return None
+
     @staticmethod
     def _parse_old_format(content: str, file_path: str) -> Optional[Dict]:
         """
@@ -481,14 +553,32 @@ class AlertParserService:
         xid_match = re.search(r'Xid\[(\d+)\]', raw_type)
         if xid_match:
             return f"xid{xid_match.group(1)}"
-        
-        # 处理复合类型
+
+        # 处理 key_name 格式: "FAIL#gpu5_5-GPUPanic_PciHeader&Device 5663&0000:86:00.0"
+        # 提取 &-分隔的部分中的告警类型
+        if '&' in raw_type:
+            parts = raw_type.split('&')
+            for part in parts:
+                # 查找包含字母的部分，且不是设备ID格式（如 0000:86:00.0）
+                if re.search(r'[a-zA-Z]', part) and not re.match(r'^[\d:]+$', part.replace('.', '').replace(':', '')):
+                    # 提取最后一个 - 后面的内容作为告警类型
+                    if '-' in part:
+                        alert_part = part.split('-')[-1]
+                        # 清理可能的后缀
+                        alert_part = alert_part.strip()
+                        if alert_part and len(alert_part) > 2:
+                            return alert_part
+
+        # 处理复合类型（下划线分隔）- 保留完整类型，不做截断
+        # 例如: GPUPanic_PciHeader 应该保持完整
         if '_' in raw_type:
-            parts = raw_type.split('_')
-            meaningful_parts = [p for p in parts if len(p) >= 3 and not p.startswith('Xid')]
-            if meaningful_parts:
-                return meaningful_parts[0]
-        
+            # 检查是否是设备位置格式（如 gpu5_5）
+            if re.match(r'^[a-z]+\d+_\d+$', raw_type.lower()):
+                # 这是设备位置格式，返回设备类型
+                return raw_type.split('_')[0]
+            # 其他情况保留完整类型
+            return raw_type
+
         return raw_type
     
     @staticmethod

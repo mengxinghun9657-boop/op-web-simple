@@ -176,7 +176,10 @@ async def get_report_info(
                 else:  # excel
                     object_name = f"excel_reports/{task_id}_{module_type}_report.xlsx"
 
-                # 尝试生成下载URL（如果文件不存在会抛出异常）
+                # 先检查文件是否真实存在，再生成下载URL
+                if not upload_service.minio_client.object_exists(object_name):
+                    continue
+
                 download_url = upload_service.get_download_url(object_name, expires=3600)
 
                 available_reports.append({
@@ -190,7 +193,7 @@ async def get_report_info(
                 continue
 
         if not available_reports:
-            raise HTTPException(status_code=404, detail="未找到任何报告文件")
+            raise HTTPException(status_code=404, detail="未找到任何报告文件，请确认任务已完成且报告已成功上传到 MinIO")
 
         return {
             "success": True,

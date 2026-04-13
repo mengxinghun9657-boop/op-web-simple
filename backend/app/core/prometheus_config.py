@@ -8,6 +8,8 @@ import os
 import json
 from typing import Dict, Optional
 from pathlib import Path
+from app.core.deps import SessionLocal
+from app.models.system_config import SystemConfig
 
 
 class PrometheusConfig:
@@ -47,6 +49,33 @@ class PrometheusConfig:
     
     def _load_config(self) -> Dict:
         """加载配置文件"""
+        # 优先读取统一 Prometheus 配置
+        try:
+            db = SessionLocal()
+            runtime_record = db.query(SystemConfig).filter(
+                SystemConfig.module == 'prometheus_runtime',
+                SystemConfig.config_key == 'main'
+            ).first()
+            if runtime_record and runtime_record.config_value:
+                runtime_config = json.loads(runtime_record.config_value)
+                return {
+                    "base_url": runtime_config.get("grafana_url", "https://cprom.cd.baidubce.com/select/prometheus"),
+                    "token": runtime_config.get("token", ""),
+                    "instance_id": runtime_config.get("instance_id", ""),
+                    "cluster_ids": runtime_config.get("cluster_ids", ""),
+                    "query_config": {
+                        "default_time_range": 900,
+                        "query_step": runtime_config.get("step", "5m")
+                    }
+                }
+        except Exception:
+            pass
+        finally:
+            try:
+                db.close()
+            except Exception:
+                pass
+
         if self.config_file.exists():
             try:
                 with open(self.config_file, 'r', encoding='utf-8') as f:
@@ -84,11 +113,21 @@ class PrometheusConfig:
     
     def get_headers(self) -> Dict:
         """获取HTTP请求头"""
+        if self.config.get("token") and self.config.get("instance_id"):
+            token = self.config.get("token")
+            return {
+                "Authorization": token if str(token).startswith("Bearer ") else f"Bearer {token}",
+                "InstanceId": self.config.get("instance_id"),
+                "Accept": "application/json, text/plain, */*"
+            }
         return self.config.get("headers", self.DEFAULT_CONFIG["headers"]).copy()
     
     def get_cookies(self) -> Dict:
         """获取Cookies"""
         return self.config.get("cookies", {}).copy()
+
+    def use_direct_api(self) -> bool:
+        return bool(self.config.get("token") and self.config.get("instance_id"))
     
     def get_query_config(self) -> Dict:
         """获取查询配置"""
@@ -150,21 +189,23 @@ class PrometheusConfig:
             import requests
             import time
 
-            url = f"{self.get_base_url()}/api/datasources/proxy/{self.get_datasource_id()}/api/v1/query"
+            if self.use_direct_api():
+                url = f"{self.get_base_url().rstrip('/')}/api/v1/query"
+            else:
+                url = f"{self.get_base_url()}/api/datasources/proxy/{self.get_datasource_id()}/api/v1/query"
             params = {
                 'query': 'up',
                 'time': int(time.time())
             }
 
-            # 检查Cookie配置
             cookies = self.get_cookies()
-            if not cookies:
+            if not self.use_direct_api() and not cookies:
                 return False, "⚠️  Cookie 未配置，请先配置 Cookie"
 
             response = requests.get(
                 url,
                 headers=self.get_headers(),
-                cookies=cookies,
+                cookies=cookies if not self.use_direct_api() else None,
                 params=params,
                 timeout=10,
                 verify=False  # 内网环境跳过SSL证书验证
@@ -173,11 +214,11 @@ class PrometheusConfig:
             if response.status_code == 200:
                 data = response.json()
                 if data.get('status') == 'success':
-                    return True, "✅ 连接成功！Cookie有效"
+                    return True, "✅ 连接成功！"
                 else:
                     return False, f"❌ 连接失败，Prometheus 返回错误: {data.get('error', 'Unknown')}"
             elif response.status_code == 401:
-                return False, "❌ Cookie 已过期或无效（状态码: 401）"
+                return False, "❌ 认证失败（状态码: 401）"
             elif response.status_code == 403:
                 return False, "❌ 权限不足（状态码: 403），请检查账号权限"
             else:

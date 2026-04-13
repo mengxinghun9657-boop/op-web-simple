@@ -111,9 +111,9 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  backend:
+  backend-api:
     image: op-web-backend:latest
-    container_name: cluster-backend
+    container_name: cluster-backend-api
     env_file:
       - .env
     restart: always
@@ -137,6 +137,8 @@ services:
       ERNIE_API_URL: ${ERNIE_API_URL:-http://llms-se.baidu-int.com:8200/chat/completions}
       ERNIE_API_KEY: ${ERNIE_API_KEY:-}
       ERNIE_MODEL: ${ERNIE_MODEL:-ernie-4.5-8k-preview}
+      ENABLE_SCHEDULER: "false"
+      ENABLE_FILE_WATCHER: "false"
       DEBUG: ${DEBUG:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8089}
       # 代理配置（绕过代理访问内网服务和百度云控制台）
@@ -159,8 +161,6 @@ services:
       - backend_data:/app/data
       # Docker socket 挂载，用于容器日志查看功能
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /data/HAS_file/changan:/app/alerts_source:ro  # 源文件目录（只读）
-      - backend_alerts:/app/alerts  # 处理目录（读写，支持文件名修正）
       - /data/HAS_file:/data/HAS_file:ro
     depends_on:
       mysql:
@@ -188,6 +188,69 @@ services:
           cpus: '4.0'
           memory: 8G
 
+  backend-worker:
+    image: op-web-backend:latest
+    container_name: cluster-backend-worker
+    env_file:
+      - .env
+    restart: always
+    command: ["python3", "worker.py"]
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-cluster_management}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: cluster-files
+      MINIO_SECURE: "false"
+      SECRET_KEY: ${SECRET_KEY}
+      BCE_ACCESS_KEY: ${BCE_ACCESS_KEY:-}
+      BCE_SECRET_KEY: ${BCE_SECRET_KEY:-}
+      ERNIE_API_URL: ${ERNIE_API_URL:-http://llms-se.baidu-int.com:8200/chat/completions}
+      ERNIE_API_KEY: ${ERNIE_API_KEY:-}
+      ERNIE_MODEL: ${ERNIE_MODEL:-ernie-4.5-8k-preview}
+      ENABLE_SCHEDULER: "true"
+      ENABLE_FILE_WATCHER: "true"
+      DEBUG: ${DEBUG:-false}
+      HTTP_PROXY: http://agent.baidu.com:8891
+      HTTPS_PROXY: http://agent.baidu.com:8891
+      NO_PROXY: localhost,127.0.0.1,10.175.96.168,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,.im.baidu.com,console.bce.baidu.com,llms-se.baidu-int.com
+      no_proxy: localhost,127.0.0.1,10.175.96.168,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,mysql,redis,minio,cluster-mysql,cluster-redis,cluster-minio,.baidubce.com,.baidu-int.com,.bcebos.com,.im.baidu.com,console.bce.baidu.com,llms-se.baidu-int.com
+      PYTHONUNBUFFERED: 1
+      TZ: Asia/Shanghai
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_results:/app/results
+      - backend_logs:/app/logs
+      - backend_data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /data/HAS_file/changan:/app/alerts_source:ro
+      - backend_alerts:/app/alerts
+      - /data/HAS_file:/data/HAS_file:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - cluster-network
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
   frontend:
     image: op-web-frontend:latest
     container_name: cluster-frontend
@@ -195,7 +258,7 @@ services:
     ports:
       - "8089:80"
     depends_on:
-      backend:
+      backend-api:
         condition: service_healthy
     networks:
       - cluster-network

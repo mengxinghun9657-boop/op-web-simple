@@ -3,7 +3,7 @@
 """
 资源分析API
 """
-from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from typing import List, Optional
 import os
@@ -13,6 +13,7 @@ import time
 from app.core.config import settings
 from app.core.logger import logger
 from app.services.resource_service import analyze_resource_data
+from app.services.task_queue_service import task_queue_service
 
 router = APIRouter()
 
@@ -39,7 +40,6 @@ class ResourceAnalysisResponse(BaseModel):
 @router.post("/analyze", response_model=ResourceAnalysisResponse, summary="执行资源分析")
 async def start_resource_analysis(
     request: ResourceAnalysisRequest,
-    background_tasks: BackgroundTasks
 ):
     """
     启动资源分析任务
@@ -129,13 +129,12 @@ async def start_resource_analysis(
                 raise HTTPException(status_code=404, detail=f"Excel文件不存在: {request.excel_file_name}")
         
         # 启动后台分析任务
-        background_tasks.add_task(
-            run_resource_analysis,
-            task_id=analysis_task_id,
-            cluster_ids=request.cluster_ids,
-            excel_file_path=excel_file_path,
-            multicluster_file_path=multicluster_file_path
-        )
+        task_queue_service.enqueue("resource_analysis", {
+            "task_id": analysis_task_id,
+            "cluster_ids": request.cluster_ids,
+            "excel_file_path": excel_file_path,
+            "multicluster_file_path": multicluster_file_path,
+        })
         
         # 保存任务到MySQL
         try:

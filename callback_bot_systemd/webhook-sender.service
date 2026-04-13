@@ -1,0 +1,17 @@
+[Unit]
+Description=如流 Webhook 发送服务
+After=network.target ruliu-callback.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/data/ruliu_callback
+Environment="WEBHOOK_URL=http://apiin.im.baidu.com/api/msg/groupmsgsend?access_token=dfd241f7681665b68f575e7bad0e15c68"
+ExecStart=/data/ruliu_callback/venv/bin/python /data/ruliu_callback/webhook_sender.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

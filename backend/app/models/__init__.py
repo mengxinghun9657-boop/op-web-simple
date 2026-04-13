@@ -6,6 +6,7 @@ from app.models.task import Task, TaskStatus, ModuleType
 from app.models.iaas import IaasServer, IaasInstance
 from app.models.system_config import SystemConfig
 from app.models.gpu_monitoring import GPUInspectionRecord
+from app.models.apiserver_alert import APIServerAlertRecord
 
 __all__ = [
     "ChatHistory",
@@ -20,4 +21,5 @@ __all__ = [
     "IaasInstance",
     "SystemConfig",
     "GPUInspectionRecord",
+    "APIServerAlertRecord",
 ]

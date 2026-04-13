@@ -219,7 +219,6 @@ import { analyzeBottomCardTime, queryBottomCardTime } from '@/api/gpuMonitoring'
 import { pollTaskStatus } from '@/utils/taskPoller'
 import { getFullBackendUrl } from '@/utils/config'
 import * as echarts from 'echarts'
-import { getReportInfo } from '@/api/tasks'
 import { loadConfig } from '@/api/config'
 
 const now = new Date()
@@ -260,7 +259,7 @@ const buildPayload = () => ({
 const loadClusterConfig = async () => {
   loadingConfig.value = true
   try {
-    const response = await loadConfig('analysis')
+    const response = await loadConfig('prometheus_runtime')
     const config = response.data?.config || response.config || {}
     const configuredClusterIds = config.cluster_ids
     if (!configuredClusterIds) {
@@ -355,16 +354,26 @@ const openReport = () => {
 
 const downloadReport = async (type) => {
   if (!latestTaskId.value) return
-  try {
-    const response = await getReportInfo('gpu_bottom', latestTaskId.value)
-    const report = response.reports?.find(item => item.type === type)
-    if (!report?.download_url) {
-      ElMessage.warning(`未找到可下载的 ${type.toUpperCase()} 报告`)
+  if (type === 'html') {
+    if (!reportUrl.value) {
+      ElMessage.warning('HTML 报告尚未生成')
       return
     }
-    window.open(report.download_url, '_blank', 'noopener,noreferrer')
-  } catch (error) {
-    ElMessage.error('获取下载链接失败')
+    try {
+      const resp = await fetch(reportUrl.value)
+      const blob = await resp.blob()
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `gpu_bottom_report_${latestTaskId.value}.html`
+      a.click()
+      URL.revokeObjectURL(a.href)
+    } catch {
+      ElMessage.error('下载失败')
+    }
+  } else if (type === 'excel') {
+    // Excel 路径规则：excel_reports/{task_id}_gpu_bottom_report.xlsx
+    const excelPath = `excel_reports/${latestTaskId.value}_gpu_bottom_report.xlsx`
+    window.open(getFullBackendUrl(`/api/v1/reports/proxy/${excelPath}`), '_blank', 'noopener,noreferrer')
   }
 }
 

@@ -369,7 +369,7 @@ const handleExcelSelect = (file) => { excelFile.value = file; excelFileName.valu
 const loadResourceConfig = async () => {
   loadingConfig.value = true
   try {
-    const response = await axios.get('/api/v1/config/load?module=analysis')
+    const response = await axios.get('/api/v1/config/load?module=prometheus_runtime')
 
     // 获取 cluster_ids 配置
     const clusterIds = response.config?.cluster_ids || response.data?.config?.cluster_ids

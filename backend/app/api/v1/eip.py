@@ -3,7 +3,7 @@
 """
 EIP带宽监控API
 """
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -38,7 +38,6 @@ class TaskResponse(BaseModel):
 @router.post("/analyze", response_model=TaskResponse)
 async def analyze_eip(
     request: EIPAnalysisRequest,
-    background_tasks: BackgroundTasks
 ):
     """
     启动EIP带宽分析

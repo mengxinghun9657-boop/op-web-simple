@@ -171,6 +171,14 @@
             补发选中通知（{{ selectedAlerts.length }}）
           </el-button>
           <el-button
+            type="warning"
+            :icon="Edit"
+            @click="openBatchStatusDialog"
+            :disabled="selectedAlerts.length === 0"
+          >
+            批量修改状态（{{ selectedAlerts.length }}）
+          </el-button>
+          <el-button
             type="success"
             :icon="Edit"
             @click="handleDetectAndCorrectClusterIds"
@@ -567,6 +575,35 @@
       </template>
     </el-dialog>
 
+    <!-- 批量修改状态对话框 -->
+    <el-dialog
+      v-model="batchStatusDialogVisible"
+      title="批量修改告警状态"
+      width="440px"
+      :close-on-click-modal="false"
+      class="google-dialog"
+      append-to-body
+    >
+      <el-form :model="batchStatusForm" label-position="top" class="google-form">
+        <el-form-item label="已选择告警数量">
+          <el-tag type="info">{{ selectedAlerts.length }} 条</el-tag>
+        </el-form-item>
+        <el-form-item label="新状态" required>
+          <el-select v-model="batchStatusForm.status" style="width: 100%" teleported popper-class="dialog-select-popper">
+            <el-option label="处理中" value="processing" />
+            <el-option label="已处理" value="resolved" />
+            <el-option label="已关闭" value="closed" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="batchStatusDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="batchStatusUpdating" @click="submitBatchStatus">确认</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <!-- iCafe 卡片创建对话框 -->
     <el-dialog
       v-model="icafeDialogVisible"
@@ -600,6 +637,42 @@
         <el-form-item label="卡片标题">
           <el-input v-model="icafeForm.generatedTitle" readonly />
         </el-form-item>
+
+        <!-- 卡片类型选择 -->
+        <el-form-item label="卡片类型" required>
+          <el-radio-group v-model="icafeForm.cardType">
+            <el-radio label="Bug">Bug（故障）</el-radio>
+            <el-radio label="Task">Task（任务）</el-radio>
+          </el-radio-group>
+          <div class="form-tip">
+            <span v-if="icafeForm.cardType === 'Bug'">用于跟踪硬件故障和问题修复</span>
+            <span v-else>用于硬件维修任务和运维工作</span>
+          </div>
+        </el-form-item>
+
+        <!-- Task类型特有字段 -->
+        <template v-if="icafeForm.cardType === 'Task'">
+          <el-form-item label="方向大类" required>
+            <el-select v-model="icafeForm.direction" placeholder="请选择方向大类" style="width: 100%" teleported popper-class="dialog-select-popper">
+              <el-option label="硬件" value="硬件" />
+              <el-option label="计算" value="计算" />
+              <el-option label="虚拟网络" value="虚拟网络" />
+              <el-option label="存储" value="存储" />
+              <el-option label="数据库" value="数据库" />
+              <el-option label="K8S" value="K8S" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="汇总分类" required>
+            <el-select v-model="icafeForm.category" placeholder="请选择汇总分类" style="width: 100%" teleported popper-class="dialog-select-popper">
+              <el-option label="运维事件" value="运维事件" />
+              <el-option label="产品咨询" value="产品咨询" />
+              <el-option label="内部事务" value="内部事务" />
+              <el-option label="运营对接" value="运营对接" />
+              <el-option label="产品需求" value="产品需求" />
+            </el-select>
+          </el-form-item>
+        </template>
 
         <!-- 手动填写字段 -->
         <el-form-item label="负责人" prop="responsiblePerson" required>
@@ -822,7 +895,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, CircleCheck, CircleClose, Notification, QuestionFilled, Edit, EditPen, Bell, Plus } from '@element-plus/icons-vue'
-import { getAlerts, getFilterOptions, diagnoseAlert, batchResendNotifications, updateAlertStatus, createICafeCard, detectIncorrectAlerts, correctClusterIds, testHostConnection, updateAlertFields, createAlert, getComponentEnums, getAlertTypeEnums } from '@/api/alerts'
+import { getAlerts, getFilterOptions, diagnoseAlert, batchResendNotifications, updateAlertStatus, createICafeCard, detectIncorrectAlerts, correctClusterIds, testHostConnection, updateAlertFields, createAlert, getComponentEnums, getAlertTypeEnums, batchUpdateAlertStatus } from '@/api/alerts'
 
 const router = useRouter()
 
@@ -1012,10 +1085,13 @@ const icafeForm = reactive({
   severity: '',
   clusterID: '',
   generatedTitle: '',
+  cardType: 'Bug', // 卡片类型：Bug 或 Task
   responsiblePerson: '',
   subcategory: '',
   workHours: 1,
-  plan: ''
+  plan: '',
+  direction: '硬件', // Task类型用：方向大类
+  category: '运维事件' // Task类型用：汇总分类
 })
 
 // iCafe 表单验证规则
@@ -1439,6 +1515,40 @@ const handleDetectAndCorrectClusterIds = async () => {
   }
 }
 
+// 批量修改状态
+const batchStatusDialogVisible = ref(false)
+const batchStatusUpdating = ref(false)
+const batchStatusForm = reactive({ status: 'processing' })
+
+const openBatchStatusDialog = () => {
+  if (selectedAlerts.value.length === 0) {
+    ElMessage.warning('请先选择告警')
+    return
+  }
+  batchStatusForm.status = 'processing'
+  batchStatusDialogVisible.value = true
+}
+
+const submitBatchStatus = async () => {
+  batchStatusUpdating.value = true
+  try {
+    const alertIds = selectedAlerts.value.map(a => a.id)
+    const response = await batchUpdateAlertStatus({ alert_ids: alertIds, status: batchStatusForm.status })
+    if (response.success) {
+      ElMessage.success(response.message || '批量更新成功')
+      batchStatusDialogVisible.value = false
+      selectedAlerts.value = []
+      await fetchAlerts()
+    } else {
+      ElMessage.error(response.error || '批量更新失败')
+    }
+  } catch {
+    ElMessage.error('批量更新失败')
+  } finally {
+    batchStatusUpdating.value = false
+  }
+}
+
 // 处理表格选择变化
 const handleSelectionChange = (selection) => {
   selectedAlerts.value = selection
@@ -1687,20 +1797,27 @@ const handleICafeSubmit = async () => {
   try {
     // 表单验证
     await icafeFormRef.value.validate()
-    
+
     icafeCreating.value = true
-    
+
     const cardData = {
+      card_type: icafeForm.cardType,
       responsible_person: icafeForm.responsiblePerson,
       subcategory: icafeForm.subcategory,
       work_hours: icafeForm.workHours,
       plan: icafeForm.plan
     }
-    
+
+    // Task 类型特有字段
+    if (icafeForm.cardType === 'Task') {
+      cardData.direction = icafeForm.direction
+      cardData.category = icafeForm.category
+    }
+
     const response = await createICafeCard(icafeForm.alertId, cardData)
-    
+
     if (response.success) {
-      ElMessage.success('iCafe 卡片创建成功')
+      ElMessage.success(`iCafe ${icafeForm.cardType} 卡片创建成功`)
       icafeDialogVisible.value = false
       // 可以选择刷新列表或显示卡片链接
     }
@@ -1723,10 +1840,13 @@ const handleICafeCancel = () => {
   icafeForm.severity = ''
   icafeForm.clusterID = ''
   icafeForm.generatedTitle = ''
+  icafeForm.cardType = 'Bug'
   icafeForm.responsiblePerson = ''
   icafeForm.subcategory = ''
   icafeForm.workHours = 1
   icafeForm.plan = ''
+  icafeForm.direction = '硬件'
+  icafeForm.category = '运维事件'
 }
 
 // 打开创建告警对话框

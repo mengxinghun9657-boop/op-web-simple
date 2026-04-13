@@ -413,48 +413,40 @@
 
           <!-- Tab 3: 实例列表 -->
           <el-tab-pane :label="`实例 (${serverInstances.length})`">
-            <div class="table-wrapper">
-              <el-table
-                :data="serverInstances"
-                max-height="500"
-                class="modern-table"
-                size="small"
-                border
-                style="width: 100%;"
-                :header-cell-style="{ whiteSpace: 'nowrap', fontSize: '12px', background: 'var(--bg-secondary, #f9fafb)', padding: '8px 4px' }"
-                :cell-style="{ padding: '8px 4px' }"
-              >
-                <el-table-column
-                  v-for="col in instanceColumns"
-                  :key="col.key"
-                  :prop="col.key"
-                  :label="col.label"
-                  :width="col.width"
-                  :min-width="col.minWidth || 80"
-                  show-overflow-tooltip
-                  resizable
-                >
-                  <template #default="{ row }">
-                    <template v-if="col.key === 'nova_vm_instance_uuid' || col.key === 'nova_vm_fixed_ips'">
-                      <div class="copyable-cell" @click.stop>
-                        <span class="bce-cell-text">{{ row[col.key] }}</span>
-                        <el-icon class="copy-icon" @click="copyToClipboard(row[col.key], col.label)"><DocumentCopy /></el-icon>
-                      </div>
-                    </template>
-                    <template v-else-if="col.key === 'nova_vm_memory_mb'">
-                      <span class="bce-cell-text">{{ formatMemory(row[col.key]) }}</span>
-                    </template>
-                    <template v-else-if="col.key === 'nova_vm_vm_state'">
-                      <span class="glass-tag" :class="row[col.key] === 'active' ? 'glass-tag-success' : 'glass-tag-primary'">{{ row[col.key] }}</span>
-                    </template>
-                    <template v-else>
-                      <span v-if="row[col.key] != null && row[col.key] !== ''" class="bce-cell-text">{{ row[col.key] }}</span>
-                      <span v-else style="color: var(--text-tertiary, #9ca3af);">-</span>
-                    </template>
-                  </template>
-                </el-table-column>
-              </el-table>
+            <div class="table-wrapper" v-if="serverInstances.length">
+              <div class="native-table-scroll">
+                <table class="native-drawer-table">
+                  <thead>
+                    <tr>
+                      <th v-for="col in instanceColumns" :key="col.key" :style="{ minWidth: col.width + 'px' }">{{ col.label }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="row in serverInstances" :key="row.nova_vm_instance_uuid">
+                      <td v-for="col in instanceColumns" :key="col.key">
+                        <template v-if="col.key === 'nova_vm_instance_uuid' || col.key === 'nova_vm_fixed_ips'">
+                          <div class="copyable-cell" @click.stop>
+                            <span class="bce-cell-text">{{ row[col.key] }}</span>
+                            <el-icon class="copy-icon" @click="copyToClipboard(row[col.key], col.label)"><DocumentCopy /></el-icon>
+                          </div>
+                        </template>
+                        <template v-else-if="col.key === 'nova_vm_memory_mb'">
+                          <span class="bce-cell-text">{{ formatMemory(row[col.key]) }}</span>
+                        </template>
+                        <template v-else-if="col.key === 'nova_vm_vm_state'">
+                          <span class="glass-tag" :class="row[col.key] === 'active' ? 'glass-tag-success' : 'glass-tag-primary'">{{ row[col.key] }}</span>
+                        </template>
+                        <template v-else>
+                          <span v-if="row[col.key] != null && row[col.key] !== ''" class="bce-cell-text">{{ row[col.key] }}</span>
+                          <span v-else style="color: var(--text-tertiary, #9ca3af);">-</span>
+                        </template>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
+            <div v-else class="drawer-bce-placeholder" style="color: var(--text-tertiary, #9ca3af);">暂无实例数据</div>
           </el-tab-pane>
 
           <!-- Tab 4: BCE 关联 -->

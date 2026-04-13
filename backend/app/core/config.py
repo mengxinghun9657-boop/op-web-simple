@@ -118,6 +118,12 @@ class Settings(BaseSettings):
     GPU_PROM_STEP: str = "5m"
     GPU_HAS_TARGET_GPU_TYPES: str = "H20,L20"
 
+    # APIServer 告警默认配置
+    APISERVER_DEFAULT_WINDOW_MINUTES: int = 5
+    APISERVER_PROM_URL: str = "https://cprom.cd.baidubce.com/select/prometheus"
+    APISERVER_PROM_TOKEN: str = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lc3BhY2UiOiJjcHJvbS1qNWkxMm94dXFqMXo3Iiwic2VjcmV0TmFtZSI6ImYwMDhkYjQ3NTE4OTRhZmU5Yjg1MWUzMmEyMDY4MzM1IiwiZXhwIjo0ODk3MjczNTI2LCJpc3MiOiJjcHJvbSJ9.wbsW3Cs3PkTfgx_lsBHONGFqY7CFENSU-2NXChlT304"
+    APISERVER_PROM_INSTANCE_ID: str = "cprom-j5i12oxuqj1z7"
+
 
 # 创建全局配置实例
 settings = Settings()

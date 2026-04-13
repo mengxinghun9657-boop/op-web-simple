@@ -26,7 +26,7 @@
     <!-- 日志列表 -->
     <div class="content-card">
       <div class="content-card-body">
-        <el-table :data="filteredLogs" v-loading="loading" class="google-table">
+        <el-table :data="logs" v-loading="loading" class="google-table">
           <el-table-column prop="created_at" label="时间" width="180" />
           <el-table-column prop="username" label="操作人" width="120" />
           <el-table-column prop="action" label="动作" width="120">
@@ -42,11 +42,13 @@
           <el-pagination
             background
             layout="total, prev, pager, next, sizes"
-            :total="totalLogs"
+            :total="total"
             :page-size="pageSize"
             :page-sizes="[20, 50, 100, 200]"
             v-model:current-page="currentPage"
             v-model:page-size="pageSize"
+            @current-change="fetchLogs"
+            @size-change="onSizeChange"
             class="google-pagination"
           />
         </div>
@@ -56,7 +58,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Download, Document } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import axios from '@/utils/axios'
@@ -66,22 +68,24 @@ const logs = ref([])
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
+const total = ref(0)
 
-// 获取审计日志
 const fetchLogs = async () => {
   loading.value = true
   try {
     const response = await axios.get('/api/v1/audit-logs', {
       params: {
-        skip: 0,
-        limit: 1000
+        page: currentPage.value,
+        page_size: pageSize.value
       }
     })
 
     if (response.success && response.data && response.data.list) {
       logs.value = response.data.list
+      total.value = response.data.total
     } else {
       logs.value = []
+      total.value = 0
       ElMessage.warning('审计日志数据格式异常')
     }
   } catch (error) {
@@ -91,20 +95,10 @@ const fetchLogs = async () => {
   }
 }
 
-// 过滤后的日志列表
-const filteredLogs = computed(() => {
-  let result = logs.value
-
-  if (dateRange.value && dateRange.value.length === 2) {
-    // 实现日期过滤逻辑
-  }
-
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return result.slice(start, end)
-})
-
-const totalLogs = computed(() => logs.value.length)
+const onSizeChange = () => {
+  currentPage.value = 1
+  fetchLogs()
+}
 
 const getActionTagType = (action) => {
   if (action === 'DELETE') return 'danger'

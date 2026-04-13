@@ -169,6 +169,15 @@ def init_system_configs():
             'cluster_ids': ','.join(configs.get('resource_analysis', [])),  # 转换为逗号分隔字符串
             'description': '资源分析默认集群ID列表'
         }
+
+        # 2.1 Prometheus 统一配置
+        prometheus_runtime_config = {
+            'grafana_url': 'https://cprom.cd.baidubce.com/select/prometheus',
+            'token': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lc3BhY2UiOiJjcHJvbS1qNWkxMm94dXFqMXo3Iiwic2VjcmV0TmFtZSI6ImYwMDhkYjQ3NTE4OTRhZmU5Yjg1MWUzMmEyMDY4MzM1IiwiZXhwIjo0ODk3MjczNTI2LCJpc3MiOiJjcHJvbSJ9.wbsW3Cs3PkTfgx_lsBHONGFqY7CFENSU-2NXChlT304',
+            'instance_id': 'cprom-j5i12oxuqj1z7',
+            'cluster_ids': ','.join(configs.get('resource_analysis', [])),
+            'step': '5m'
+        }
         
         # 检查分析配置是否已存在
         existing_analysis = db.query(SystemConfig).filter(
@@ -205,6 +214,22 @@ def init_system_configs():
             db.add(analysis_record)
             cluster_count = len(configs.get('resource_analysis', []))
             logger.info(f"✅ 创建分析配置: 集群数={cluster_count}")
+
+        existing_runtime = db.query(SystemConfig).filter(
+            SystemConfig.module == 'prometheus_runtime',
+            SystemConfig.config_key == 'main'
+        ).first()
+        if existing_runtime:
+            logger.info("Prometheus 统一配置已存在，跳过")
+        else:
+            runtime_record = SystemConfig(
+                module='prometheus_runtime',
+                config_key='main',
+                config_value=json.dumps(prometheus_runtime_config, ensure_ascii=False),
+                updated_by=1
+            )
+            db.add(runtime_record)
+            logger.info("✅ 创建 Prometheus 统一配置")
         
         # 3. CMDB配置（空配置，需要管理员手动配置Cookie）
         cmdb_config = {

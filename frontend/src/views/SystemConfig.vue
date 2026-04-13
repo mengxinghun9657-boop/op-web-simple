@@ -36,6 +36,10 @@
             <el-icon><Monitor /></el-icon>
             <span>监控配置</span>
           </el-menu-item>
+          <el-menu-item index="prometheus_runtime">
+            <el-icon><Connection /></el-icon>
+            <span>Prometheus配置</span>
+          </el-menu-item>
           <el-menu-item index="analysis">
             <el-icon><TrendCharts /></el-icon>
             <span>分析配置</span>
@@ -71,8 +75,10 @@ import { Setting, User, DataBoard, Monitor, TrendCharts, Histogram, Postcard, Co
 import { useUserStore } from '@/stores/user'
 import CMDBConfig from '@/components/config/CMDBConfig.vue'
 import MonitoringConfig from '@/components/config/MonitoringConfig.vue'
+import PrometheusRuntimeConfig from '@/components/config/PrometheusRuntimeConfig.vue'
 import AnalysisConfig from '@/components/config/AnalysisConfig.vue'
 import PFSConfig from '@/components/config/PFSConfig.vue'
+import APIServerConfig from '@/components/config/APIServerConfig.vue'
 import ICafeConfig from '@/components/config/ICafeConfig.vue'
 import BCESyncConfig from '@/components/config/BCESyncConfig.vue'
 
@@ -96,8 +102,10 @@ const currentComponent = computed(() => {
   const components = {
     cmdb: CMDBConfig,
     monitoring: MonitoringConfig,
+    prometheus_runtime: PrometheusRuntimeConfig,
     analysis: AnalysisConfig,
     pfs: PFSConfig,
+    apiserver: APIServerConfig,
     icafe: ICafeConfig,
     bce_sync: BCESyncConfig
   }

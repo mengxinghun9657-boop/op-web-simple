@@ -57,6 +57,29 @@ class GPUMonitoringService:
             item.strip() for item in settings.GPU_HAS_TARGET_GPU_TYPES.split(",") if item.strip()
         }
 
+    def _load_runtime_prometheus_config(self) -> Dict[str, Any]:
+        db = SessionLocal()
+        try:
+            runtime_record = db.query(SystemConfig).filter(
+                SystemConfig.module == "prometheus_runtime",
+                SystemConfig.config_key == "main",
+            ).first()
+            config = {}
+            if runtime_record and runtime_record.config_value:
+                config = json.loads(runtime_record.config_value)
+            cluster_ids = config.get("cluster_ids") or ""
+            if isinstance(cluster_ids, str):
+                cluster_ids = [item.strip() for item in cluster_ids.split(",") if item.strip()]
+            return {
+                "grafana_url": config.get("grafana_url") or self.prom_url.rsplit("/api/v1/query_range", 1)[0],
+                "token": config.get("token") or self.prom_token,
+                "instance_id": config.get("instance_id") or self.prom_instance_id,
+                "step": config.get("step") or self.prom_step,
+                "cluster_ids": cluster_ids,
+            }
+        finally:
+            db.close()
+
     def get_has_inspection_data(self, db: Session) -> Dict[str, Any]:
         """从主 MySQL 获取 HAS 自动化巡检实例数据"""
         rows = (
@@ -313,13 +336,14 @@ class GPUMonitoringService:
         step: Optional[str] = None,
     ) -> Dict[str, Any]:
         """按时间区间查询 GPU 卡时数据"""
-        actual_step = step or self.prom_step
+        runtime_config = self._load_runtime_prometheus_config()
+        actual_step = step or runtime_config["step"] or self.prom_step
         if actual_step not in self.STEP_TO_HOURS:
             raise ValueError(f"不支持的 step: {actual_step}")
         if end_time <= start_time:
             raise ValueError("结束时间必须大于开始时间")
 
-        actual_cluster_ids = [cluster_id for cluster_id in (cluster_ids or [self.prom_cluster_id]) if cluster_id]
+        actual_cluster_ids = [cluster_id for cluster_id in (cluster_ids or runtime_config.get("cluster_ids") or [self.prom_cluster_id]) if cluster_id]
         if not actual_cluster_ids:
             raise ValueError("至少需要提供一个集群ID")
 
@@ -331,6 +355,7 @@ class GPUMonitoringService:
                     end=int(end_time.timestamp()),
                     step=actual_step,
                     cluster_id=cluster_id,
+                    runtime_config=runtime_config,
                 )
             )
 
@@ -367,17 +392,17 @@ class GPUMonitoringService:
             "pods": bottom_pods,
         }
 
-    def _query_prometheus_range(self, start: int, end: int, step: str, cluster_id: str) -> List[Dict[str, Any]]:
+    def _query_prometheus_range(self, start: int, end: int, step: str, cluster_id: str, runtime_config: Dict[str, Any]) -> List[Dict[str, Any]]:
         query = f'DCGM_FI_DEV_GPU_UTIL{{clusterID="{cluster_id}", job_pod_namespace!=""}}'
         headers = {
-            "Authorization": f"Bearer {self.prom_token}",
-            "InstanceId": self.prom_instance_id,
+            "Authorization": runtime_config["token"] if str(runtime_config["token"]).startswith("Bearer ") else f"Bearer {runtime_config['token']}",
+            "InstanceId": runtime_config["instance_id"],
             "Content-Type": "application/json",
         }
 
         try:
             response = requests.get(
-                self.prom_url,
+                f"{runtime_config['grafana_url'].rstrip('/')}/api/v1/query_range",
                 headers=headers,
                 params={
                     "query": query,

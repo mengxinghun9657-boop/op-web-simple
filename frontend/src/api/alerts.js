@@ -84,6 +84,15 @@ export const updateAlertStatus = (alertId, data) => {
 export const createICafeCard = (alertId, cardData) => {
   return axios.post(`/api/v1/alerts/${alertId}/create-icafe-card`, cardData)
 }
+
+/**
+ * 批量修改告警状态
+ * @param {Object} data - { alert_ids, status, resolved_by }
+ * @returns {Promise}
+ */
+export const batchUpdateAlertStatus = (data) => {
+  return axios.put('/api/v1/alerts/batch/status', data)
+}
 /**
  * 检测需要修正cluster_id的告警记录
  * @returns {Promise}

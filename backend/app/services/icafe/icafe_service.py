@@ -283,12 +283,9 @@ class ICafeService:
         
         return "\n".join(html_parts)
     
-    def build_card_fields(self, form_data: Dict[str, Any]) -> Dict[str, Any]:
+    def build_card_fields(self, form_data: Dict[str, Any], card_type: str = 'Bug') -> Dict[str, Any]:
         """
-        构建卡片字段（基于 HMLCC 空间 Bug 类型的字段结构）
-
-        注意：必须使用 Bug 类型，Task 类型的方向大类/汇总分类/细分分类为必填字段，
-        即使传了最基础的字段也会报 "Field name or value is incorrect"。
+        构建卡片字段（支持 Bug 和 Task 类型）
 
         Args:
             form_data: 表单数据
@@ -296,34 +293,54 @@ class ICafeService:
                 - subcategory: 细分分类
                 - work_hours: 工时
                 - plan: 所属计划
+                - direction: 方向大类（Task类型）
+                - category: 汇总分类（Task类型）
+            card_type: 卡片类型，'Bug' 或 'Task'
 
         Returns:
             字段字典
         """
         fields = {}
 
-        # 标准字段
+        # 标准字段（所有类型通用）
         if form_data.get('responsible_person'):
             fields['负责人'] = form_data['responsible_person']
 
         fields['流程状态'] = '新建'
-        fields['优先级'] = 'P1-High'
 
-        # 用户填写的自定义字段
-        if form_data.get('subcategory'):
-            fields['细分分类'] = form_data['subcategory']
+        if card_type == 'Task':
+            # Task 类型字段
+            # 必填字段：方向大类、汇总分类、细分分类
+            fields['方向大类'] = form_data.get('direction', '硬件')
+            fields['汇总分类'] = form_data.get('category', '运维事件')
+            fields['细分分类'] = form_data.get('subcategory', 'GPU')
 
-        if form_data.get('work_hours'):
-            fields['占用工时'] = str(form_data['work_hours'])
+            # 可选字段
+            if form_data.get('work_hours'):
+                fields['占用工时'] = str(form_data['work_hours'])
 
-        if form_data.get('plan'):
-            fields['所属计划'] = form_data['plan']
+            if form_data.get('plan'):
+                fields['所属计划'] = form_data['plan']
 
-        # 固定业务字段（Bug 类型下均已验证支持）
-        fields['有感事件'] = '否'
-        fields['TAM负责人'] = '陈少禄'
-        fields['汇总分类'] = '运维事件'
-        fields['方向大类'] = '计算'
+        else:
+            # Bug 类型字段
+            fields['优先级'] = 'P1-High'
+
+            # 用户填写的自定义字段
+            if form_data.get('subcategory'):
+                fields['细分分类'] = form_data['subcategory']
+
+            if form_data.get('work_hours'):
+                fields['占用工时'] = str(form_data['work_hours'])
+
+            if form_data.get('plan'):
+                fields['所属计划'] = form_data['plan']
+
+            # 固定业务字段
+            fields['有感事件'] = '否'
+            fields['TAM负责人'] = '陈少禄'
+            fields['汇总分类'] = '运维事件'
+            fields['方向大类'] = '计算'
 
         return fields
 

@@ -4,7 +4,7 @@ GPU 集群监控 API
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from loguru import logger
@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_db, get_current_user
 from app.schemas.response import APIResponse
 from app.services.gpu_monitoring_service import gpu_monitoring_service
+from app.services.task_queue_service import task_queue_service
 
 
 router = APIRouter(prefix="/gpu-monitoring", tags=["GPU 集群监控"])
@@ -39,13 +40,12 @@ async def get_has_inspection(db: Session = Depends(get_db)):
 
 @router.post("/has-inspection/collect", response_model=APIResponse)
 async def collect_has_inspection(
-    background_tasks: BackgroundTasks,
     current_user = Depends(get_current_user),
 ):
     """直接采集 GPU HAS 巡检数据并写入主 MySQL"""
     try:
         task_id = gpu_monitoring_service.create_has_collect_task(username=getattr(current_user, "username", "system"))
-        background_tasks.add_task(gpu_monitoring_service.collect_has_inspection_to_mysql, task_id)
+        task_queue_service.enqueue("gpu_has_inspection_collect", {"task_id": task_id})
         return APIResponse(
             success=True,
             data={"task_id": task_id},
@@ -117,7 +117,6 @@ async def query_bottom_card_time(request: BottomCardTimeRequest):
 @router.post("/bottom-card-time/analyze", response_model=APIResponse)
 async def analyze_bottom_card_time(
     request: BottomCardTimeRequest,
-    background_tasks: BackgroundTasks,
     current_user = Depends(get_current_user),
 ):
     """创建 GPU bottom 卡时分析任务"""
@@ -125,15 +124,14 @@ async def analyze_bottom_card_time(
         task_id = gpu_monitoring_service.create_bottom_analysis_task(
             username=getattr(current_user, "username", "system")
         )
-        background_tasks.add_task(
-            gpu_monitoring_service.run_bottom_analysis_task,
-            task_id,
-            request.start_time,
-            request.end_time,
-            request.cluster_ids,
-            request.target_models,
-            request.step,
-        )
+        task_queue_service.enqueue("gpu_bottom_analysis", {
+            "task_id": task_id,
+            "start_time": request.start_time.isoformat(),
+            "end_time": request.end_time.isoformat(),
+            "cluster_ids": request.cluster_ids,
+            "target_models": request.target_models,
+            "step": request.step,
+        })
         return APIResponse(
             success=True,
             data={"task_id": task_id},

@@ -754,7 +754,7 @@ async def get_bce_config(
     db: Session = Depends(get_db),
     current_user = Depends(require_admin)
 ):
-    """获取 BCE 同步配置（Cookie 脱敏、区域、集群ID列表）"""
+    """获取 BCE 同步配置（SK 脱敏、区域、集群ID列表）"""
     from app.services.bce_sync_service import BCESyncService
     return BCESyncService(db).get_full_config()
 
@@ -772,7 +772,8 @@ async def update_bce_config(
     if isinstance(ids, str):
         ids = [x.strip() for x in ids.replace('\n', ',').split(',') if x.strip()]
     svc.update_config(
-        cookie=request.get('cookie', ''),
+        access_key=request.get('access_key', ''),
+        secret_key=request.get('secret_key', ''),
         region=request.get('region', ''),
         cluster_ids=ids,
         updated_by_id=current_user.id
@@ -829,65 +830,62 @@ async def test_bce_connection(
     current_user = Depends(get_current_user)
 ):
     """
-    测试 BCE 连接
+    测试 BCE 连接（使用 AK/SK 调用官方 API）
 
     支持两种模式：
-    1. 传入配置数据：使用传入的 Cookie 测试（保存前测试）
+    1. 传入配置数据：使用传入的 AK/SK 测试（保存前测试）
     2. 不传配置：使用数据库中的配置测试（保存后测试）
-
-    需要管理员权限
     """
     try:
-        # 检查权限
         if current_user.role not in ['admin', 'super_admin']:
             raise HTTPException(status_code=403, detail="仅管理员可以测试连接")
 
-        from app.services.bce_sync_service import BCESyncService, _BCCDownloader
+        from app.services.bce_sync_service import BCESyncService, _BCCApiClient
 
-        # 如果传入了配置，使用传入的配置
-        if config and config.get('bce_cookie'):
-            cookie = config.get('bce_cookie')
+        if config and (config.get('access_key') or config.get('secret_key')):
+            ak = config.get('access_key', '')
+            sk = config.get('secret_key', '')
             region = config.get('region', 'cd')
         else:
-            # 否则从数据库读取配置
             svc = BCESyncService(db)
-            cookie = svc.get_cookie()
+            ak, sk = svc.get_credentials()
             region = svc.get_region()
 
-        if not cookie:
+        if not ak or not sk:
             return APIResponse(
                 success=False,
-                error="未配置 BCE Cookie",
-                message="请先配置 BCE Cookie"
+                error="未配置 BCE Access Key / Secret Key",
+                message="请先填写 AK 和 SK"
             )
 
-        # 测试连接：尝试下载 BCC 数据
         logger.info(f"测试 BCE 连接（region={region}）")
-        result = _BCCDownloader(cookie, region).download()
-
-        if result['success']:
-            return APIResponse(
-                success=True,
-                data={"connected": True, "region": region},
-                message="BCE 连接测试成功"
-            )
-        else:
-            error_msg = result.get('error', '连接失败')
-            raw = result.get('raw', '')
-            if raw:
-                error_msg = f"{error_msg}（响应内容：{raw[:100]}）"
-            return APIResponse(
-                success=False,
-                error=error_msg,
-                message="BCE 连接测试失败：Cookie 可能已过期或 region 配置错误，请重新从百度云控制台获取 Cookie"
-            )
+        # 只获取第一页（max_keys=1）验证凭证有效性，避免拉全量数据
+        from baidubce.bce_client_configuration import BceClientConfiguration
+        from baidubce.auth.bce_credentials import BceCredentials
+        from baidubce.services.bcc.bcc_client import BccClient
+        _BCC_EP = {'cd': 'bcc.cd.baidubce.com', 'bj': 'bcc.bj.baidubce.com',
+                   'gz': 'bcc.gz.baidubce.com', 'su': 'bcc.su.baidubce.com'}
+        endpoint = _BCC_EP.get(region, f'bcc.{region}.baidubce.com')
+        cfg = BceClientConfiguration(
+            credentials=BceCredentials(ak, sk),
+            endpoint=endpoint,
+        )
+        client = BccClient(cfg)
+        resp = client.list_instances(max_keys=1)
+        count = len(resp.instances) if hasattr(resp, 'instances') else 0
+        return APIResponse(
+            success=True,
+            data={"connected": True, "region": region, "sample_count": count},
+            message=f"BCE 连接测试成功（region={region}）"
+        )
 
     except Exception as e:
-        logger.error(f"❌ 测试 BCE 连接失败: {e}")
+        err = str(e)
+        logger.error(f"测试 BCE 连接失败: {err}")
         return APIResponse(
             success=False,
-            error=str(e),
-            message="连接测试异常"
+            error=err,
+            message="连接测试失败：请检查 AK/SK 是否正确，以及账号是否有 BCC 只读权限"
         )
 
 
@@ -1227,5 +1225,86 @@ async def advanced_search(
                 "crm_company": i.crm_company,
                 "crm_vip_type": i.crm_vip_type,
             } for i in instances]
-    
+
     return results
+
+
+# ========== CCE 官方 API 路由（只读） ==========
+
+@router.get("/cce/clusters", summary="CCE 集群列表")
+async def cce_list_clusters(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """从 BCE 官方 API 实时获取全部 CCE 集群列表"""
+    from app.services.cce_api_service import CCEApiService
+    result = CCEApiService(db).list_clusters()
+    if not result["success"]:
+        raise HTTPException(status_code=502, detail=result["error"])
+    return result
+
+
+@router.get("/cce/cluster-ids", summary="CCE 集群 ID 列表（轻量）")
+async def cce_get_cluster_ids(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """仅返回集群 ID 数组，供下拉框使用"""
+    from app.services.cce_api_service import CCEApiService
+    ids = CCEApiService(db).get_cluster_ids()
+    return {"success": True, "cluster_ids": ids}
+
+
+@router.get("/cce/cluster/{cluster_id}", summary="CCE 集群详情")
+async def cce_get_cluster_detail(
+    cluster_id: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """获取单个集群的详细信息（K8S版本、网络模式、Master类型等）"""
+    from app.services.cce_api_service import CCEApiService
+    result = CCEApiService(db).get_cluster_detail(cluster_id)
+    if not result["success"]:
+        raise HTTPException(status_code=502, detail=result["error"])
+    return result
+
+
+@router.get("/cce/cluster/{cluster_id}/instances", summary="CCE 集群节点列表")
+async def cce_list_instances(
+    cluster_id: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """获取集群所有节点（节点ID、IP、状态、规格等）"""
+    from app.services.cce_api_service import CCEApiService
+    result = CCEApiService(db).list_cluster_instances(cluster_id)
+    if not result["success"]:
+        raise HTTPException(status_code=502, detail=result["error"])
+    return result
+
+
+@router.get("/cce/cluster/{cluster_id}/kubeconfig", summary="下载集群 KubeConfig")
+async def cce_get_kubeconfig(
+    cluster_id: str,
+    type: str = Query("vpc", description="连接类型：vpc（内网）或 public（外网）"),
+    db: Session = Depends(get_db),
+    current_user = Depends(require_admin)
+):
+    """
+    下载集群 KubeConfig（管理员权限）
+    - type=vpc：使用内网 BLB VPC IP 连接
+    - type=public：使用外网 EIP 连接（集群需开放公网访问）
+    """
+    from app.services.cce_api_service import CCEApiService
+    from fastapi.responses import Response
+    result = CCEApiService(db).get_kubeconfig(cluster_id, kube_type=type)
+    if not result["success"]:
+        raise HTTPException(status_code=502, detail=result["error"])
+    kube_yaml = result["kubeConfig"]
+    # 返回可直接下载的 YAML 文件
+    filename = f"kubeconfig-{cluster_id}-{type}.yaml"
+    return Response(
+        content=kube_yaml,
+        media_type="application/x-yaml",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )

@@ -1,16 +1,14 @@
 """
 BCE 数据同步服务
-将百度云 BCC 实例和 CCE 节点数据下载并写入本地容器数据库
-（复用 auto_download_instanceID 中的下载逻辑，集成到后端服务）
+将百度云 BCC 实例和 CCE 节点数据写入本地容器数据库
+使用 BCE 官方 API（AK/SK 鉴权），不依赖 Cookie
 """
 import csv
 import io
-import time
 import json
 import requests
 from datetime import datetime
 from typing import Optional, Dict, List, Any
-from urllib.parse import urlencode
 from loguru import logger
 from sqlalchemy.orm import Session
 
@@ -18,115 +16,220 @@ from app.models.system_config import SystemConfig
 from app.core.database import get_db_connection
 
 
-# ========== 下载器（内联，避免跨目录依赖） ==========
+# ========== BCE 官方 API 下载器 ==========
 
-class _BCCDownloader:
-    def __init__(self, cookies: str, region: str = 'cd'):
-        self.base_url = "https://console.bce.baidu.com/api/bcc/instance/download"
+# BCC 官方 API endpoint（成都区域）
+_BCC_ENDPOINT_MAP = {
+    'cd': 'bcc.cd.baidubce.com',
+    'bj': 'bcc.bj.baidubce.com',
+    'gz': 'bcc.gz.baidubce.com',
+    'su': 'bcc.su.baidubce.com',
+}
+
+# CCE 官方 API endpoint
+_CCE_ENDPOINT_MAP = {
+    'cd': 'cce.cd.baidubce.com',
+    'bj': 'cce.bj.baidubce.com',
+    'gz': 'cce.gz.baidubce.com',
+    'su': 'cce.su.baidubce.com',
+}
+
+
+def _make_bcc_client(access_key: str, secret_key: str, region: str):
+    """构造 baidubce BCC 客户端"""
+    from baidubce.bce_client_configuration import BceClientConfiguration
+    from baidubce.auth.bce_credentials import BceCredentials
+    from baidubce.services.bcc.bcc_client import BccClient
+
+    endpoint = _BCC_ENDPOINT_MAP.get(region, f'bcc.{region}.baidubce.com')
+    config = BceClientConfiguration(
+        credentials=BceCredentials(access_key, secret_key),
+        endpoint=endpoint,
+    )
+    return BccClient(config)
+
+
+def _make_cce_signed_session(access_key: str, secret_key: str):
+    """返回一个带有 BCE 签名能力的 requests Session（用于 CCE REST API）"""
+    import hashlib
+    import hmac
+    from datetime import timezone
+
+    class _BCEAuth(requests.auth.AuthBase):
+        def __call__(self, r):
+            from urllib.parse import urlparse, quote
+            now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+            expiration = 1800
+            sign_key_info = f"bce-auth-v1/{access_key}/{now}/{expiration}"
+            sign_key = hmac.new(
+                secret_key.encode('utf-8'),
+                sign_key_info.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
+
+            parsed = urlparse(r.url)
+            canonical_uri = quote(parsed.path or '/', safe='/-_.~')
+            # 只签 host header
+            signed_headers = 'host'
+            canonical_headers = f"host:{parsed.netloc.split(':')[0]}"
+            qs = parsed.query or ''
+            # 对 query string 参数按 key 排序规范化
+            if qs:
+                parts = sorted(qs.split('&'))
+                qs = '&'.join(
+                    f"{quote(p.split('=')[0], safe='')}={quote(p.split('=')[1] if '=' in p else '', safe='')}"
+                    for p in parts
+                )
+            canonical_request = f"{r.method}\n{canonical_uri}\n{qs}\n{canonical_headers}"
+            signature = hmac.new(
+                sign_key.encode('utf-8'),
+                canonical_request.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
+            r.headers['Authorization'] = (
+                f"{sign_key_info}/{signed_headers}/{signature}"
+            )
+            return r
+
+    session = requests.Session()
+    session.auth = _BCEAuth()
+    return session
+
+
+class _BCCApiClient:
+    """使用 baidubce SDK 获取 BCC 实例列表"""
+
+    def __init__(self, access_key: str, secret_key: str, region: str = 'cd'):
+        self.access_key = access_key
+        self.secret_key = secret_key
         self.region = region
-        # trust_env=True（默认）：自动读取环境变量中的 HTTP_PROXY/HTTPS_PROXY/NO_PROXY
-        # docker-compose 中已将 console.bce.baidu.com 加入 NO_PROXY，会绕过代理直连
-        self.session = requests.Session()
-        self.session.trust_env = True
-        for cookie in cookies.split('; '):
-            if '=' in cookie:
-                name, value = cookie.split('=', 1)
-                self.session.cookies.set(name, value)
-        csrf_token = self._extract_csrf_token()
-        self.headers = {
-            'Content-Type': 'application/json;charset=UTF-8',
-            'csrftoken': csrf_token,
-            'referer': 'https://console.bce.baidu.com/bcc/',
-            'user-agent': 'Mozilla/5.0',
-            'x-region': region,
-            'x-request-by': 'RestClient'
-        }
 
-    def _extract_csrf_token(self):
-        bce_user_info = self.session.cookies.get('bce-user-info')
-        return bce_user_info.strip('"') if bce_user_info else None
-
-    def download(self) -> Dict[str, Any]:
-        params = {
-            'keywordType': 'fuzzySearch',
-            'order': 'desc',
-            'orderBy': 'createTime',
-            'serverType': 'BCC',
-            'enableBid': True,
-            'filters': json.dumps([]),
-            'needAlarmStatus': True,
-            'isAdvancedSearch': False,
-            'region': self.region,
-            'locale': 'zh-cn',
-            '_': str(int(time.time() * 1000))
-        }
-        url = f"{self.base_url}?{urlencode(params)}"
+    def list_all_instances(self) -> Dict[str, Any]:
+        """分页获取全部 BCC 实例，返回标准化字段列表"""
         try:
-            response = self.session.post(url, headers=self.headers, json={}, timeout=60)
-            response.raise_for_status()
-            text = response.text
-            if text.startswith('\ufeff'):
-                text = text[1:]
-            if not text.strip():
-                return {'success': False, 'error': '响应为空'}
-            if text.startswith('BCC_ID,') or (',' in text and '\n' in text):
-                return {'success': True, 'data': text, 'format': 'csv'}
-            return {'success': False, 'error': '非CSV响应', 'raw': text[:200]}
+            client = _make_bcc_client(self.access_key, self.secret_key, self.region)
+            all_instances = []
+            marker = None
+            while True:
+                resp = client.list_instances(marker=marker, max_keys=1000)
+                items = resp.instances if hasattr(resp, 'instances') else []
+                for inst in items:
+                    all_instances.append(self._normalize(inst))
+                if not getattr(resp, 'is_truncated', False):
+                    break
+                marker = getattr(resp, 'next_marker', None)
+                if not marker:
+                    break
+            return {'success': True, 'instances': all_instances}
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
+    @staticmethod
+    def _normalize(inst) -> Dict[str, Any]:
+        """将 SDK 返回的对象转为扁平 dict"""
+        d = inst.__dict__ if hasattr(inst, '__dict__') else {}
+        nic = d.get('nic_info') or {}
+        if hasattr(nic, '__dict__'):
+            nic = nic.__dict__
+        ips = nic.get('ips') or []
+        eip = ''
+        if ips:
+            first = ips[0]
+            if hasattr(first, '__dict__'):
+                first = first.__dict__
+            eip = first.get('eip', '') or ''
+        tags = d.get('tags') or []
+        tag_str = ','.join(
+            f"{(t.__dict__ if hasattr(t, '__dict__') else t).get('tag_key','')}:"
+            f"{(t.__dict__ if hasattr(t, '__dict__') else t).get('tag_value','')}"
+            for t in tags
+        )
+        return {
+            'BCC_ID': d.get('id', ''),
+            '名称': d.get('name', ''),
+            '实例规格': d.get('spec', '') or d.get('instance_type', ''),
+            '状态': d.get('status', ''),
+            '内网IP': d.get('internal_ip', ''),
+            '公网IP': eip,
+            'CPU': d.get('cpu_count', ''),
+            '内存(GB)': d.get('memory_capacity_in_g_b', '') or d.get('memory_capacity_in_gb', ''),
+            '付费方式': d.get('payment_timing', ''),
+            '创建时间': d.get('create_time', ''),
+            '到期时间': d.get('expire_time', ''),
+            '可用区': d.get('zone_name', ''),
+            'VPC_ID': d.get('vpc_id', ''),
+            '子网ID': d.get('subnet_id', ''),
+            '标签': tag_str,
+        }
 
-class _CCEDownloader:
-    def __init__(self, cookies: str, region: str = 'cd'):
-        self.base_url_base = "https://console.bce.baidu.com/api/cce/service/v2/cluster"
+
+class _CCEApiClient:
+    """使用 BCE REST API 获取 CCE 集群节点列表"""
+
+    def __init__(self, access_key: str, secret_key: str, region: str = 'cd'):
+        self.access_key = access_key
+        self.secret_key = secret_key
         self.region = region
-        # 同 BCCDownloader：trust_env=True 读取 NO_PROXY，console.bce.baidu.com 已在其中
-        self.session = requests.Session()
-        self.session.trust_env = True
-        for cookie in cookies.split('; '):
-            if '=' in cookie:
-                name, value = cookie.split('=', 1)
-                self.session.cookies.set(name, value)
-        csrf_token = self._extract_csrf_token()
-        self.headers = {
-            'Content-Type': 'application/json;charset=UTF-8',
-            'csrftoken': csrf_token,
-            'referer': 'https://console.bce.baidu.com/cce/',
-            'user-agent': 'Mozilla/5.0',
-            'x-region': region,
-            'x-request-by': 'RestClient'
-        }
+        endpoint = _CCE_ENDPOINT_MAP.get(region, f'cce.{region}.baidubce.com')
+        self.base_url = f'https://{endpoint}'
+        self.session = _make_cce_signed_session(access_key, secret_key)
 
-    def _extract_csrf_token(self):
-        bce_user_info = self.session.cookies.get('bce-user-info')
-        return bce_user_info.strip('"') if bce_user_info else None
-
-    def download(self, cluster_id: str) -> Dict[str, Any]:
-        params = {'locale': 'zh-cn', '_': str(int(time.time() * 1000))}
-        url = f"{self.base_url_base}/{cluster_id}/instances/download?{urlencode(params)}"
-        payload = {
-            "cceInstanceIDs": [],
-            "exportAll": True,
-            "calculateGPUCountRequested": False,
-            "keywordType": "k8sNodeName",
-            "clusterUuid": cluster_id,
-            "clusterRole": "node",
-            "orderBy": "createdAt",
-            "order": "desc",
-        }
+    def list_cluster_nodes(self, cluster_id: str) -> Dict[str, Any]:
+        """获取集群所有节点"""
         try:
-            response = self.session.post(url, headers=self.headers, json=payload, timeout=60)
-            response.raise_for_status()
-            text = response.text
-            if text.startswith('\ufeff'):
-                text = text[1:]
-            if not text.strip():
-                return {'success': False, 'error': '响应为空'}
-            if ',' in text and '\n' in text:
-                return {'success': True, 'data': text, 'format': 'csv'}
-            return {'success': False, 'error': '非CSV响应', 'raw': text[:200]}
+            all_nodes = []
+            page_no = 1
+            page_size = 100
+            while True:
+                url = f"{self.base_url}/v2/cluster/{cluster_id}/instances"
+                params = {'pageNo': page_no, 'pageSize': page_size}
+                resp = self.session.get(url, params=params, timeout=30)
+                resp.raise_for_status()
+                data = resp.json()
+                # 实测响应结构：data.instancePage.instanceList
+                instance_page = data.get('instancePage') or data.get('result') or data
+                nodes = instance_page.get('instanceList') or []
+                if not nodes:
+                    break
+                for n in nodes:
+                    all_nodes.append(self._normalize(n, cluster_id))
+                total = instance_page.get('totalCount') or instance_page.get('total', 0)
+                if len(all_nodes) >= total or len(nodes) < page_size:
+                    break
+                page_no += 1
+            return {'success': True, 'nodes': all_nodes}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+
+    @staticmethod
+    def _normalize(node: Dict, cluster_id: str) -> Dict[str, Any]:
+        # 实测响应结构：
+        #   IP          → status.machine.vpcIP
+        #   k8sNodeName → status.machine.k8sNodeName
+        #   BCC实例ID   → status.machine.instanceID
+        #   CPU/内存    → spec.instanceResource.cpu/mem
+        #   OS          → spec.instanceOS.osName
+        spec = node.get('spec') or {}
+        status = node.get('status') or {}
+        machine_status = status.get('machine') or {}
+        inst_resource = spec.get('instanceResource') or {}
+        inst_os = spec.get('instanceOS') or {}
+        vpc_cfg = spec.get('vpcConfig') or {}
+        return {
+            '节点ID': machine_status.get('instanceID') or spec.get('cceInstanceID', ''),
+            '节点名称': spec.get('instanceName', ''),
+            'K8S节点名': machine_status.get('k8sNodeName', ''),
+            '状态': status.get('instancePhase', ''),
+            '内网IP': machine_status.get('vpcIP', ''),
+            'CPU核数': inst_resource.get('cpu', ''),
+            '内存(GB)': inst_resource.get('mem', ''),
+            '操作系统': inst_os.get('osName', '') or inst_os.get('imageName', ''),
+            '节点角色': spec.get('clusterRole', ''),
+            '机器类型': spec.get('machineType', ''),
+            '可用区': vpc_cfg.get('availableZone', ''),
+            '集群ID': cluster_id,
+            '创建时间': node.get('createdAt', ''),
+        }
 
 
 # ========== 数据库写入器（写容器本地库） ==========
@@ -275,33 +378,24 @@ class BCESyncService:
     BCC_TABLE = 'bce_bcc_instances'
     CCE_TABLE = 'bce_cce_nodes'
 
-    # 默认配置（与 auto_download_instanceID/config.py 保持一致）
     DEFAULTS = {
         'region': 'cd',
-        'cluster_ids': [
-            'cce-266b50jq', 'cce-3nusu9su', 'cce-9m1ht29q', 'cce-elwhlymq',
-            'cce-48c915gn', 'cce-ld2ckre2', 'cce-216ima4l', 'cce-2ys5dxch',
-            'cce-75n0j16r', 'cce-hcbs74xg', 'cce-xrg955qz', 'cce-pog0r4mg',
-            'cce-gzk0qlzk', 'cce-p6w3c5z8', 'cce-uk1zi507', 'cce-k5sn275j',
-            'cce-4nmy1x1s',
-        ],
-        'bce_cookie': '',
+        'access_key': '',
+        'secret_key': '',
     }
 
     def __init__(self, db: Session):
         self.db = db
         self._writer = _LocalDBWriter()
 
-    # -------- 配置读写（复用 SystemConfig 表，config_key='main' 存 JSON blob）--------
+    # -------- 配置读写 --------
 
     def _load_config(self) -> Dict[str, Any]:
-        """从 SystemConfig 读取完整配置，不存在时返回默认值"""
         row = self.db.query(SystemConfig).filter_by(
             module=self.MODULE, config_key='main').first()
         if row and row.config_value:
             try:
                 stored = json.loads(row.config_value)
-                # 用默认值补全缺失字段（但不覆盖已配置的值）
                 result = dict(self.DEFAULTS)
                 result.update(stored)
                 return result
@@ -310,7 +404,6 @@ class BCESyncService:
         return dict(self.DEFAULTS)
 
     def _save_config(self, patch: Dict[str, Any], updated_by_id: Optional[int] = None):
-        """将 patch 合并到现有配置后写回"""
         current = self._load_config()
         current.update(patch)
         config_value = json.dumps(current, ensure_ascii=False)
@@ -326,60 +419,73 @@ class BCESyncService:
                 module=self.MODULE,
                 config_key='main',
                 config_value=config_value,
-                description='BCE 数据同步配置（Cookie、区域、集群ID列表）',
+                description='BCE 数据同步配置（AK/SK、区域、集群ID列表）',
                 updated_by=updated_by_id,
             )
             self.db.add(row)
         self.db.commit()
 
     def get_full_config(self) -> Dict[str, Any]:
-        """返回完整配置（供前端展示，Cookie 脱敏）"""
+        """返回完整配置（供前端展示，SK 脱敏）"""
         cfg = self._load_config()
-        cookie = cfg.get('bce_cookie', '')
+        ak = cfg.get('access_key', '')
+        sk = cfg.get('secret_key', '')
         return {
-            'cookie_configured': bool(cookie),
-            'cookie_preview': (cookie[:10] + '...' + cookie[-10:]) if len(cookie) > 20 else None,
+            'access_key': ak,
+            'secret_key_configured': bool(sk),
+            'secret_key_preview': (sk[:4] + '****' + sk[-4:]) if len(sk) > 8 else ('****' if sk else ''),
             'region': cfg.get('region', self.DEFAULTS['region']),
-            'cluster_ids': cfg.get('cluster_ids', self.DEFAULTS['cluster_ids']),
         }
 
-    def update_config(self, cookie: str = '', region: str = '',
-                      cluster_ids: Optional[List[str]] = None,
+    def update_config(self, access_key: str = '', secret_key: str = '',
+                      region: str = '', cluster_ids: Optional[List[str]] = None,
                       updated_by_id: Optional[int] = None):
-        """更新配置（只更新传入的非空字段）"""
         patch: Dict[str, Any] = {}
-        if cookie:
-            patch['bce_cookie'] = cookie
+        if access_key:
+            patch['access_key'] = access_key
+        if secret_key:
+            patch['secret_key'] = secret_key
         if region:
             patch['region'] = region
-        if cluster_ids is not None:
-            patch['cluster_ids'] = cluster_ids
+        # cluster_ids 参数保留兼容但不再保存
         if patch:
             self._save_config(patch, updated_by_id=updated_by_id)
 
-    def get_cookie(self) -> Optional[str]:
-        return self._load_config().get('bce_cookie') or None
+    def get_credentials(self):
+        cfg = self._load_config()
+        return cfg.get('access_key', ''), cfg.get('secret_key', '')
 
     def get_region(self) -> str:
         return self._load_config().get('region', self.DEFAULTS['region'])
 
-    def get_cluster_ids(self) -> List[str]:
-        return self._load_config().get('cluster_ids', self.DEFAULTS['cluster_ids'])
+    # -------- 工具：列表转 CSV 文本 --------
+
+    @staticmethod
+    def _list_to_csv(rows: List[Dict[str, Any]]) -> str:
+        if not rows:
+            return ''
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+        return output.getvalue()
 
     # -------- 同步执行 --------
 
     def sync_bcc(self) -> Dict[str, Any]:
-        """下载 BCC 实例并写入本地库"""
-        cookie = self.get_cookie()
-        if not cookie:
-            return {'success': False, 'error': '未配置 BCE Cookie'}
+        ak, sk = self.get_credentials()
+        if not ak or not sk:
+            return {'success': False, 'error': '未配置 BCE Access Key / Secret Key'}
         region = self.get_region()
         logger.info(f"开始同步 BCC 实例（region={region}）")
-        result = _BCCDownloader(cookie, region).download()
+        result = _BCCApiClient(ak, sk, region).list_all_instances()
         if not result['success']:
             return result
+        csv_text = self._list_to_csv(result['instances'])
+        if not csv_text:
+            return {'success': False, 'error': '接口返回 0 条实例'}
         write_result = self._writer.import_csv(
-            result['data'], self.BCC_TABLE, 'BCC',
+            csv_text, self.BCC_TABLE, 'BCC',
             collect_date=datetime.now().date()
         )
         if write_result['success']:
@@ -387,29 +493,41 @@ class BCESyncService:
         return write_result
 
     def sync_cce(self, cluster_ids: Optional[List[str]] = None) -> Dict[str, Any]:
-        """下载 CCE 节点并写入本地库，支持多集群"""
-        cookie = self.get_cookie()
-        if not cookie:
-            return {'success': False, 'error': '未配置 BCE Cookie'}
+        ak, sk = self.get_credentials()
+        if not ak or not sk:
+            return {'success': False, 'error': '未配置 BCE Access Key / Secret Key'}
         region = self.get_region()
+
+        # 优先使用 CCE 官方 API 动态获取集群 ID
         if cluster_ids is None:
-            cluster_ids = self.get_cluster_ids()
+            try:
+                from app.services.cce_api_service import CCEApiService
+                cluster_ids = CCEApiService(self.db).get_cluster_ids()
+                if cluster_ids:
+                    logger.info(f"从 CCE API 获取到 {len(cluster_ids)} 个集群")
+            except Exception as e:
+                logger.warning(f"CCE API 获取集群列表失败: {e}")
+                cluster_ids = []
         if not cluster_ids:
-            return {'success': False, 'error': '未配置集群 ID'}
+            return {'success': False, 'error': '无法获取集群 ID（CCE API 调用失败且未手动配置）'}
 
         results = {}
         total_count = 0
         has_error = False
-        downloader = _CCEDownloader(cookie, region)
+        client = _CCEApiClient(ak, sk, region)
         for cid in cluster_ids:
             logger.info(f"同步 CCE 集群 {cid}")
-            dl = downloader.download(cid)
+            dl = client.list_cluster_nodes(cid)
             if not dl['success']:
                 results[cid] = {'success': False, 'error': dl['error']}
                 has_error = True
                 continue
+            csv_text = self._list_to_csv(dl['nodes'])
+            if not csv_text:
+                results[cid] = {'success': True, 'count': 0}
+                continue
             wr = self._writer.import_csv(
-                dl['data'], self.CCE_TABLE, 'CCE',
+                csv_text, self.CCE_TABLE, 'CCE',
                 cluster_id=cid,
                 collect_date=datetime.now().date()
             )

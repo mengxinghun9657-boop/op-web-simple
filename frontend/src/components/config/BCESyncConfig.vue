@@ -20,16 +20,27 @@
             label-width="120px"
             @submit.prevent="handleSave"
           >
-            <el-form-item label="BCE Cookie" prop="bce_cookie" required>
+            <el-form-item label="Access Key" prop="access_key" required>
               <el-input
-                v-model="form.bce_cookie"
-                type="textarea"
-                :rows="3"
-                placeholder="请输入 BCE Cookie"
-                show-password
+                v-model="form.access_key"
+                placeholder="请输入 BCE Access Key（AK）"
+                clearable
               />
               <div class="form-tip">
-                从百度云控制台获取 Cookie，用于访问 BCC/CCE API
+                BCE 官方 API 凭证，在百度云控制台「安全认证」→「Access Key」中获取
+              </div>
+            </el-form-item>
+
+            <el-form-item label="Secret Key" prop="secret_key" required>
+              <el-input
+                v-model="form.secret_key"
+                type="password"
+                placeholder="请输入 BCE Secret Key（SK）"
+                show-password
+                clearable
+              />
+              <div class="form-tip">
+                SK 为敏感信息，保存后将脱敏显示。建议使用只读权限的子账号 AK/SK。
               </div>
             </el-form-item>
 
@@ -43,24 +54,10 @@
               <div class="form-tip">选择 BCE 所在区域</div>
             </el-form-item>
 
-            <el-form-item label="CCE 集群" prop="cluster_ids">
-              <el-select
-                v-model="form.cluster_ids"
-                multiple
-                filterable
-                allow-create
-                default-first-option
-                placeholder="输入或选择集群 ID"
-                style="width: 100%"
-              >
-                <el-option
-                  v-for="id in defaultClusterIds"
-                  :key="id"
-                  :label="id"
-                  :value="id"
-                />
-              </el-select>
-              <div class="form-tip">选择需要同步的 CCE 集群（可多选）</div>
+            <el-form-item label="CCE 集群">
+              <div class="form-tip" style="margin-top: 0; color: #67c23a;">
+                ✓ 集群 ID 由 CCE 官方 API 自动获取，无需手动配置
+              </div>
             </el-form-item>
 
             <el-form-item label="测试连接">
@@ -166,9 +163,9 @@
         <el-alert title="配置说明" type="info" :closable="false" show-icon>
           <ul>
             <li>BCE 数据同步用于将百度云 BCC 实例和 CCE 节点数据导入本地数据库</li>
-            <li>配置 Cookie 后，系统可通过百度云控制台 API 下载实例数据</li>
+            <li>使用 BCE 官方 API（AK/SK 鉴权），凭证不会过期，无需定期更新</li>
+            <li>建议在百度云控制台创建只读权限子账号，使用子账号的 AK/SK</li>
             <li>同步后的数据可用于服务器关联查询、资源统计等功能</li>
-            <li>建议定期同步以保持数据最新（可配置自动同步）</li>
           </ul>
         </el-alert>
       </div>
@@ -190,23 +187,14 @@ import {
   updateBCESyncConfig
 } from '@/api/cmdb'
 
-// 默认集群 ID 列表
-const defaultClusterIds = [
-  'cce-266b50jq', 'cce-3nusu9su', 'cce-9m1ht29q', 'cce-elwhlymq',
-  'cce-48c915gn', 'cce-ld2ckre2', 'cce-216ima4l', 'cce-2ys5dxch',
-  'cce-75n0j16r', 'cce-hcbs74xg', 'cce-xrg955qz', 'cce-pog0r4mg',
-  'cce-gzk0qlzk', 'cce-p6w3c5z8', 'cce-uk1zi507', 'cce-k5sn275j',
-  'cce-4nmy1x1s'
-]
-
 // 当前激活的 Tab
 const activeTab = ref('basic')
 
 // 表单数据
 const form = reactive({
-  bce_cookie: '',
+  access_key: '',
+  secret_key: '',
   region: 'cd',
-  cluster_ids: []
 })
 
 // 同步配置
@@ -251,8 +239,11 @@ const syncResultClass = ref('')
 
 // 表单验证规则
 const rules = {
-  bce_cookie: [
-    { required: true, message: '请输入 BCE Cookie', trigger: 'blur' }
+  access_key: [
+    { required: true, message: '请输入 Access Key', trigger: 'blur' }
+  ],
+  secret_key: [
+    { required: true, message: '请输入 Secret Key', trigger: 'blur' }
   ],
   region: [
     { required: true, message: '请选择区域', trigger: 'change' }
@@ -263,12 +254,9 @@ const rules = {
 const loadConfig = async () => {
   try {
     const response = await getBCEConfig()
-    if (response.cookie_configured) {
-      // Cookie 已配置，显示预览
-      form.bce_cookie = response.cookie_preview || ''
-    }
+    form.access_key = response.access_key || ''
+    form.secret_key = response.secret_key_configured ? response.secret_key_preview || '' : ''
     form.region = response.region || 'cd'
-    form.cluster_ids = response.cluster_ids || []
   } catch (error) {
     console.error('加载 BCE 配置失败:', error)
   }
@@ -316,9 +304,9 @@ const handleSave = async () => {
     saving.value = true
 
     const configData = {
-      cookie: form.bce_cookie,
+      access_key: form.access_key,
+      secret_key: form.secret_key,
       region: form.region,
-      cluster_ids: form.cluster_ids
     }
 
     await updateBCEConfig(configData)
@@ -371,7 +359,8 @@ const handleTestConnection = async () => {
 
     // 使用当前表单数据测试连接
     const testConfig = {
-      bce_cookie: form.bce_cookie,
+      access_key: form.access_key,
+      secret_key: form.secret_key,
       region: form.region
     }
 

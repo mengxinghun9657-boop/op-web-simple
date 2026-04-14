@@ -248,8 +248,8 @@ const allMenuItems = [
     icon: 'Monitor',
     children: [
       { name: 'APIServer配置', path: '/apiserver/config', icon: 'Setting' },
-      { name: 'APIServer监控', path: '/apiserver/monitoring', icon: 'DataLine' },
-      { name: 'APIServer告警', path: '/apiserver/alerts', icon: 'Warning' },
+      { name: 'APIServer告警统计', path: '/apiserver/monitoring', icon: 'DataLine' },
+      { name: '告警列表', path: '/apiserver/alerts', icon: 'Warning' },
       { name: '集群实时监控', path: '/cce-monitoring/dashboard', icon: 'Cpu' },
     ]
   },

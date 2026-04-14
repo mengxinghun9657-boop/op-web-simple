@@ -59,7 +59,7 @@ export const advancedSearch = (params) => axios.get('/api/v1/cmdb/search', { par
 // 获取 BCE 同步配置
 export const getBCEConfig = () => axios.get('/api/v1/cmdb/bce/config')
 
-// 更新 BCE 同步配置（cookie、region、cluster_ids）
+// 更新 BCE 同步配置（access_key、secret_key、region）
 export const updateBCEConfig = (config) => axios.post('/api/v1/cmdb/bce/config', config)
 
 // 一键同步 BCE 数据（target: all / bcc / cce）
@@ -84,3 +84,32 @@ export const getBCESyncConfig = () => axios.get('/api/v1/cmdb/bce/sync-config')
 // 更新 BCE 自动同步配置
 export const updateBCESyncConfig = (config) => axios.post('/api/v1/cmdb/bce/sync-config', config)
 
+// ========== CCE 官方 API（只读） ==========
+
+// 获取全部 CCE 集群列表（含详情）
+export const getCCEClusters_full = () => axios.get('/api/v1/cmdb/cce/clusters')
+
+// 获取 CCE 集群 ID 列表（轻量）
+export const getCCEClusterIds = () => axios.get('/api/v1/cmdb/cce/cluster-ids')
+
+// 获取单个 CCE 集群详情
+export const getCCEClusterDetail = (clusterId) => axios.get(`/api/v1/cmdb/cce/cluster/${clusterId}`)
+
+// 获取 CCE 集群节点列表
+export const getCCEClusterInstances = (clusterId) => axios.get(`/api/v1/cmdb/cce/cluster/${clusterId}/instances`)
+
+// 下载 KubeConfig（触发浏览器下载，type: vpc | public）
+export const downloadKubeconfig = async (clusterId, type = 'vpc') => {
+  const resp = await axios.get(`/api/v1/cmdb/cce/cluster/${clusterId}/kubeconfig`, {
+    params: { type },
+    responseType: 'blob',
+  })
+  const url = window.URL.createObjectURL(new Blob([resp.data]))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `kubeconfig-${clusterId}-${type}.yaml`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
+}

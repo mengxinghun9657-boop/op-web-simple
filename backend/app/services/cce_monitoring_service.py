@@ -34,7 +34,7 @@ METRICS: List[Dict[str, Any]] = [
         "key": "node_ready",
         "label": "Ready 节点数",
         "category": "basic",
-        "promql": 'count(kube_node_status_condition{{clusterID="{cluster_id}",condition="Ready",status="True"}})',
+        "promql": 'count(kube_node_status_condition{{clusterID="{cluster_id}",condition="Ready",status="true"}} == 1)',
         "unit": "个",
     },
     {
@@ -106,29 +106,139 @@ METRICS: List[Dict[str, Any]] = [
         "key": "node_disk_pressure",
         "label": "DiskPressure 节点数",
         "category": "node_condition",
-        "promql": 'count(kube_node_status_condition{{clusterID="{cluster_id}",condition="DiskPressure",status="True"}}) or vector(0)',
+        "promql": 'count(kube_node_status_condition{{clusterID="{cluster_id}",condition="DiskPressure",status="true"}} == 1) or vector(0)',
         "unit": "个",
     },
     {
         "key": "node_memory_pressure",
         "label": "MemoryPressure 节点数",
         "category": "node_condition",
-        "promql": 'count(kube_node_status_condition{{clusterID="{cluster_id}",condition="MemoryPressure",status="True"}}) or vector(0)',
+        "promql": 'count(kube_node_status_condition{{clusterID="{cluster_id}",condition="MemoryPressure",status="true"}} == 1) or vector(0)',
         "unit": "个",
     },
     {
         "key": "node_pid_pressure",
         "label": "PIDPressure 节点数",
         "category": "node_condition",
-        "promql": 'count(kube_node_status_condition{{clusterID="{cluster_id}",condition="PIDPressure",status="True"}}) or vector(0)',
+        "promql": 'count(kube_node_status_condition{{clusterID="{cluster_id}",condition="PIDPressure",status="true"}} == 1) or vector(0)',
         "unit": "个",
     },
     {
         "key": "node_network_unavailable",
         "label": "NetworkUnavailable 节点数",
         "category": "node_condition",
-        "promql": 'count(kube_node_status_condition{{clusterID="{cluster_id}",condition="NetworkUnavailable",status="True"}}) or vector(0)',
+        "promql": 'count(kube_node_status_condition{{clusterID="{cluster_id}",condition="NetworkUnavailable",status="true"}} == 1) or vector(0)',
         "unit": "个",
+    },
+    # ── 集群容量 ────────────────────────────────────────────────────────────
+    {
+        "key": "total_cpu_cores",
+        "label": "集群可分配 CPU 总核数",
+        "category": "capacity",
+        "promql": 'sum(kube_node_status_allocatable{{clusterID="{cluster_id}",resource="cpu"}})',
+        "unit": "核",
+    },
+    {
+        "key": "total_memory_gb",
+        "label": "集群可分配内存总量",
+        "category": "capacity",
+        "promql": 'sum(kube_node_status_allocatable{{clusterID="{cluster_id}",resource="memory"}}) / 1024 / 1024 / 1024',
+        "unit": "GB",
+    },
+    # ── 网络带宽 ────────────────────────────────────────────────────────────
+    {
+        "key": "net_receive_mbps",
+        "label": "集群网络入流量",
+        "category": "network",
+        "promql": 'sum(rate(node_network_receive_bytes_total{{clusterID="{cluster_id}",device!~"lo|veth.*|docker.*|flannel.*|cni.*"}}[5m])) / 1024 / 1024',
+        "unit": "MB/s",
+    },
+    {
+        "key": "net_transmit_mbps",
+        "label": "集群网络出流量",
+        "category": "network",
+        "promql": 'sum(rate(node_network_transmit_bytes_total{{clusterID="{cluster_id}",device!~"lo|veth.*|docker.*|flannel.*|cni.*"}}[5m])) / 1024 / 1024',
+        "unit": "MB/s",
+    },
+    # ── 磁盘 I/O ────────────────────────────────────────────────────────────
+    {
+        "key": "disk_read_mbps",
+        "label": "集群磁盘读速率",
+        "category": "disk_io",
+        "promql": 'sum(rate(node_disk_read_bytes_total{{clusterID="{cluster_id}"}}[5m])) / 1024 / 1024',
+        "unit": "MB/s",
+    },
+    {
+        "key": "disk_write_mbps",
+        "label": "集群磁盘写速率",
+        "category": "disk_io",
+        "promql": 'sum(rate(node_disk_written_bytes_total{{clusterID="{cluster_id}"}}[5m])) / 1024 / 1024',
+        "unit": "MB/s",
+    },
+    # ── 系统负载 ────────────────────────────────────────────────────────────
+    {
+        "key": "load1",
+        "label": "节点平均负载 (1m)",
+        "category": "load",
+        "promql": 'avg(node_load1{{clusterID="{cluster_id}"}})',
+        "unit": "",
+    },
+    {
+        "key": "load5",
+        "label": "节点平均负载 (5m)",
+        "category": "load",
+        "promql": 'avg(node_load5{{clusterID="{cluster_id}"}})',
+        "unit": "",
+    },
+    # ── 集群组件健康 ────────────────────────────────────────────────────────
+    {
+        "key": "etcd_has_leader",
+        "label": "etcd 有 Leader",
+        "category": "components",
+        "promql": 'min(etcd_server_has_leader{{clusterID="{cluster_id}"}})',
+        "unit": "",
+    },
+    {
+        "key": "etcd_leader_changes",
+        "label": "etcd Leader 变更次数 (1h)",
+        "category": "components",
+        "promql": 'sum(increase(etcd_server_leader_changes_seen_total{{clusterID="{cluster_id}"}}[1h]))',
+        "unit": "次",
+    },
+    {
+        "key": "etcd_db_size_mb",
+        "label": "etcd 数据库大小",
+        "category": "components",
+        "promql": 'max(etcd_mvcc_db_total_size_in_bytes{{clusterID="{cluster_id}"}}) / 1024 / 1024',
+        "unit": "MB",
+    },
+    {
+        "key": "coredns_qps",
+        "label": "CoreDNS QPS",
+        "category": "components",
+        "promql": 'sum(rate(coredns_dns_requests_total{{clusterID="{cluster_id}"}}[5m]))',
+        "unit": "qps",
+    },
+    {
+        "key": "pod_restarts_1h",
+        "label": "容器重启次数 (1h)",
+        "category": "components",
+        "promql": 'sum(increase(kube_pod_container_status_restarts_total{{clusterID="{cluster_id}"}}[1h]))',
+        "unit": "次",
+    },
+    {
+        "key": "pending_pods_unschedulable",
+        "label": "不可调度 Pending Pod",
+        "category": "components",
+        "promql": 'sum(scheduler_pending_pods{{clusterID="{cluster_id}",queue="unschedulable"}}) or vector(0)',
+        "unit": "个",
+    },
+    {
+        "key": "tcp_connections",
+        "label": "TCP 连接数",
+        "category": "components",
+        "promql": 'sum(node_sockstat_TCP_inuse{{clusterID="{cluster_id}"}})',
+        "unit": "条",
     },
     # ── APIServer 健康 ──────────────────────────────────────────────────────
     {
@@ -170,9 +280,14 @@ METRICS: List[Dict[str, Any]] = [
 
 CATEGORY_LABELS = {
     "basic": "基础资源",
+    "capacity": "集群容量",
     "usage": "资源使用率",
     "node_condition": "节点状态",
-    "apiserver": "APIServer 健康",
+    "network": "网络带宽",
+    "disk_io": "磁盘 I/O",
+    "load": "系统负载",
+    "components": "组件健康",
+    "apiserver": "APIServer 告警统计",
 }
 
 # 用于趋势图的 range query 指标（key → promql_template）
@@ -206,6 +321,36 @@ CHART_METRICS: Dict[str, Dict[str, str]] = {
         "label": "Running Pod 数",
         "promql": 'sum(kube_pod_status_phase{{clusterID="{cluster_id}",phase="Running"}})',
         "unit": "个",
+    },
+    "net_receive_mbps": {
+        "label": "网络入流量",
+        "promql": 'sum(rate(node_network_receive_bytes_total{{clusterID="{cluster_id}",device!~"lo|veth.*|docker.*|flannel.*|cni.*"}}[5m])) / 1024 / 1024',
+        "unit": "MB/s",
+    },
+    "net_transmit_mbps": {
+        "label": "网络出流量",
+        "promql": 'sum(rate(node_network_transmit_bytes_total{{clusterID="{cluster_id}",device!~"lo|veth.*|docker.*|flannel.*|cni.*"}}[5m])) / 1024 / 1024',
+        "unit": "MB/s",
+    },
+    "disk_read_mbps": {
+        "label": "磁盘读速率",
+        "promql": 'sum(rate(node_disk_read_bytes_total{{clusterID="{cluster_id}"}}[5m])) / 1024 / 1024',
+        "unit": "MB/s",
+    },
+    "disk_write_mbps": {
+        "label": "磁盘写速率",
+        "promql": 'sum(rate(node_disk_written_bytes_total{{clusterID="{cluster_id}"}}[5m])) / 1024 / 1024',
+        "unit": "MB/s",
+    },
+    "load1": {
+        "label": "系统负载 (1m)",
+        "promql": 'avg(node_load1{{clusterID="{cluster_id}"}})',
+        "unit": "",
+    },
+    "disk_usage_pct": {
+        "label": "磁盘使用率",
+        "promql": 'avg((1 - node_filesystem_avail_bytes{{clusterID="{cluster_id}",fstype!="tmpfs"}} / node_filesystem_size_bytes{{clusterID="{cluster_id}",fstype!="tmpfs"}}) * 100)',
+        "unit": "%",
     },
 }
 
@@ -350,4 +495,15 @@ class CCEMonitoringService:
         return [self.query_cluster(cid) for cid in cluster_ids]
 
     def list_clusters(self) -> List[str]:
+        """
+        优先从 CCE 官方 API 动态获取集群 ID 列表；
+        若 AK/SK 未配置或请求失败，则 fallback 到 prometheus_runtime 配置中的 cluster_ids。
+        """
+        try:
+            from app.services.cce_api_service import CCEApiService
+            ids = CCEApiService(self.db).get_cluster_ids()
+            if ids:
+                return ids
+        except Exception as e:
+            logger.warning(f"CCE API 获取集群列表失败，使用配置兜底: {e}")
         return self._load_config().get("cluster_ids", [])

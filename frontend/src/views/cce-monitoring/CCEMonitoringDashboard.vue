@@ -21,7 +21,6 @@
         <el-select
           v-model="periodHours"
           style="width: 120px; margin-right: 8px"
-          :teleported="false"
           @change="onPeriodChange"
         >
           <el-option label="近 1 小时" :value="1" />
@@ -34,13 +33,23 @@
         <el-select
           v-model="step"
           style="width: 90px; margin-right: 8px"
-          :teleported="false"
           @change="onPeriodChange"
         >
           <el-option label="1m" value="1m" />
           <el-option label="5m" value="5m" />
           <el-option label="15m" value="15m" />
           <el-option label="1h" value="1h" />
+        </el-select>
+        <!-- P1：自动刷新 -->
+        <el-select
+          v-model="autoRefreshSec"
+          style="width: 100px; margin-right: 8px"
+          @change="onAutoRefreshChange"
+        >
+          <el-option label="不自动刷新" :value="0" />
+          <el-option label="30 秒" :value="30" />
+          <el-option label="1 分钟" :value="60" />
+          <el-option label="5 分钟" :value="300" />
         </el-select>
         <el-button type="primary" :loading="loadingInstant" @click="refresh" :disabled="!selectedCluster">
           <el-icon><Refresh /></el-icon>
@@ -52,132 +61,141 @@
     <!-- 未配置提示 -->
     <el-alert v-if="configError" :title="configError" type="warning" :closable="false" show-icon style="margin-bottom: 16px" />
 
+    <!-- 集群基础信息卡片 -->
+    <div v-if="selectedCluster" class="content-card cluster-info-card" style="margin-bottom: 16px">
+      <div class="content-card-header">
+        <div class="content-card-title">集群信息</div>
+        <div class="content-card-extra" style="display:flex;gap:8px;align-items:center">
+          <el-tag v-if="clusterDetail" :type="clusterDetail.clusterPhase === 'running' ? 'success' : 'danger'" size="small">
+            {{ clusterDetail.clusterPhase || '未知' }}
+          </el-tag>
+          <!-- KubeConfig 下载，管理员可见 -->
+          <el-dropdown trigger="click" :loading="downloadingKubeconfig" @command="handleDownloadKubeconfig">
+            <el-button size="small" :loading="downloadingKubeconfig">
+              下载 KubeConfig <el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="vpc">内网（VPC）</el-dropdown-item>
+                <el-dropdown-item command="public">外网（EIP）</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </div>
+      <div v-if="loadingDetail" style="padding: 12px; color: var(--text-secondary)">加载集群信息...</div>
+      <div v-else-if="clusterDetail" class="cluster-info-grid">
+        <div class="cluster-info-item">
+          <span class="info-label">集群名称</span>
+          <span class="info-value">{{ clusterDetail.clusterName || selectedCluster }}</span>
+        </div>
+        <div class="cluster-info-item">
+          <span class="info-label">K8S 版本</span>
+          <span class="info-value mono">{{ clusterDetail.k8sVersion || '-' }}</span>
+        </div>
+        <div class="cluster-info-item">
+          <span class="info-label">Master 类型</span>
+          <span class="info-value">{{ clusterDetail.masterType === 'managed' ? '托管型' : clusterDetail.masterType === 'custom' ? '自定义' : (clusterDetail.masterType || '-') }}</span>
+        </div>
+        <div class="cluster-info-item">
+          <span class="info-label">网络模式</span>
+          <span class="info-value mono">{{ clusterDetail.networkMode || '-' }}</span>
+        </div>
+        <div class="cluster-info-item">
+          <span class="info-label">节点总数</span>
+          <span class="info-value">{{ clusterDetail.nodeNum ?? '-' }}</span>
+        </div>
+        <div class="cluster-info-item">
+          <span class="info-label">Pod 网段</span>
+          <span class="info-value mono">{{ clusterDetail.clusterPodCIDR || '-' }}</span>
+        </div>
+        <div class="cluster-info-item">
+          <span class="info-label">Service 网段</span>
+          <span class="info-value mono">{{ clusterDetail.clusterIPServiceCIDR || '-' }}</span>
+        </div>
+        <div class="cluster-info-item">
+          <span class="info-label">kube-proxy</span>
+          <span class="info-value mono">{{ clusterDetail.kubeProxyMode || '-' }}</span>
+        </div>
+      </div>
+      <div v-else style="padding: 12px; color: var(--text-secondary); font-size: 13px">
+        集群基础信息不可用（需在系统设置中配置 BCE AK/SK）
+      </div>
+    </div>
+
     <!-- 未选集群 -->
     <div v-if="!selectedCluster && !configError" class="empty-hint">
       <el-empty description="请从右上角选择一个集群查看监控数据" />
     </div>
 
     <template v-if="selectedCluster && clusterData">
-      <!-- ── 基础资源 ── -->
-      <div class="content-card" v-if="clusterData.categories?.basic">
-        <div class="content-card-header">
-          <div class="content-card-title">{{ clusterData.categories.basic.label }}</div>
-        </div>
-        <div class="content-card-body metrics-grid">
-          <div
-            v-for="m in clusterData.categories.basic.metrics"
-            :key="m.key"
-            class="metric-card"
-          >
-            <div class="metric-label">{{ m.label }}</div>
-            <div class="metric-value">
-              <span v-if="m.value !== null">{{ formatValue(m) }}</span>
-              <span v-else class="metric-null">-</span>
+      <!-- ── 通用指标区域循环渲染 ── -->
+      <template v-for="catKey in CATEGORY_ORDER" :key="catKey">
+        <div class="content-card" v-if="clusterData.categories?.[catKey]">
+          <div class="content-card-header">
+            <div class="content-card-title">{{ clusterData.categories[catKey].label }}</div>
+            <!-- 节点状态额外标签 -->
+            <div class="content-card-extra" v-if="catKey === 'node_condition'">
+              <el-tag type="success" v-if="allNodeCondNormal">全部正常</el-tag>
+              <el-tag type="danger" v-else>存在异常节点</el-tag>
             </div>
-            <div class="metric-unit">{{ m.unit }}</div>
           </div>
-        </div>
-      </div>
-
-      <!-- ── 资源使用率 ── -->
-      <div class="content-card" v-if="clusterData.categories?.usage">
-        <div class="content-card-header">
-          <div class="content-card-title">{{ clusterData.categories.usage.label }}</div>
-        </div>
-        <div class="content-card-body metrics-grid">
-          <div
-            v-for="m in clusterData.categories.usage.metrics"
-            :key="m.key"
-            class="metric-card"
-            :class="getUsageClass(m)"
-          >
-            <div class="metric-label">{{ m.label }}</div>
-            <div class="metric-value">
-              <span v-if="m.value !== null">{{ formatValue(m) }}</span>
-              <span v-else class="metric-null">-</span>
-            </div>
-            <template v-if="m.unit === '%' && m.value !== null">
-              <div :style="{ '--progress-color': progressColor(m.value) }">
-                <el-progress
-                  :percentage="Math.min(100, Math.round(m.value))"
-                  :show-text="false"
-                  :stroke-width="5"
-                  style="margin-top: 4px"
-                />
+          <div class="content-card-body metrics-grid">
+            <div
+              v-for="m in clusterData.categories[catKey].metrics"
+              :key="m.key"
+              class="metric-card"
+              :class="getMetricClass(catKey, m)"
+            >
+              <div class="metric-label">{{ m.label }}</div>
+              <div class="metric-value">
+                <span v-if="m.value !== null">{{ formatValue(m) }}</span>
+                <span v-else class="metric-null">-</span>
               </div>
-            </template>
-            <div v-else class="metric-unit">{{ m.unit }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── 节点状态 ── -->
-      <div class="content-card" v-if="clusterData.categories?.node_condition">
-        <div class="content-card-header">
-          <div class="content-card-title">{{ clusterData.categories.node_condition.label }}</div>
-          <div class="content-card-extra">
-            <el-tag type="success" v-if="allNodeCondNormal">全部正常</el-tag>
-            <el-tag type="danger" v-else>存在异常节点</el-tag>
-          </div>
-        </div>
-        <div class="content-card-body metrics-grid">
-          <div
-            v-for="m in clusterData.categories.node_condition.metrics"
-            :key="m.key"
-            class="metric-card"
-            :class="m.value > 0 ? 'metric-card--danger' : 'metric-card--ok'"
-          >
-            <div class="metric-label">{{ m.label }}</div>
-            <div class="metric-value">
-              <span v-if="m.value !== null">{{ m.value }}</span>
-              <span v-else class="metric-null">-</span>
+              <!-- 百分比进度条 -->
+              <template v-if="m.unit === '%' && m.value !== null && catKey === 'usage'">
+                <div :style="{ '--progress-color': progressColor(m.value) }">
+                  <el-progress
+                    :percentage="Math.min(100, Math.round(m.value))"
+                    :show-text="false"
+                    :stroke-width="5"
+                    style="margin-top: 4px"
+                  />
+                </div>
+              </template>
+              <div v-else class="metric-unit">{{ m.unit }}</div>
             </div>
-            <div class="metric-unit">{{ m.unit }}</div>
           </div>
         </div>
-      </div>
-
-      <!-- ── APIServer 健康 ── -->
-      <div class="content-card" v-if="clusterData.categories?.apiserver">
-        <div class="content-card-header">
-          <div class="content-card-title">{{ clusterData.categories.apiserver.label }}</div>
-        </div>
-        <div class="content-card-body metrics-grid">
-          <div
-            v-for="m in clusterData.categories.apiserver.metrics"
-            :key="m.key"
-            class="metric-card"
-            :class="getApiClass(m)"
-          >
-            <div class="metric-label">{{ m.label }}</div>
-            <div class="metric-value">
-              <span v-if="m.value !== null">{{ formatValue(m) }}</span>
-              <span v-else class="metric-null">-</span>
-            </div>
-            <div class="metric-unit">{{ m.unit }}</div>
-          </div>
-        </div>
-      </div>
+      </template>
     </template>
 
-    <!-- ── 趋势图区（独立于 clusterData，避免竞态）── -->
+    <!-- ── 趋势图区 ── -->
     <div class="content-card" v-if="selectedCluster">
       <div class="content-card-header">
         <div class="content-card-title">趋势图</div>
         <div class="content-card-extra">
-          <el-text type="info" size="small" v-if="lastRefreshTime">上次刷新：{{ lastRefreshTime }}</el-text>
+          <el-text type="info" size="small" v-if="lastRefreshTime">
+            上次刷新：{{ lastRefreshTime }}
+            <span v-if="autoRefreshSec > 0" style="margin-left:6px;color:#52c41a">● 自动刷新</span>
+          </el-text>
         </div>
       </div>
       <div class="content-card-body">
         <div v-if="loadingCharts" class="chart-loading">
           <el-skeleton :rows="4" animated />
         </div>
+        <div v-else-if="chartError" class="chart-empty">
+          <el-empty :description="chartError" :image-size="60" />
+        </div>
         <div v-else-if="chartsEmpty" class="chart-empty">
           <el-empty description="暂无趋势数据，请确认 Prometheus 可以正常查询" :image-size="80" />
         </div>
         <div v-else class="charts-grid">
           <div v-for="(chart, key) in chartData.charts" :key="key" class="chart-item">
-            <div class="chart-title">{{ chart.label }} <span class="chart-unit">{{ chart.unit }}</span></div>
+            <div class="chart-title" :style="{ borderLeft: `3px solid ${chartColor(key)}` }">
+              {{ chart.label }} <span class="chart-unit">{{ chart.unit }}</span>
+            </div>
             <div :ref="el => setChartRef(el, key)" class="chart-canvas"></div>
           </div>
         </div>
@@ -189,21 +207,46 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Monitor, Refresh } from '@element-plus/icons-vue'
+import { Monitor, Refresh, ArrowDown } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { getCCEClusters, getCCEMonitoringConfig, queryCCECluster, queryCCEClusterCharts } from '@/api/cceMonitoring'
+import { getCCEClusterDetail, downloadKubeconfig } from '@/api/cmdb'
+
+// category 展示顺序
+const CATEGORY_ORDER = ['basic', 'capacity', 'usage', 'node_condition', 'network', 'disk_io', 'load', 'components', 'apiserver']
+
+// P2：Datadog 调色板
+const DD_COLORS = ['#632ca6', '#00a4bd', '#e5a111', '#e5273b', '#00c984', '#9d66b7', '#0085c2', '#f2a900', '#c23b22', '#00875a']
+
+// 按图表 key 的插入顺序分配固定颜色
+const chartColorMap = {}
+let colorIndex = 0
+const chartColor = (key) => {
+  if (!(key in chartColorMap)) {
+    chartColorMap[key] = DD_COLORS[colorIndex % DD_COLORS.length]
+    colorIndex++
+  }
+  return chartColorMap[key]
+}
 
 // ── 状态 ──────────────────────────────────────────────────────────────────
 const clusterIds = ref([])
 const selectedCluster = ref('')
 const periodHours = ref(3)
 const step = ref('5m')
+const autoRefreshSec = ref(0)
 const clusterData = ref(null)
 const chartData = ref(null)
 const configError = ref('')
+const chartError = ref('')
 const lastRefreshTime = ref('')
 const loadingInstant = ref(false)
 const loadingCharts = ref(false)
+const clusterDetail = ref(null)
+const loadingDetail = ref(false)
+const downloadingKubeconfig = ref(false)
+
+let autoRefreshTimer = null
 
 // ── ECharts 实例管理 ──────────────────────────────────────────────────────
 const chartRefs = {}
@@ -218,9 +261,20 @@ const destroyCharts = () => {
   Object.keys(chartInstances).forEach(k => delete chartInstances[k])
 }
 
+const formatXLabel = (timestamp, totalHours) => {
+  const d = new Date(timestamp)
+  const hh = d.getHours().toString().padStart(2, '0')
+  const mm = d.getMinutes().toString().padStart(2, '0')
+  if (totalHours > 24) {
+    const mo = (d.getMonth() + 1).toString().padStart(2, '0')
+    const dd = d.getDate().toString().padStart(2, '0')
+    return `${mo}-${dd} ${hh}:${mm}`
+  }
+  return `${hh}:${mm}`
+}
+
 const renderCharts = async () => {
   if (!chartData.value?.charts) return
-  // 等两个 tick：第一个 tick 让 v-for DOM 创建，第二个 tick 确保 :ref 回调全部执行
   await nextTick()
   await nextTick()
   for (const [key, chart] of Object.entries(chartData.value.charts)) {
@@ -234,32 +288,33 @@ const renderCharts = async () => {
     const inst = echarts.init(el)
     chartInstances[key] = inst
 
-    const xData = chart.data.map(p => {
-      const d = new Date(p.timestamp)
-      return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-    })
+    const color = chartColor(key)
+    const xData = chart.data.map(p => formatXLabel(p.timestamp, periodHours.value))
     const yData = chart.data.map(p => p.value)
 
     inst.setOption({
-      grid: { top: 10, right: 16, bottom: 30, left: 48 },
+      grid: { top: 10, right: 16, bottom: 30, left: 52 },
       xAxis: {
         type: 'category',
         data: xData,
-        axisLabel: { fontSize: 10, interval: Math.floor(xData.length / 6) },
-        axisLine: { lineStyle: { color: '#ddd' } },
+        axisLabel: { fontSize: 10, interval: Math.floor(xData.length / 6), color: '#8c8c8c' },
+        axisLine: { lineStyle: { color: '#e0e0e0' } },
+        axisTick: { show: false },
       },
       yAxis: {
         type: 'value',
-        axisLabel: { fontSize: 10, formatter: v => chart.unit === '%' ? `${v}%` : v },
-        splitLine: { lineStyle: { color: '#f0f0f0' } },
+        axisLabel: { fontSize: 10, formatter: v => chart.unit === '%' ? `${v}%` : v, color: '#8c8c8c' },
+        splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+        axisLine: { show: false },
+        axisTick: { show: false },
       },
       series: [{
         type: 'line',
         data: yData,
-        smooth: true,
+        smooth: false,
         symbol: 'none',
-        lineStyle: { width: 2, color: '#1a73e8' },
-        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(26,115,232,0.15)' }, { offset: 1, color: 'rgba(26,115,232,0)' }] } },
+        lineStyle: { width: 1.5, color },
+        areaStyle: { color, opacity: 0.06 },
       }],
       tooltip: {
         trigger: 'axis',
@@ -288,8 +343,9 @@ const formatValue = (m) => {
   if (m.value === null) return '-'
   if (m.unit === '%') return m.value.toFixed(1)
   if (m.unit === 's') return m.value.toFixed(3)
+  if (m.unit === 'MB/s' || m.unit === 'GB') return m.value.toFixed(1)
   if (Number.isInteger(m.value)) return m.value
-  return m.value
+  return Number(m.value.toFixed(2))
 }
 
 const progressColor = (v) => {
@@ -298,21 +354,52 @@ const progressColor = (v) => {
   return '#67c23a'
 }
 
-const USAGE_KEYS = new Set(['cpu_usage_pct', 'memory_usage_pct', 'cpu_request_pct', 'memory_request_pct', 'disk_usage_pct'])
-const getUsageClass = (m) => {
-  if (!USAGE_KEYS.has(m.key) || m.value === null) return ''
-  if (m.value >= 90) return 'metric-card--danger'
-  if (m.value >= 75) return 'metric-card--warning'
-  return 'metric-card--ok'
-}
-
-const getApiClass = (m) => {
+const getMetricClass = (catKey, m) => {
   if (m.value === null) return ''
-  if (m.key === 'read_success_rate' || m.key === 'write_success_rate') {
-    if (m.value < 95) return 'metric-card--danger'
-    if (m.value < 99) return 'metric-card--warning'
+
+  if (catKey === 'basic') {
+    if (m.key === 'pod_failed' && m.value > 0) return 'metric-card--danger'
+    if (m.key === 'pod_pending' && m.value > 0) return 'metric-card--warning'
+    return ''
+  }
+
+  if (catKey === 'usage') {
+    if (m.unit !== '%') return ''
+    if (m.value >= 90) return 'metric-card--danger'
+    if (m.value >= 75) return 'metric-card--warning'
     return 'metric-card--ok'
   }
+
+  if (catKey === 'node_condition') {
+    return m.value > 0 ? 'metric-card--danger' : 'metric-card--ok'
+  }
+
+  if (catKey === 'apiserver') {
+    if (m.key === 'read_success_rate' || m.key === 'write_success_rate') {
+      if (m.value < 95) return 'metric-card--danger'
+      if (m.value < 99) return 'metric-card--warning'
+      return 'metric-card--ok'
+    }
+    if (m.key === 'get_p50_latency' || m.key === 'write_p50_latency') {
+      if (m.value > 5) return 'metric-card--danger'
+      if (m.value > 1) return 'metric-card--warning'
+      return 'metric-card--ok'
+    }
+    return ''
+  }
+
+  if (catKey === 'components') {
+    if (m.key === 'etcd_has_leader') return m.value === 0 ? 'metric-card--danger' : 'metric-card--ok'
+    if (m.key === 'etcd_leader_changes' && m.value > 3) return 'metric-card--warning'
+    if (m.key === 'pod_restarts_1h') {
+      if (m.value > 50) return 'metric-card--danger'
+      if (m.value > 10) return 'metric-card--warning'
+      return ''
+    }
+    if (m.key === 'pending_pods_unschedulable' && m.value > 0) return 'metric-card--warning'
+    return ''
+  }
+
   return ''
 }
 
@@ -343,18 +430,19 @@ const fetchInstant = async () => {
 const fetchCharts = async () => {
   if (!selectedCluster.value) return
   loadingCharts.value = true
+  chartError.value = ''
   destroyCharts()
   try {
     const resp = await queryCCEClusterCharts(selectedCluster.value, periodHours.value, step.value)
-    if (resp.success && !resp.data.error) {
+    if (resp.success && !resp.data?.error) {
       chartData.value = resp.data
-      // 先关闭 loading，让 charts-grid DOM 渲染出来，再初始化 ECharts
       loadingCharts.value = false
       await renderCharts()
       return
     }
-  } catch {
-    // 静默失败，趋势图不影响主面板
+    chartError.value = resp.data?.error || resp.error || '趋势图查询失败'
+  } catch (e) {
+    chartError.value = `趋势图查询异常：${e?.message || '未知错误'}`
   }
   loadingCharts.value = false
 }
@@ -367,11 +455,34 @@ const refresh = () => {
 const onClusterChange = () => {
   clusterData.value = null
   chartData.value = null
+  chartError.value = ''
   refresh()
+  fetchClusterDetail(selectedCluster.value)
 }
 
+// P1b：时间范围切换同时刷新指标卡片
 const onPeriodChange = () => {
+  fetchInstant()
   fetchCharts()
+}
+
+// P1a：自动刷新控制
+const startAutoRefresh = () => {
+  stopAutoRefresh()
+  if (autoRefreshSec.value > 0) {
+    autoRefreshTimer = setInterval(refresh, autoRefreshSec.value * 1000)
+  }
+}
+
+const stopAutoRefresh = () => {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer)
+    autoRefreshTimer = null
+  }
+}
+
+const onAutoRefreshChange = () => {
+  startAutoRefresh()
 }
 
 const fetchClusters = async () => {
@@ -382,10 +493,38 @@ const fetchClusters = async () => {
       if (clusterIds.value.length > 0) {
         selectedCluster.value = clusterIds.value[0]
         refresh()
+        fetchClusterDetail(clusterIds.value[0])
       }
     }
   } catch {
     ElMessage.error('获取集群列表失败')
+  }
+}
+
+const fetchClusterDetail = async (clusterId) => {
+  if (!clusterId) return
+  loadingDetail.value = true
+  clusterDetail.value = null
+  try {
+    const resp = await getCCEClusterDetail(clusterId)
+    if (resp.success) {
+      clusterDetail.value = resp.cluster
+    }
+  } catch {
+    // 静默：AK/SK 未配置时不报错，只是不展示集群信息
+  } finally {
+    loadingDetail.value = false
+  }
+}
+
+const handleDownloadKubeconfig = async (type) => {
+  downloadingKubeconfig.value = true
+  try {
+    await downloadKubeconfig(selectedCluster.value, type)
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.detail || 'KubeConfig 下载失败')
+  } finally {
+    downloadingKubeconfig.value = false
   }
 }
 
@@ -398,7 +537,6 @@ const fetchConfig = async () => {
   } catch { /* 静默 */ }
 }
 
-// ── 窗口 resize ───────────────────────────────────────────────────────────
 const handleResize = () => {
   Object.values(chartInstances).forEach(inst => inst?.resize())
 }
@@ -410,13 +548,13 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  stopAutoRefresh()
   destroyCharts()
   window.removeEventListener('resize', handleResize)
 })
 </script>
 
 <style scoped>
-/* 覆盖全局进度条颜色，让动态颜色生效 */
 :deep(.el-progress-bar__inner) {
   background: var(--progress-color, #67c23a) !important;
   background-image: none !important;
@@ -440,7 +578,7 @@ onBeforeUnmount(() => {
   transition: box-shadow 0.2s;
 }
 .metric-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-.metric-card--ok    { border-color: #b7eb8f; background: #f6ffed; }
+.metric-card--ok      { border-color: #b7eb8f; background: #f6ffed; }
 .metric-card--warning { border-color: #ffd591; background: #fffbe6; }
 .metric-card--danger  { border-color: #ffb8b8; background: #fff1f0; }
 
@@ -458,7 +596,6 @@ onBeforeUnmount(() => {
 .metric-null { font-size: 20px; color: #bbb; }
 .metric-unit { font-size: 11px; color: #999; }
 
-/* ── 趋势图 ── */
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
@@ -475,6 +612,7 @@ onBeforeUnmount(() => {
   font-weight: 500;
   color: #333;
   margin-bottom: 6px;
+  padding-left: 8px;
 }
 .chart-unit {
   font-size: 11px;
@@ -488,6 +626,33 @@ onBeforeUnmount(() => {
 .chart-loading, .chart-empty {
   padding: 20px 0;
 }
-
 .empty-hint { padding: 60px 0; }
+
+/* 集群信息卡片 */
+.cluster-info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px 16px;
+  padding: 12px 0 4px;
+}
+.cluster-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.info-label {
+  font-size: 11px;
+  color: var(--text-secondary, #8c8c8c);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.info-value {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.info-value.mono {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+}
 </style>

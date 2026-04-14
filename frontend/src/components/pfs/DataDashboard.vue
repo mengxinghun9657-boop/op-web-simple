@@ -392,36 +392,40 @@ const initChart = () => {
   }
 }
 
+const DD_COLORS = ['#632ca6', '#00a4bd', '#e5a111', '#e5273b', '#00c984', '#9d66b7', '#0085c8', '#f0a30a']
+
 // 更新分类图表
 const updateCategoryChart = (category) => {
   const chartInstance = chartInstances[category]
   if (!chartInstance) return
-  
+
   const categoryMetrics = metricsByCategory.value[category] || []
   if (categoryMetrics.length === 0) return
-  
+
   const series = []
   const legend = []
-  
-  categoryMetrics.forEach(metricResult => {
+
+  categoryMetrics.forEach((metricResult, idx) => {
     const dataPoints = metricResult.data_points || []
-    
+    const color = DD_COLORS[idx % DD_COLORS.length]
+
     const data = dataPoints.map(point => [
-      point.timestamp * 1000,  // 转换为毫秒
+      point.timestamp * 1000,
       point.value
     ])
-    
+
     legend.push(metricResult.zh_name)
-    
+
     series.push({
       name: metricResult.zh_name,
-      type: chartType.value,
+      type: chartType.value === 'area' ? 'line' : chartType.value,
       data: data,
-      smooth: true,
-      areaStyle: chartType.value === 'area' ? {} : undefined,
-      emphasis: {
-        focus: 'series'
-      }
+      smooth: false,
+      symbol: 'none',
+      lineStyle: { width: 1.5, color },
+      itemStyle: { color },
+      areaStyle: chartType.value === 'area' ? { color, opacity: 0.06 } : undefined,
+      emphasis: { focus: 'series' }
     })
   })
   
@@ -459,10 +463,17 @@ const updateCategoryChart = (category) => {
     },
     xAxis: {
       type: 'time',
-      boundaryGap: false
+      boundaryGap: false,
+      axisLabel: { color: '#8c8c8c' },
+      axisLine: { lineStyle: { color: '#e0e0e0' } },
+      axisTick: { show: false },
     },
     yAxis: {
-      type: 'value'
+      type: 'value',
+      axisLabel: { color: '#8c8c8c' },
+      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
     },
     series: series,
     dataZoom: [
@@ -474,7 +485,7 @@ const updateCategoryChart = (category) => {
       }
     ]
   }
-  
+
   chartInstance.setOption(option)
 }
 
@@ -499,8 +510,11 @@ const updateCompareChart = () => {
         name: `${metric.zh_name} (今天)`,
         type: 'line',
         data: todayData,
-        smooth: true,
-        itemStyle: { color: '#409EFF' },
+        smooth: false,
+        symbol: 'none',
+        lineStyle: { width: 1.5, color: '#632ca6' },
+        itemStyle: { color: '#632ca6' },
+        areaStyle: { color: '#632ca6', opacity: 0.06 },
         emphasis: { focus: 'series' }
       })
     }
@@ -518,9 +532,10 @@ const updateCompareChart = () => {
         name: `${metric.zh_name} (昨天)`,
         type: 'line',
         data: yesterdayData,
-        smooth: true,
-        itemStyle: { color: '#E6A23C' },
-        lineStyle: { type: 'dashed' },
+        smooth: false,
+        symbol: 'none',
+        lineStyle: { width: 1.5, color: '#e5a111', type: 'dashed' },
+        itemStyle: { color: '#e5a111' },
         emphasis: { focus: 'series' }
       })
     }
@@ -595,14 +610,21 @@ const updateCompareChart = () => {
       type: 'time',
       boundaryGap: false,
       axisLabel: {
+        color: '#8c8c8c',
         formatter: (value) => {
           const date = new Date(value)
           return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
         }
-      }
+      },
+      axisLine: { lineStyle: { color: '#e0e0e0' } },
+      axisTick: { show: false },
     },
     yAxis: {
-      type: 'value'
+      type: 'value',
+      axisLabel: { color: '#8c8c8c' },
+      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
     },
     series: series,
     dataZoom: [

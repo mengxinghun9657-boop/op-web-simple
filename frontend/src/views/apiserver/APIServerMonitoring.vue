@@ -80,25 +80,50 @@ const renderCharts = () => {
     tooltip: { trigger: 'axis' },
     legend: { data: ['critical', 'warning'] },
     grid: { left: '4%', right: '4%', bottom: '4%', top: 32, containLabel: true },
-    xAxis: { type: 'category', data: (overview.value.timeline || []).map(item => item.time) },
-    yAxis: { type: 'value' },
+    xAxis: {
+      type: 'category',
+      data: (overview.value.timeline || []).map(item => item.time),
+      axisLabel: { color: '#8c8c8c' },
+      axisLine: { lineStyle: { color: '#e0e0e0' } },
+      axisTick: { show: false },
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: '#8c8c8c' },
+      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
+    },
     series: [
-      { name: 'critical', type: 'line', data: (overview.value.timeline || []).map(item => item.critical), itemStyle: { color: '#ef4444' } },
-      { name: 'warning', type: 'line', data: (overview.value.timeline || []).map(item => item.warning), itemStyle: { color: '#f59e0b' } }
+      { name: 'critical', type: 'line', smooth: false, symbol: 'none', data: (overview.value.timeline || []).map(item => item.critical), lineStyle: { width: 1.5, color: '#e5273b' }, itemStyle: { color: '#e5273b' }, areaStyle: { color: '#e5273b', opacity: 0.06 } },
+      { name: 'warning', type: 'line', smooth: false, symbol: 'none', data: (overview.value.timeline || []).map(item => item.warning), lineStyle: { width: 1.5, color: '#e5a111' }, itemStyle: { color: '#e5a111' }, areaStyle: { color: '#e5a111', opacity: 0.06 } }
     ]
   })
 
   metricChart?.setOption({
     tooltip: { trigger: 'item' },
-    series: [{ type: 'pie', radius: ['42%', '70%'], data: overview.value.metric_distribution || [] }]
+    color: ['#e5273b', '#e5a111', '#00a4bd', '#632ca6', '#00c984', '#9d66b7'],
+    series: [{ type: 'pie', radius: ['42%', '70%'], data: overview.value.metric_distribution || [], itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 } }]
   })
 
   clusterChart?.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: '4%', right: '4%', bottom: '4%', top: 16, containLabel: true },
-    xAxis: { type: 'value' },
-    yAxis: { type: 'category', data: (overview.value.cluster_distribution || []).map(item => item.name) },
-    series: [{ type: 'bar', barMaxWidth: 22, data: (overview.value.cluster_distribution || []).map(item => item.value), itemStyle: { color: '#2563eb' } }]
+    xAxis: {
+      type: 'value',
+      axisLabel: { color: '#8c8c8c' },
+      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
+    },
+    yAxis: {
+      type: 'category',
+      data: (overview.value.cluster_distribution || []).map(item => item.name),
+      axisLabel: { color: '#8c8c8c' },
+      axisLine: { lineStyle: { color: '#e0e0e0' } },
+      axisTick: { show: false },
+    },
+    series: [{ type: 'bar', barMaxWidth: 22, data: (overview.value.cluster_distribution || []).map(item => item.value), itemStyle: { color: '#632ca6', borderRadius: [0, 3, 3, 0] } }]
   })
 }
 

@@ -30,7 +30,7 @@ body {
   font-family: var(--font-google);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
-  overflow: clip;
+  overflow: hidden;
 }
 
 /* ==================== 滚动条样式 ==================== */

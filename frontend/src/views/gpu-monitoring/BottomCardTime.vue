@@ -396,11 +396,12 @@ const renderCharts = () => {
 
   modelChart?.setOption({
     tooltip: { trigger: 'item', formatter: '{b}<br/>Bottom: {c} ({d}%)' },
+    color: ['#632ca6', '#00a4bd', '#e5a111', '#e5273b', '#00c984', '#9d66b7', '#0085c8', '#f0a30a'],
     series: [
       {
         type: 'pie',
         radius: ['42%', '70%'],
-        itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
+        itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
         label: { formatter: '{b}\n{c}' },
         data: modelData.map(item => ({ name: item.model, value: item.bottom }))
       }
@@ -410,18 +411,26 @@ const renderCharts = () => {
   namespaceChart?.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: '4%', right: '4%', bottom: '4%', top: 16, containLabel: true },
-    xAxis: { type: 'value' },
+    xAxis: {
+      type: 'value',
+      axisLabel: { color: '#8c8c8c' },
+      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
+    },
     yAxis: {
       type: 'category',
       data: namespaceData.map(item => item.namespace),
-      axisLabel: { width: 180, overflow: 'truncate' }
+      axisLabel: { color: '#8c8c8c', width: 180, overflow: 'truncate' },
+      axisLine: { lineStyle: { color: '#e0e0e0' } },
+      axisTick: { show: false },
     },
     series: [
       {
         type: 'bar',
         barMaxWidth: 22,
         data: namespaceData.map(item => item.total_bottom),
-        itemStyle: { color: '#3b82f6', borderRadius: [0, 6, 6, 0] }
+        itemStyle: { color: '#632ca6', borderRadius: [0, 3, 3, 0] }
       }
     ]
   })
@@ -445,18 +454,26 @@ const renderCharts = () => {
       }
     },
     grid: { left: '4%', right: '4%', bottom: '4%', top: 16, containLabel: true },
-    xAxis: { type: 'value' },
+    xAxis: {
+      type: 'value',
+      axisLabel: { color: '#8c8c8c' },
+      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
+    },
     yAxis: {
       type: 'category',
       data: podData.map(item => item.pod),
-      axisLabel: { width: 260, overflow: 'truncate' }
+      axisLabel: { color: '#8c8c8c', width: 260, overflow: 'truncate' },
+      axisLine: { lineStyle: { color: '#e0e0e0' } },
+      axisTick: { show: false },
     },
     series: [
       {
         type: 'bar',
         barMaxWidth: 20,
         data: podData.map(item => item.bottom),
-        itemStyle: { color: '#10b981', borderRadius: [0, 6, 6, 0] }
+        itemStyle: { color: '#00a4bd', borderRadius: [0, 3, 3, 0] }
       }
     ]
   })

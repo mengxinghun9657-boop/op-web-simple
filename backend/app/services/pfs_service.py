@@ -233,7 +233,12 @@ class PFSService:
         promql = promql.replace("$instanceId", instance_id)
         
         if level == "client" and client_id:
-            promql = promql.replace("$client", client_id)
+            # 精确匹配单个客户端，通配符才用正则匹配
+            if client_id == ".*":
+                promql = promql.replace("$client", client_id)
+            else:
+                # 将 ClientId=~"$client" 替换为精确匹配 ClientId="$client"
+                promql = promql.replace('ClientId=~"$client"', f'ClientId="{client_id}"')
         
         return promql
     

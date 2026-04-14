@@ -105,9 +105,6 @@ async def process_analysis(task_id: str, file_path: str, file_name: str):
                 'progress': 10
             }, f, indent=2, ensure_ascii=False)
         
-        # 同时更新内存状态（兼容性）
-        tasks_status[task_id].update({"status": "processing", "message": "正在分析中...", "progress": 10})
-        
         # 阶段2: 数据分析（30%）
         with open(result_file, 'w', encoding='utf-8') as f:
             json.dump({
@@ -140,13 +137,6 @@ async def process_analysis(task_id: str, file_path: str, file_name: str):
                     'progress': 100
                 }, f, indent=2, ensure_ascii=False)
             
-            # 更新内存状态（兼容性）
-            tasks_status[task_id].update({
-                "status": "completed",
-                "html_file": result.get('html_file'),
-                "message": "分析完成"
-            })
-            
             try:
                 from app.services.task_service import update_task_status
                 from app.models.task import TaskStatus
@@ -163,14 +153,7 @@ async def process_analysis(task_id: str, file_path: str, file_name: str):
                     'error': result.get('error'),
                     'message': '分析失败'
                 }, f, indent=2, ensure_ascii=False)
-            
-            # 更新内存状态（兼容性）
-            tasks_status[task_id].update({
-                "status": "failed",
-                "error": result.get('error'),
-                "message": "分析失败"
-            })
-            
+
             try:
                 from app.services.task_service import update_task_status
                 from app.models.task import TaskStatus
@@ -190,13 +173,6 @@ async def process_analysis(task_id: str, file_path: str, file_name: str):
                 'error': str(e),
                 'message': '分析异常'
             }, f, indent=2, ensure_ascii=False)
-        
-        # 更新内存状态（兼容性）
-        tasks_status[task_id].update({
-            "status": "failed",
-            "error": str(e),
-            "message": "分析异常"
-        })
         
         try:
             from app.services.task_service import update_task_status
@@ -227,9 +203,6 @@ async def process_api_analysis(task_id: str, request: AnalyzeAPIRequest):
                 'message': '正在获取数据并分析...',
                 'progress': 10
             }, f, indent=2, ensure_ascii=False)
-        
-        # 同时更新内存状态（兼容性）
-        tasks_status[task_id].update({"status": "processing", "message": "正在获取数据并分析...", "progress": 10})
         
         # 阶段2: 数据获取和分析（30%）
         with open(result_file, 'w', encoding='utf-8') as f:
@@ -272,14 +245,6 @@ async def process_api_analysis(task_id: str, request: AnalyzeAPIRequest):
                     'progress': 100
                 }, f, indent=2, ensure_ascii=False)
             
-            # 更新内存状态（兼容性）
-            tasks_status[task_id].update({
-                "status": "completed",
-                "html_file": result.get('html_file'),
-                "total_records": result.get('total_records'),
-                "message": "分析完成"
-            })
-            
             try:
                 from app.services.task_service import update_task_status
                 from app.models.task import TaskStatus
@@ -296,14 +261,7 @@ async def process_api_analysis(task_id: str, request: AnalyzeAPIRequest):
                     'error': result.get('error'),
                     'message': '分析失败'
                 }, f, indent=2, ensure_ascii=False)
-            
-            # 更新内存状态（兼容性）
-            tasks_status[task_id].update({
-                "status": "failed",
-                "error": result.get('error'),
-                "message": "分析失败"
-            })
-            
+
             try:
                 from app.services.task_service import update_task_status
                 from app.models.task import TaskStatus
@@ -312,7 +270,7 @@ async def process_api_analysis(task_id: str, request: AnalyzeAPIRequest):
                 logger.warning(f"[{task_id}] 更新API分析任务失败状态到数据库失败: {db_error}")
     except Exception as e:
         logger.error(f"API 分析任务异常: {e}")
-        
+
         # 保存异常到文件
         import json
         with open(result_file, 'w', encoding='utf-8') as f:
@@ -323,13 +281,13 @@ async def process_api_analysis(task_id: str, request: AnalyzeAPIRequest):
                 'error': str(e),
                 'message': '分析异常'
             }, f, indent=2, ensure_ascii=False)
-        
-        # 更新内存状态（兼容性）
-        tasks_status[task_id].update({
-            "status": "failed",
-            "error": str(e),
-            "message": "分析异常"
-        })
+
+        try:
+            from app.services.task_service import update_task_status
+            from app.models.task import TaskStatus
+            update_task_status(task_id, TaskStatus.FAILED, error_message=str(e))
+        except Exception as db_error:
+            logger.warning(f"[{task_id}] 更新API分析任务失败状态到数据库失败: {db_error}")
 
 
 @router.post("/analyze", response_model=TaskResponse)

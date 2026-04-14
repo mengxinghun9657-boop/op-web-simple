@@ -396,8 +396,7 @@ class APIServerAlertService:
             }
         else:
             payload = {"group_id": webhook.group_id, "msg": f"{title}\n{content}"}
-        with httpx.Client(timeout=20) as client:
-            client.post(webhook.url, json=payload)
+        requests.post(webhook.url, json=payload, timeout=20)
 
     def list_alerts(self, page: int, page_size: int, cluster_id: Optional[str], severity: Optional[str], status: Optional[str]) -> Dict[str, Any]:
         query = self.db.query(APIServerAlertRecord).order_by(APIServerAlertRecord.updated_at.desc())

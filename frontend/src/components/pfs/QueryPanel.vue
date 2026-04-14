@@ -55,6 +55,7 @@
           placeholder="请选择 PFS 集群"
           style="width: 100%;"
           :loading="loadingConfig"
+          @change="handleInstanceChange"
         >
           <el-option
             v-for="id in pfsInstanceIds"
@@ -215,6 +216,7 @@ const queryForm = ref({
 // PFS 集群 ID 列表
 const pfsInstanceIds = ref([])
 const loadingConfig = ref(false)
+const pfsRegion = ref('cd')
 
 // 指标数据
 const metricsByCategory = ref({})
@@ -255,6 +257,7 @@ const loadPFSConfig = async () => {
         pfsIds = [config.pfs_instance_id]
       }
       pfsInstanceIds.value = pfsIds.length ? pfsIds : ['pfs-mTYGr6']
+      pfsRegion.value = config.region || 'cd'
       
       // 如果没有选择集群ID，默认选择第一个
       if (!queryForm.value.instanceId && pfsInstanceIds.value.length > 0) {
@@ -290,9 +293,11 @@ const loadMetrics = async () => {
 
 // 加载客户端列表
 const loadClients = async () => {
+  if (!queryForm.value.instanceId) return
   loadingClients.value = true
+  clients.value = []
   try {
-    const response = await pfsApi.getClients()
+    const response = await pfsApi.getClients(pfsRegion.value, queryForm.value.instanceId)
     if (response.success) {
       clients.value = response.data
     }
@@ -327,6 +332,14 @@ const handleClearAll = () => {
   queryForm.value.metrics = []
   emit('update:metrics', [])
   ElMessage.info('已清空选择')
+}
+
+// 处理集群切换
+const handleInstanceChange = (value) => {
+  emit('update:instanceId', value)
+  if (queryForm.value.level === 'client') {
+    loadClients()
+  }
 }
 
 // 处理级别变化
@@ -423,6 +436,9 @@ watch(() => props.level, (value) => {
 
 watch(() => props.instanceId, (value) => {
   queryForm.value.instanceId = value
+  if (queryForm.value.level === 'client') {
+    loadClients()
+  }
 })
 
 watch(() => props.clientId, (value) => {

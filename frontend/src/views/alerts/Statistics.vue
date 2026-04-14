@@ -259,35 +259,48 @@ const renderTrendChart = (data) => {
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: dates
+      data: dates,
+      axisLabel: { color: '#8c8c8c' },
+      axisLine: { lineStyle: { color: '#e0e0e0' } },
+      axisTick: { show: false },
     },
     yAxis: {
-      type: 'value'
+      type: 'value',
+      axisLabel: { color: '#8c8c8c' },
+      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
     },
     series: [
       {
         name: 'Critical',
         type: 'line',
-        smooth: true,
+        smooth: false,
+        symbol: 'none',
         data: critical,
-        itemStyle: { color: '#F56C6C' },
-        areaStyle: { opacity: 0.2 }
+        lineStyle: { width: 1.5, color: '#e5273b' },
+        itemStyle: { color: '#e5273b' },
+        areaStyle: { color: '#e5273b', opacity: 0.06 }
       },
       {
         name: 'Warning',
         type: 'line',
-        smooth: true,
+        smooth: false,
+        symbol: 'none',
         data: warning,
-        itemStyle: { color: '#E6A23C' },
-        areaStyle: { opacity: 0.2 }
+        lineStyle: { width: 1.5, color: '#e5a111' },
+        itemStyle: { color: '#e5a111' },
+        areaStyle: { color: '#e5a111', opacity: 0.06 }
       },
       {
         name: 'Info',
         type: 'line',
-        smooth: true,
+        smooth: false,
+        symbol: 'none',
         data: info,
-        itemStyle: { color: '#409EFF' },
-        areaStyle: { opacity: 0.2 }
+        lineStyle: { width: 1.5, color: '#00a4bd' },
+        itemStyle: { color: '#00a4bd' },
+        areaStyle: { color: '#00a4bd', opacity: 0.06 }
       }
     ]
   }
@@ -307,6 +320,7 @@ const renderDistributionChart = (data) => {
   }))
   
   const option = {
+    color: ['#e5273b', '#e5a111', '#00a4bd', '#632ca6', '#00c984', '#9d66b7'],
     tooltip: {
       trigger: 'item',
       formatter: '{b}: {c} ({d}%)'
@@ -415,40 +429,47 @@ const renderTopNodesChart = (data) => {
       containLabel: true
     },
     xAxis: {
-      type: 'value'
+      type: 'value',
+      axisLabel: { color: '#8c8c8c' },
+      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
     },
     yAxis: {
       type: 'category',
       data: nodes,
       axisLabel: {
+        color: '#8c8c8c',
         width: 180,
         overflow: 'truncate'
-      }
+      },
+      axisLine: { lineStyle: { color: '#e0e0e0' } },
+      axisTick: { show: false },
     },
     series: [
       {
         name: 'Critical',
         type: 'bar',
         stack: 'total',
-        barMaxWidth: 28,
+        barMaxWidth: 24,
         data: critical,
-        itemStyle: { color: '#F56C6C' }
+        itemStyle: { color: '#e5273b', borderRadius: [0, 0, 0, 0] }
       },
       {
         name: 'Warning',
         type: 'bar',
         stack: 'total',
-        barMaxWidth: 28,
+        barMaxWidth: 24,
         data: warning,
-        itemStyle: { color: '#E6A23C' }
+        itemStyle: { color: '#e5a111' }
       },
       {
         name: '其他',
         type: 'bar',
         stack: 'total',
-        barMaxWidth: 28,
+        barMaxWidth: 24,
         data: total.map((t, i) => t - critical[i] - warning[i]),
-        itemStyle: { color: '#409EFF' }
+        itemStyle: { color: '#00a4bd' }
       }
     ]
   }

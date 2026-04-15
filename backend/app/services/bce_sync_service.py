@@ -67,11 +67,15 @@ def _make_cce_signed_session(access_key: str, secret_key: str):
                 hashlib.sha256
             ).hexdigest()
 
+            # 注入 x-bce-date header（BOS 强制要求）
+            r.headers['x-bce-date'] = now
+
             parsed = urlparse(r.url)
             canonical_uri = quote(parsed.path or '/', safe='/-_.~')
-            # 只签 host header
-            signed_headers = 'host'
-            canonical_headers = f"host:{parsed.netloc.split(':')[0]}"
+            # 签 host + x-bce-date
+            host_val = parsed.netloc.split(':')[0]
+            signed_headers = 'host;x-bce-date'
+            canonical_headers = f"host:{host_val}\nx-bce-date:{now}"
             qs = parsed.query or ''
             # 对 query string 参数按 key 排序规范化
             if qs:

@@ -247,16 +247,16 @@ async def list_servers(
                 bce_ips = set()
                 # 匹配 BCC 实例名、实例ID、IP
                 _cur.execute(
-                    "SELECT `主ipv4私网地址` FROM `bce_bcc_instances`"
-                    " WHERE `主ipv4私网地址` LIKE %s OR `名称` LIKE %s OR `bcc_id` LIKE %s"
+                    "SELECT `内网ip` FROM `bce_bcc_instances`"
+                    " WHERE `内网ip` LIKE %s OR `名称` LIKE %s OR `bcc_id` LIKE %s"
                     " LIMIT 200",
                     (f'%{kw}%', f'%{kw}%', f'%{kw}%')
                 )
                 bce_ips.update(r[0] for r in _cur.fetchall() if r[0])
                 # 匹配 CCE 节点名、IP
                 _cur.execute(
-                    "SELECT `ip地址` FROM `bce_cce_nodes`"
-                    " WHERE `ip地址` LIKE %s OR `节点名称` LIKE %s"
+                    "SELECT `内网ip` FROM `bce_cce_nodes`"
+                    " WHERE `内网ip` LIKE %s OR `节点名称` LIKE %s"
                     " LIMIT 200",
                     (f'%{kw}%', f'%{kw}%')
                 )
@@ -417,15 +417,15 @@ async def list_instances(
                 _conn = get_db_connection()
                 _cur = _conn.cursor()
                 _cur.execute(
-                    "SELECT `主ipv4私网地址` FROM `bce_bcc_instances`"
-                    " WHERE `主ipv4私网地址` LIKE %s OR `名称` LIKE %s OR `bcc_id` LIKE %s"
+                    "SELECT `内网ip` FROM `bce_bcc_instances`"
+                    " WHERE `内网ip` LIKE %s OR `名称` LIKE %s OR `bcc_id` LIKE %s"
                     " LIMIT 200",
                     (f'%{kw}%', f'%{kw}%', f'%{kw}%')
                 )
                 bce_ips.update(r[0] for r in _cur.fetchall() if r[0])
                 _cur.execute(
-                    "SELECT `ip地址` FROM `bce_cce_nodes`"
-                    " WHERE `ip地址` LIKE %s OR `节点名称` LIKE %s"
+                    "SELECT `内网ip` FROM `bce_cce_nodes`"
+                    " WHERE `内网ip` LIKE %s OR `节点名称` LIKE %s"
                     " LIMIT 200",
                     (f'%{kw}%', f'%{kw}%')
                 )
@@ -1039,8 +1039,8 @@ async def get_server_bce_context(
 
     关联逻辑：
     - 收集该服务器下所有实例的私网 IP（nova_vm_fixed_ips）
-    - 用这批 IP 在 bce_bcc_instances 中匹配 `主ipv4私网地址`
-    - 同时在 bce_cce_nodes 中匹配 `ip地址`，获取所属集群 ID
+    - 用这批 IP 在 bce_bcc_instances 中匹配 `内网ip`
+    - 同时在 bce_cce_nodes 中匹配 `内网ip`，获取所属集群 ID
     """
     from app.core.database import get_db_connection
 
@@ -1093,7 +1093,7 @@ async def get_server_bce_context(
             placeholders = ','.join(['%s'] * len(ip_list))
             cursor.execute(
                 f"SELECT * FROM `bce_bcc_instances`"
-                f" WHERE `主ipv4私网地址` IN ({placeholders})"
+                f" WHERE `内网ip` IN ({placeholders})"
                 f" ORDER BY `collect_date` DESC",
                 ip_list
             )
@@ -1107,7 +1107,7 @@ async def get_server_bce_context(
             placeholders = ','.join(['%s'] * len(ip_list))
             cursor.execute(
                 f"SELECT * FROM `bce_cce_nodes`"
-                f" WHERE `ip地址` IN ({placeholders})"
+                f" WHERE `内网ip` IN ({placeholders})"
                 f" ORDER BY `collect_date` DESC",
                 ip_list
             )
@@ -1281,6 +1281,95 @@ async def cce_list_instances(
     if not result["success"]:
         raise HTTPException(status_code=502, detail=result["error"])
     return result
+
+
+@router.get("/bcc/instance-ids", summary="BCC 实例 ID 列表（轻量）")
+async def bcc_get_instance_ids(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """从 BCE API 实时获取 BCC 实例列表，返回 ID 数组，供监控配置同步使用"""
+    from app.services.bce_sync_service import BCESyncService, _BCCApiClient
+    svc = BCESyncService(db)
+    ak, sk = svc.get_credentials()
+    if not ak or not sk:
+        raise HTTPException(status_code=400, detail="未配置 BCE Access Key / Secret Key，请先在 BCE 同步配置中填写")
+    region = svc.get_region()
+    result = _BCCApiClient(ak, sk, region).list_all_instances()
+    if not result["success"]:
+        raise HTTPException(status_code=502, detail=f"BCC API 调用失败: {result['error']}")
+    ids = [inst["BCC_ID"] for inst in result["instances"] if inst.get("BCC_ID")]
+    return {"success": True, "instance_ids": ids, "count": len(ids)}
+
+
+@router.get("/eip/instance-ids", summary="EIP 实例 ID 列表（轻量）")
+async def eip_get_instance_ids(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """从 BCE API 实时获取 EIP 列表，返回 eipId 数组，供监控配置同步使用"""
+    from app.services.bce_sync_service import BCESyncService
+    from baidubce.bce_client_configuration import BceClientConfiguration
+    from baidubce.auth.bce_credentials import BceCredentials
+    from baidubce.services.eip.eip_client import EipClient
+
+    svc = BCESyncService(db)
+    ak, sk = svc.get_credentials()
+    if not ak or not sk:
+        raise HTTPException(status_code=400, detail="未配置 BCE Access Key / Secret Key，请先在 BCE 同步配置中填写")
+    region = svc.get_region()
+    endpoint = f"eip.{region}.baidubce.com"
+
+    all_ids = []
+    marker = None
+    try:
+        config = BceClientConfiguration(credentials=BceCredentials(ak, sk), endpoint=endpoint)
+        client = EipClient(config)
+        while True:
+            resp = client.list_eips(max_keys=1000, marker=marker)
+            for item in resp.eip_list:
+                eip_id = getattr(item, 'eip_id', None) or getattr(item, 'id', None)
+                if eip_id:
+                    all_ids.append(eip_id)
+            if not resp.is_truncated:
+                break
+            marker = resp.next_marker
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"EIP API 调用失败: {str(e)}")
+
+    return {"success": True, "instance_ids": all_ids, "count": len(all_ids)}
+
+
+@router.get("/bos/bucket-names", summary="BOS Bucket 名称列表（轻量）")
+async def bos_get_bucket_names(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """从 BCE API 实时获取 BOS Bucket 列表，返回 name 数组，供监控配置同步使用"""
+    from app.services.bce_sync_service import BCESyncService
+    from baidubce.bce_client_configuration import BceClientConfiguration
+    from baidubce.auth.bce_credentials import BceCredentials
+    from baidubce.services.bos.bos_client import BosClient
+
+    svc = BCESyncService(db)
+    ak, sk = svc.get_credentials()
+    if not ak or not sk:
+        raise HTTPException(status_code=400, detail="未配置 BCE Access Key / Secret Key，请先在 BCE 同步配置中填写")
+    region = svc.get_region()
+    endpoint = f"{region}.bcebos.com"
+
+    try:
+        config = BceClientConfiguration(
+            credentials=BceCredentials(ak, sk),
+            endpoint=endpoint
+        )
+        client = BosClient(config)
+        resp = client.list_buckets()
+        names = [b.name for b in resp.buckets if b.name]
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"BOS API 调用失败: {str(e)}")
+
+    return {"success": True, "bucket_names": names, "count": len(names)}
 
 
 @router.get("/cce/cluster/{cluster_id}/kubeconfig", summary="下载集群 KubeConfig")

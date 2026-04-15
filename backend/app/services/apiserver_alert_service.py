@@ -294,8 +294,8 @@ class APIServerAlertService:
                     record.labels = {"cluster_id": cluster_id}
                     record.last_seen_at = datetime.now()
                     record.resolved_at = None
-                    if not record.notified:
-                        record.notified = "false"
+                    # 每次检测到告警都重置为待通知，确保每次扫描都发送通知
+                    record.notified = "false"
 
             if cluster_ids:
                 unresolved = db.query(APIServerAlertRecord).filter(

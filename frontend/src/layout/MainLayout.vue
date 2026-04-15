@@ -168,11 +168,7 @@
 
       <!-- 内容区 -->
       <div class="main-content">
-        <router-view v-slot="{ Component, route }">
-          <transition name="page-fade" mode="out-in">
-            <component :is="Component" :key="route.path" />
-          </transition>
-        </router-view>
+        <router-view :key="$route.path" />
       </div>
     </main>
   </div>

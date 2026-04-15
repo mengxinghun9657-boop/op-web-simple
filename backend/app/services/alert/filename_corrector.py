@@ -49,9 +49,9 @@ class FilenameCorrectorService:
 
         try:
             cursor = conn.cursor()
-            # 查询bce_cce_nodes表，通过节点名称（IP）获取cluster_id
+            # 查询bce_cce_nodes表，通过内网IP获取cluster_id
             cursor.execute(
-                "SELECT cluster_id FROM bce_cce_nodes WHERE `节点名称`=%s LIMIT 1",
+                "SELECT cluster_id FROM bce_cce_nodes WHERE `内网ip`=%s LIMIT 1",
                 (ip,)
             )
             result = cursor.fetchone()

@@ -30,16 +30,26 @@
             :disabled="!isAdmin"
           />
         </div>
-        <el-button 
-          type="primary" 
-          @click="saveResourceConfig" 
-          :loading="saving"
-          :disabled="!isAdmin"
-          class="save-button"
-        >
-          <el-icon><Check /></el-icon>
-          保存配置
-        </el-button>
+        <div class="action-row">
+          <el-button
+            type="success"
+            @click="syncFromCCEApi"
+            :loading="syncing"
+            :disabled="!isAdmin"
+          >
+            <el-icon><Refresh /></el-icon>
+            从 CCE API 同步
+          </el-button>
+          <el-button
+            type="primary"
+            @click="saveResourceConfig"
+            :loading="saving"
+            :disabled="!isAdmin"
+          >
+            <el-icon><Check /></el-icon>
+            保存配置
+          </el-button>
+        </div>
       </div>
     </div>
 
@@ -85,8 +95,9 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Cpu, List, Check, InfoFilled, QuestionFilled, Lock, Edit } from '@element-plus/icons-vue'
+import { Cpu, List, Check, InfoFilled, QuestionFilled, Lock, Edit, Refresh } from '@element-plus/icons-vue'
 import * as configApi from '@/api/config'
+import { getCCEClusterIds } from '@/api/cmdb'
 
 // 用户权限
 const user = computed(() => JSON.parse(localStorage.getItem('user') || '{}'))
@@ -97,6 +108,7 @@ const resourceConfig = ref({ text: '', ids: [], description: '' })
 
 // 保存状态
 const saving = ref(false)
+const syncing = ref(false)
 
 // 监听文本变化，更新ID数组
 watch(() => resourceConfig.value.text, (newText) => {
@@ -123,6 +135,29 @@ const loadConfig = async () => {
     }
   } catch (error) {
     // Silent error handling
+  }
+}
+
+// 从 CCE API 同步集群 ID
+const syncFromCCEApi = async () => {
+  if (!isAdmin.value) {
+    ElMessage.warning('仅管理员可以修改配置')
+    return
+  }
+  syncing.value = true
+  try {
+    const res = await getCCEClusterIds()
+    const ids = res.data?.cluster_ids || res.cluster_ids || []
+    if (ids.length === 0) {
+      ElMessage.warning('CCE API 未返回集群ID，请确认 AK/SK 已配置')
+      return
+    }
+    resourceConfig.value.text = ids.join('\n')
+    ElMessage.success(`已从 CCE API 同步 ${ids.length} 个集群ID，请点击保存配置`)
+  } catch (error) {
+    ElMessage.error('从 CCE API 获取失败：' + (error.response?.data?.detail || error.message) + '，已保留原有配置')
+  } finally {
+    syncing.value = false
   }
 }
 
@@ -290,12 +325,14 @@ onMounted(() => {
 }
 
 /* 增强按钮样式 */
-.save-button {
-  width: 100%;
+.action-row {
+  display: flex;
+  gap: var(--spacing-3);
   margin-top: var(--spacing-4);
 }
 
-.config-section :deep(.el-button) {
+.action-row .el-button {
+  flex: 1;
   height: 44px;
   font-size: var(--font-size-base);
   font-weight: 600;
@@ -303,17 +340,13 @@ onMounted(() => {
   transition: var(--transition-all);
 }
 
-.config-section :deep(.el-button:hover) {
+.action-row .el-button:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-lg);
 }
 
-.config-section :deep(.el-button:active) {
+.action-row .el-button:active {
   transform: translateY(0);
-}
-
-.config-section :deep(.el-button .el-icon) {
-  font-size: 18px;
 }
 
 /* 配置说明 - 增强视觉效果 */

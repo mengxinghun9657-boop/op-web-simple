@@ -195,10 +195,11 @@ const handleQuery = async () => {
       }
 
       const response = await pfsApi.queryMetrics(request)
-      
+
       if (response.success) {
         metricsData.value = response.data
-        ElMessage.success(`查询成功，共 ${response.data.length} 个指标`)
+        console.log('[PFS] 查询结果:', response.message)
+        ElMessage.success(response.message || `查询成功，共 ${response.data.length} 个指标`)
       } else {
         ElMessage.error(response.error || '查询失败')
       }

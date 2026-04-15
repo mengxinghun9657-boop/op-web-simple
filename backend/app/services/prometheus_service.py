@@ -34,28 +34,22 @@ class PrometheusService:
             查询结果值，失败返回None
         """
         try:
-            if self.config.use_direct_api():
-                url = f"{self.config.get_base_url().rstrip('/')}/api/v1/query"
-            else:
-                url = f"{self.config.get_base_url()}/api/datasources/proxy/{self.config.get_datasource_id()}/api/v1/query"
-
+            url = f"{self.config.get_base_url().rstrip('/')}/api/v1/query"
             params = {
                 'query': query,
                 'time': query_time or int(time.time())
             }
 
-            cookies = self.config.get_cookies()
-            if not self.config.use_direct_api() and not cookies:
-                logger.warning("⚠️  Prometheus Cookie 未配置，请在资源分析页面配置 Cookie")
+            if not self.config.config.get("token"):
+                logger.warning("⚠️  Prometheus Token 未配置，请在系统配置中填写 Token")
                 return None
 
             response = requests.get(
                 url,
                 headers=self.config.get_headers(),
-                cookies=cookies if not self.config.use_direct_api() else None,
                 params=params,
                 timeout=30,
-                verify=False  # 内网环境跳过SSL证书验证
+                verify=False
             )
 
             if response.status_code == 200:
@@ -65,24 +59,19 @@ class PrometheusService:
                 else:
                     logger.warning(f"查询无结果: {query[:100]}...")
             elif response.status_code == 401:
-                logger.error(f"❌ Cookie 已过期或无效，状态码: 401，请在资源分析页面重新配置 Cookie")
+                logger.error("❌ Token 已过期或无效（401），请在系统配置中重新填写 Token")
             elif response.status_code == 403:
-                logger.error(f"❌ 权限不足，状态码: 403，请检查 Cookie 对应账号的权限")
+                logger.error("❌ 权限不足（403），请检查 Token 对应账号的权限")
             else:
                 logger.warning(f"查询失败，状态码: {response.status_code}, 查询: {query[:100]}...")
 
             return None
 
-        except requests.exceptions.SSLError as e:
-            logger.error(f"❌ SSL 连接错误: {str(e)[:200]}")
-            logger.error(f"   提示: 如果在内网环境，这通常是 Cookie 认证失败导致")
-            return None
         except requests.exceptions.ConnectionError as e:
             logger.error(f"❌ 网络连接错误: {str(e)[:200]}")
-            logger.error(f"   提示: 请检查网络连接和代理配置")
             return None
-        except requests.exceptions.Timeout as e:
-            logger.error(f"❌ 请求超时: {str(e)[:200]}")
+        except requests.exceptions.Timeout:
+            logger.error("❌ 请求超时")
             return None
         except Exception as e:
             logger.error(f"查询指标失败: {query[:100]}..., 错误: {str(e)[:200]}")

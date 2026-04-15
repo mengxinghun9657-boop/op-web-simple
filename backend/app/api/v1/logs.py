@@ -1,13 +1,14 @@
 """
 容器日志 API
-提供实时容器日志流功能
+提供实时容器日志流功能和 Web Terminal 功能
 """
 
 import asyncio
+import json
 import subprocess
 import threading
 import queue
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -195,3 +196,156 @@ def get_container_description(container_key: str) -> str:
         "frontend": "前端 Nginx 服务日志"
     }
     return descriptions.get(container_key, "未知服务")
+
+
+# 各容器优先使用的 shell（bash > sh）
+CONTAINER_SHELLS = {
+    "backend": ["/bin/bash", "/bin/sh"],
+    "backend_worker": ["/bin/bash", "/bin/sh"],
+    "mysql": ["/bin/bash", "/bin/sh"],
+    "redis": ["/bin/sh"],
+    "minio": ["/bin/sh"],
+    "frontend": ["/bin/sh"],
+}
+
+
+@router.websocket("/exec/{container_name}")
+async def exec_container_terminal(
+    websocket: WebSocket,
+    container_name: str,
+    token: str = Query(..., description="认证令牌"),
+    db: Session = Depends(get_db)
+):
+    """
+    WebSocket 容器终端 (Web Terminal)
+
+    需要管理员权限，通过 URL query 参数传递 token。
+
+    前端协议：
+    - 普通输入：直接发送字符串（透传给 pty stdin）
+    - 调整终端大小：发送 JSON {"type": "resize", "cols": N, "rows": N}
+    """
+    # 验证 token + 管理员权限
+    try:
+        current_user = get_current_user(credentials=None, db=db, token=token)
+        if current_user.role not in ['super_admin', 'admin']:
+            await websocket.close(code=4003, reason="需要管理员权限")
+            return
+    except Exception:
+        await websocket.close(code=4001, reason="认证失败")
+        return
+
+    # 验证容器名
+    if container_name not in ALLOWED_CONTAINERS:
+        await websocket.close(code=4004, reason=f"无效的容器名称")
+        return
+
+    actual_container = ALLOWED_CONTAINERS[container_name]
+    shells = CONTAINER_SHELLS.get(container_name, ["/bin/sh"])
+
+    await websocket.accept()
+
+    # 确定可用的 shell
+    shell = shells[0]
+    if len(shells) > 1:
+        # 检查 bash 是否存在
+        check = subprocess.run(
+            ["docker", "exec", actual_container, "which", "bash"],
+            capture_output=True, timeout=3
+        )
+        if check.returncode != 0:
+            shell = "/bin/sh"
+
+    try:
+        import ptyprocess
+    except ImportError:
+        await websocket.send_text("\r\n[错误] 服务器未安装 ptyprocess，无法启动终端\r\n")
+        await websocket.close()
+        return
+
+    # 启动 pty 进程
+    try:
+        pty_proc = ptyprocess.PtyProcess.spawn(
+            ["docker", "exec", "-it", actual_container, shell],
+            dimensions=(24, 80)
+        )
+    except Exception as e:
+        await websocket.send_text(f"\r\n[错误] 启动终端失败: {e}\r\n")
+        await websocket.close()
+        return
+
+    loop = asyncio.get_event_loop()
+    stop_event = asyncio.Event()
+
+    async def pty_to_ws():
+        """pty 输出 → WebSocket"""
+        while not stop_event.is_set():
+            try:
+                data = await loop.run_in_executor(None, lambda: _read_pty(pty_proc))
+                if data is None:
+                    break
+                await websocket.send_bytes(data)
+            except Exception:
+                break
+        stop_event.set()
+
+    def _read_pty(pty_proc):
+        """同步读取 pty（在 executor 中运行）"""
+        try:
+            return pty_proc.read(4096)
+        except EOFError:
+            return None
+        except Exception:
+            return None
+
+    # 启动 pty → ws 转发任务
+    pty_task = asyncio.create_task(pty_to_ws())
+
+    try:
+        while not stop_event.is_set():
+            try:
+                data = await asyncio.wait_for(websocket.receive(), timeout=0.1)
+            except asyncio.TimeoutError:
+                # 检查 pty 是否还活着
+                if not pty_proc.isalive():
+                    break
+                continue
+            except (WebSocketDisconnect, RuntimeError):
+                break
+
+            if "bytes" in data:
+                raw = data["bytes"]
+            elif "text" in data:
+                raw = data["text"]
+            else:
+                continue
+
+            # 判断是否为 resize 指令
+            if isinstance(raw, (str, bytes)):
+                text = raw if isinstance(raw, str) else raw.decode("utf-8", errors="ignore")
+                if text.startswith("{") and '"type"' in text:
+                    try:
+                        msg = json.loads(text)
+                        if msg.get("type") == "resize":
+                            cols = int(msg.get("cols", 80))
+                            rows = int(msg.get("rows", 24))
+                            pty_proc.setwinsize(rows, cols)
+                        continue
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+                # 普通输入写入 pty
+                try:
+                    if isinstance(raw, str):
+                        pty_proc.write(raw.encode("utf-8"))
+                    else:
+                        pty_proc.write(raw)
+                except Exception:
+                    break
+
+    finally:
+        stop_event.set()
+        pty_task.cancel()
+        try:
+            pty_proc.terminate(force=True)
+        except Exception:
+            pass

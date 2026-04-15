@@ -167,7 +167,7 @@ class PFSService:
                 )
                 
                 logger.info(f"🔍 查询指标：{metric_name}, PromQL: {promql}")
-                
+
                 # 调用 Prometheus API
                 prom_results = self.pfs_client.query_range(
                     promql=promql,
@@ -175,6 +175,8 @@ class PFSService:
                     end_ts=request.end_time,
                     step=request.step
                 )
+
+                logger.info(f"📊 Prometheus 返回 {len(prom_results)} 条 series，client_id={request.client_id}")
                 
                 # 解析结果
                 metric_result = self._parse_results(

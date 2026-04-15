@@ -137,14 +137,29 @@ async def query_metrics(
     try:
         pfs_service = PFSService(db)
         results = pfs_service.query_metrics_with_cache(request, use_cache=True)
-        
+
         # 转换为可序列化的格式
         serializable_results = [result.dict() for result in results]
-        
+
+        # 统计客户端数量（用于调试）
+        all_client_ids = set()
+        total_points = 0
+        for r in results:
+            for pt in r.data_points:
+                total_points += 1
+                cid = pt.client_id or (pt.labels.get("ClientId") if pt.labels else None)
+                if cid:
+                    all_client_ids.add(cid)
+
+        msg = f"查询成功，共 {len(results)} 个指标，{total_points} 个数据点"
+        if all_client_ids:
+            msg += f"，{len(all_client_ids)} 个客户端: {sorted(all_client_ids)}"
+        logger.info(f"📋 {msg}")
+
         return QueryMetricsResponse(
             success=True,
             data=serializable_results,
-            message=f"查询成功，共 {len(results)} 个指标"
+            message=msg
         )
         
     except Exception as e:

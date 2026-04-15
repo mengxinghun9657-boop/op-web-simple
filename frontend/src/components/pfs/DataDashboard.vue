@@ -93,47 +93,101 @@
       </el-table>
       
       <!-- 普通模式表格 -->
-      <el-table
-        v-else
-        :data="tableData"
-        stripe
-        border
-        :max-height="500"
-        style="width: 100%"
-      >
-        <el-table-column prop="timestamp" label="时间" width="180" sortable>
-          <template #default="{ row }">
-            {{ formatTimestamp(row.timestamp) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="metric_name" label="指标名称" width="200" />
-        <el-table-column prop="metric_zh_name" label="中文名称" width="200" />
-        <el-table-column prop="value" label="数值" width="150" sortable>
-          <template #default="{ row }">
-            {{ formatValue(row.value, row.unit) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="unit_zh" label="单位" width="100" />
-        <el-table-column
-          v-if="hasClientData"
-          prop="client_id"
-          label="客户端ID"
-          width="150"
-        />
-        <el-table-column
-          v-if="hasClientData"
-          prop="client_ip"
-          label="客户端IP"
-          width="150"
-        />
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getStatusTagType(row.status)" size="small">
-              {{ getStatusText(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-      </el-table>
+      <template v-else>
+        <!-- 有客户端数据：按客户端分组展示 -->
+        <template v-if="hasClientData">
+          <div class="client-filter">
+            <span class="client-filter-label">筛选客户端：</span>
+            <el-select
+              v-model="selectedClientFilter"
+              clearable
+              placeholder="全部客户端"
+              size="small"
+              style="width: 240px;"
+            >
+              <el-option
+                v-for="cid in allClientIds"
+                :key="cid"
+                :label="cid"
+                :value="cid"
+              />
+            </el-select>
+          </div>
+          <div
+            v-for="clientId in filteredClientIds"
+            :key="clientId"
+            class="client-table-block"
+          >
+            <div class="client-table-title">
+              <el-icon><Connection /></el-icon>
+              客户端：{{ clientId }}
+              <el-tag size="small" type="info" style="margin-left: 8px;">
+                {{ clientTableData(clientId).length }} 条
+              </el-tag>
+            </div>
+            <el-table
+              :data="clientTableData(clientId)"
+              stripe
+              border
+              :max-height="400"
+              style="width: 100%"
+            >
+              <el-table-column prop="timestamp" label="时间" width="180" sortable>
+                <template #default="{ row }">
+                  {{ formatTimestamp(row.timestamp) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="metric_name" label="指标名称" width="200" />
+              <el-table-column prop="metric_zh_name" label="中文名称" width="200" />
+              <el-table-column prop="value" label="数值" width="150" sortable>
+                <template #default="{ row }">
+                  {{ formatValue(row.value, row.unit) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="unit_zh" label="单位" width="100" />
+              <el-table-column prop="client_ip" label="客户端IP" width="150" />
+              <el-table-column prop="status" label="状态" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="getStatusTagType(row.status)" size="small">
+                    {{ getStatusText(row.status) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </template>
+
+        <!-- 集群级别：原有单表格 -->
+        <el-table
+          v-else
+          :data="tableData"
+          stripe
+          border
+          :max-height="500"
+          style="width: 100%"
+        >
+          <el-table-column prop="timestamp" label="时间" width="180" sortable>
+            <template #default="{ row }">
+              {{ formatTimestamp(row.timestamp) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="metric_name" label="指标名称" width="200" />
+          <el-table-column prop="metric_zh_name" label="中文名称" width="200" />
+          <el-table-column prop="value" label="数值" width="150" sortable>
+            <template #default="{ row }">
+              {{ formatValue(row.value, row.unit) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="unit_zh" label="单位" width="100" />
+          <el-table-column prop="status" label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="getStatusTagType(row.status)" size="small">
+                {{ getStatusText(row.status) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
     </div>
 
     <!-- 空状态 -->
@@ -148,7 +202,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Download } from '@element-plus/icons-vue'
+import { Download, Connection } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 
 const props = defineProps({
@@ -207,10 +261,55 @@ const metricsByCategory = computed(() => {
 })
 
 const hasClientData = computed(() => {
-  return props.metricsData.some(metric => 
-    metric.data_points?.some(point => point.labels?.ClientId)
+  return props.metricsData.some(metric =>
+    metric.data_points?.some(point => point.labels?.ClientId || point.client_id)
   )
 })
+
+// 客户端筛选
+const selectedClientFilter = ref('')
+
+// 所有客户端 ID（去重排序）
+const allClientIds = computed(() => {
+  const ids = new Set()
+  props.metricsData.forEach(metric => {
+    metric.data_points?.forEach(point => {
+      const cid = point.client_id || point.labels?.ClientId
+      if (cid) ids.add(cid)
+    })
+  })
+  return Array.from(ids).sort()
+})
+
+// 筛选后的客户端列表
+const filteredClientIds = computed(() => {
+  if (selectedClientFilter.value) return [selectedClientFilter.value]
+  return allClientIds.value
+})
+
+// 指定客户端的表格数据
+const clientTableData = (clientId) => {
+  const data = []
+  props.metricsData.forEach(metricResult => {
+    const dataPoints = metricResult.data_points || []
+    dataPoints.forEach(point => {
+      const cid = point.client_id || point.labels?.ClientId || ''
+      if (cid !== clientId) return
+      data.push({
+        timestamp: point.timestamp,
+        metric_name: metricResult.metric_name,
+        metric_zh_name: metricResult.zh_name,
+        value: point.value,
+        unit: metricResult.unit,
+        unit_zh: metricResult.unit_zh,
+        client_id: cid,
+        client_ip: point.client_ip || point.labels?.ClientIp || '-',
+        status: determineStatus(point.value, metricResult)
+      })
+    })
+  })
+  return data.sort((a, b) => b.timestamp - a.timestamp)
+}
 
 const tableData = computed(() => {
   // 对比模式：显示对比数据
@@ -405,30 +504,77 @@ const updateCategoryChart = (category) => {
   const series = []
   const legend = []
 
-  categoryMetrics.forEach((metricResult, idx) => {
-    const dataPoints = metricResult.data_points || []
-    const color = DD_COLORS[idx % DD_COLORS.length]
+  // 判断是否有客户端维度数据
+  const isClientLevel = categoryMetrics.some(m =>
+    m.data_points?.some(p => p.client_id || p.labels?.ClientId)
+  )
 
-    const data = dataPoints.map(point => [
-      point.timestamp * 1000,
-      point.value
-    ])
+  if (isClientLevel) {
+    // 客户端级别：每个指标 × 每个客户端 = 一条 series
+    categoryMetrics.forEach((metricResult) => {
+      const dataPoints = metricResult.data_points || []
 
-    legend.push(metricResult.zh_name)
+      // 按 clientId 分组
+      const byClient = {}
+      dataPoints.forEach(point => {
+        const cid = point.client_id || point.labels?.ClientId || 'unknown'
+        if (!byClient[cid]) byClient[cid] = []
+        byClient[cid].push(point)
+      })
 
-    series.push({
-      name: metricResult.zh_name,
-      type: chartType.value === 'area' ? 'line' : chartType.value,
-      data: data,
-      smooth: false,
-      symbol: 'none',
-      lineStyle: { width: 1.5, color },
-      itemStyle: { color },
-      areaStyle: chartType.value === 'area' ? { color, opacity: 0.06 } : undefined,
-      emphasis: { focus: 'series' }
+      const clientIds = Object.keys(byClient).sort()
+      clientIds.forEach((cid, cidx) => {
+        const color = DD_COLORS[(legend.length) % DD_COLORS.length]
+        const seriesName = clientIds.length === 1
+          ? metricResult.zh_name
+          : `${metricResult.zh_name} [${cid}]`
+
+        const data = byClient[cid].map(p => [p.timestamp * 1000, p.value])
+
+        legend.push(seriesName)
+        series.push({
+          name: seriesName,
+          type: chartType.value === 'area' ? 'line' : chartType.value,
+          data,
+          smooth: false,
+          symbol: 'none',
+          lineStyle: { width: 1.5, color },
+          itemStyle: { color },
+          areaStyle: chartType.value === 'area' ? { color, opacity: 0.06 } : undefined,
+          emphasis: { focus: 'series' },
+          // 存储单位供 tooltip 用
+          _unit: metricResult.unit
+        })
+      })
     })
-  })
-  
+  } else {
+    // 集群级别：原有逻辑，按指标分 series
+    categoryMetrics.forEach((metricResult, idx) => {
+      const dataPoints = metricResult.data_points || []
+      const color = DD_COLORS[idx % DD_COLORS.length]
+
+      const data = dataPoints.map(point => [
+        point.timestamp * 1000,
+        point.value
+      ])
+
+      legend.push(metricResult.zh_name)
+
+      series.push({
+        name: metricResult.zh_name,
+        type: chartType.value === 'area' ? 'line' : chartType.value,
+        data: data,
+        smooth: false,
+        symbol: 'none',
+        lineStyle: { width: 1.5, color },
+        itemStyle: { color },
+        areaStyle: chartType.value === 'area' ? { color, opacity: 0.06 } : undefined,
+        emphasis: { focus: 'series' },
+        _unit: metricResult.unit
+      })
+    })
+  }
+
   const option = {
     title: {
       text: `${category}指标趋势`,
@@ -442,8 +588,8 @@ const updateCategoryChart = (category) => {
       formatter: (params) => {
         let result = `<div style="font-weight: bold;">${formatTimestamp(params[0].value[0] / 1000)}</div>`
         params.forEach(param => {
-          const metricResult = categoryMetrics.find(m => m.zh_name === param.seriesName)
-          const value = formatValue(param.value[1], metricResult?.unit)
+          const s = series.find(s => s.name === param.seriesName)
+          const value = formatValue(param.value[1], s?._unit)
           result += `<div>${param.marker} ${param.seriesName}: ${value}</div>`
         })
         return result
@@ -785,5 +931,34 @@ onUnmounted(() => {
 .table-actions {
   display: flex;
   gap: var(--spacing-2);
+}
+
+.client-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-4);
+}
+
+.client-filter-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.client-table-block {
+  margin-bottom: var(--spacing-5);
+}
+
+.client-table-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--spacing-2);
 }
 </style>

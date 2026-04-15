@@ -1077,26 +1077,28 @@ onMounted(() => {
   font-family: 'Courier New', monospace;
   font-size: 11px;
   background-color: var(--bg-secondary);
-  padding: 2px 4px;
+  padding: 4px 6px;
   border-radius: 3px;
   color: var(--text-secondary);
   display: block;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  line-height: 1.5;
 }
 
 .copyable-cell {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   min-width: 0;
   width: 100%;
 }
 
 .copy-icon {
-  opacity: 0;
+  opacity: 0.4;
   cursor: pointer;
   color: var(--color-primary, #409eff);
   transition: opacity 0.2s ease;

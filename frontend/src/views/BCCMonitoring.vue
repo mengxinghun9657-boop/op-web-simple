@@ -9,7 +9,6 @@ import { getFullBackendUrl } from '@/utils/config'
 
 const router = useRouter()
 const instanceIdsText = ref('')
-const auth = ref({ ak: '', sk: '' })
 const analyzing = ref(false)
 const progress = ref(0)
 const statusMessage = ref('准备就绪 - 配置认证信息并开始监控')
@@ -62,8 +61,7 @@ const startMonitoring = async () => {
   addLog(`开始BCC实例监控分析... (${instanceIds.value.length || '使用默认'} 个实例)`)
   try {
     const response = await axios.post('/api/v1/monitoring/bcc/analyze', {
-      instance_ids: instanceIds.value, days: 1,
-      ak: auth.value.ak.trim() || undefined, sk: auth.value.sk.trim() || undefined
+      instance_ids: instanceIds.value, days: 1
     })
     const taskId = response.task_id; addLog(`任务已创建: ${taskId}`); statusMessage.value = `任务已创建: ${taskId}`
     await pollTaskStatus(taskId)
@@ -145,26 +143,6 @@ onMounted(() => {
       </div>
     </div>
     
-    <!-- 认证配置 -->
-    <div class="content-card">
-      <div class="content-card-header">
-        <div class="content-card-title">
-          <el-icon><Monitor /></el-icon>
-          BCE认证配置（可选）
-        </div>
-      </div>
-      <div class="content-card-body">
-        <el-form :model="auth" label-width="120px">
-          <el-form-item label="AK (Access Key)">
-            <el-input v-model="auth.ak" placeholder="留空则使用默认配置" />
-          </el-form-item>
-          <el-form-item label="SK (Secret Key)">
-            <el-input v-model="auth.sk" type="password" placeholder="留空则使用默认配置" show-password />
-          </el-form-item>
-        </el-form>
-      </div>
-    </div>
-
     <!-- 实例ID列表 -->
     <div class="content-card">
       <div class="content-card-header">

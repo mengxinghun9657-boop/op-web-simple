@@ -47,6 +47,9 @@ pydantic-settings>=2.0.0
 loguru==0.7.2
 psutil>=5.9.0
 
+# 伪终端（容器 Web Terminal）
+ptyprocess==0.7.0
+
 # 限流
 slowapi==0.1.9
 

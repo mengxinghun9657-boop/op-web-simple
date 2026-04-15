@@ -234,6 +234,13 @@ METRICS: List[Dict[str, Any]] = [
         "unit": "个",
     },
     {
+        "key": "pending_pvc_count",
+        "label": "Pending PVC 数",
+        "category": "components",
+        "promql": 'count(kube_persistentvolumeclaim_status_phase{{clusterID="{cluster_id}",phase="Pending"}} == 1) or vector(0)',
+        "unit": "个",
+    },
+    {
         "key": "tcp_connections",
         "label": "TCP 连接数",
         "category": "components",
@@ -507,3 +514,75 @@ class CCEMonitoringService:
         except Exception as e:
             logger.warning(f"CCE API 获取集群列表失败，使用配置兜底: {e}")
         return self._load_config().get("cluster_ids", [])
+
+    def query_pending_pvcs(self, cluster_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        查询 Pending PVC 详情列表。
+        cluster_id 为 None 时查全部集群，否则只查指定集群。
+        返回: {total, items: [{clusterID, namespace, pvc, storageClass, capacity}]}
+        """
+        config = self._load_config()
+        if not config["grafana_url"]:
+            return {"error": "Prometheus 未配置", "total": 0, "items": []}
+
+        if cluster_id:
+            promql = f'kube_persistentvolumeclaim_status_phase{{clusterID="{cluster_id}",phase="Pending"}} == 1'
+        else:
+            promql = 'kube_persistentvolumeclaim_status_phase{phase="Pending"} == 1'
+
+        url = f"{config['grafana_url'].rstrip('/')}/api/v1/query"
+        try:
+            resp = requests.get(
+                url, headers=self._headers(config),
+                params={"query": promql}, timeout=30, verify=False
+            )
+            resp.raise_for_status()
+            results = resp.json().get("data", {}).get("result", [])
+        except Exception as exc:
+            logger.warning(f"Pending PVC 查询失败: {exc}")
+            return {"error": str(exc), "total": 0, "items": []}
+
+        # 查容量信息（kube_persistentvolumeclaim_resource_requests_storage_bytes）
+        if cluster_id:
+            cap_promql = f'kube_persistentvolumeclaim_resource_requests_storage_bytes{{clusterID="{cluster_id}"}}'
+        else:
+            cap_promql = 'kube_persistentvolumeclaim_resource_requests_storage_bytes'
+        cap_map: Dict[str, int] = {}
+        try:
+            cap_resp = requests.get(
+                url, headers=self._headers(config),
+                params={"query": cap_promql}, timeout=30, verify=False
+            )
+            cap_resp.raise_for_status()
+            for r in cap_resp.json().get("data", {}).get("result", []):
+                m = r.get("metric", {})
+                key = f"{m.get('clusterID','')}|{m.get('namespace','')}|{m.get('persistentvolumeclaim','')}"
+                try:
+                    cap_map[key] = int(float(r["value"][1]))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        items = []
+        for r in results:
+            m = r.get("metric", {})
+            cid = m.get("clusterID", "")
+            ns = m.get("namespace", "")
+            pvc = m.get("persistentvolumeclaim", "")
+            cap_bytes = cap_map.get(f"{cid}|{ns}|{pvc}")
+            cap_str = ""
+            if cap_bytes:
+                gib = cap_bytes / 1024 / 1024 / 1024
+                cap_str = f"{gib:.0f}Gi" if gib >= 1 else f"{cap_bytes // (1024*1024)}Mi"
+            items.append({
+                "clusterID": cid,
+                "namespace": ns,
+                "pvc": pvc,
+                "storageClass": m.get("storageclass", ""),
+                "capacity": cap_str,
+            })
+
+        # 按集群、namespace 排序
+        items.sort(key=lambda x: (x["clusterID"], x["namespace"], x["pvc"]))
+        return {"total": len(items), "items": items}

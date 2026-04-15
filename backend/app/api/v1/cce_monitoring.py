@@ -4,6 +4,7 @@
 CCE 集群实时监控 API
 """
 from fastapi import APIRouter, Depends, Query
+from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_db
@@ -54,3 +55,14 @@ async def query_all_clusters(db: Session = Depends(get_db)):
     svc = CCEMonitoringService(db)
     data = svc.query_all_clusters()
     return APIResponse(success=True, data={"clusters": data}, message="查询成功")
+
+
+@router.get("/pending-pvcs", response_model=APIResponse)
+async def query_pending_pvcs(
+    cluster_id: Optional[str] = Query(None, description="集群ID，不传则查全部集群"),
+    db: Session = Depends(get_db),
+):
+    """查询 Pending 状态的 PVC 列表"""
+    svc = CCEMonitoringService(db)
+    data = svc.query_pending_pvcs(cluster_id=cluster_id)
+    return APIResponse(success=True, data=data, message="查询成功")

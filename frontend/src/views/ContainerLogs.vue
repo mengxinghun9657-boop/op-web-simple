@@ -9,7 +9,7 @@
           </div>
           容器日志
         </div>
-        <div class="page-subtitle">实时查看容器运行日志</div>
+        <div class="page-subtitle">实时查看容器运行日志 / 连接容器终端</div>
       </div>
     </div>
 
@@ -89,6 +89,10 @@
             <el-icon><Delete /></el-icon>
             清空日志
           </el-button>
+          <el-button type="success" @click="openTerminal">
+            <el-icon><Promotion /></el-icon>
+            连接终端
+          </el-button>
         </div>
         <div class="toolbar-right">
           <el-tag type="info" effect="plain">
@@ -140,11 +144,24 @@
         </div>
       </div>
     </el-card>
+
+    <!-- Web Terminal 对话框 -->
+    <el-dialog
+      v-model="terminalVisible"
+      :title="`终端 - ${containerNames[activeContainer]}`"
+      fullscreen
+      destroy-on-close
+      class="terminal-dialog"
+      @opened="initTerminal"
+      @close="closeTerminal"
+    >
+      <div ref="terminalEl" class="terminal-wrapper"></div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onUnmounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   Document,
@@ -154,7 +171,8 @@ import {
   Box,
   VideoPlay,
   VideoPause,
-  Delete
+  Delete,
+  Promotion
 } from '@element-plus/icons-vue'
 
 // 容器名称映射
@@ -184,6 +202,14 @@ const logsContainer = ref(null)
 const isAtBottom = ref(true)
 const autoScroll = ref(true)
 
+// ===== Web Terminal 相关 =====
+const terminalVisible = ref(false)
+const terminalEl = ref(null)
+let terminal = null
+let fitAddon = null
+let terminalWs = null
+let resizeObserver = null
+
 // 计算连接状态显示
 const connectionStatus = computed(() => {
   if (isConnected.value) {
@@ -204,46 +230,31 @@ const toggleConnection = async () => {
   }
 }
 
-// 检查并刷新Token（如果即将过期）
+// 检查并刷新Token
 const ensureValidToken = async () => {
   const token = localStorage.getItem('token')
-  if (!token) {
-    throw new Error('未登录')
-  }
+  if (!token) throw new Error('未登录')
 
   try {
-    // 解析JWT获取过期时间
     const payload = JSON.parse(atob(token.split('.')[1]))
-    const expTime = payload.exp * 1000 // 转换为毫秒
-    const now = Date.now()
-    const timeUntilExp = expTime - now
-
-    // 如果Token将在5分钟内过期，先刷新
+    const timeUntilExp = payload.exp * 1000 - Date.now()
     if (timeUntilExp < 5 * 60 * 1000) {
-      console.log('Token即将过期，正在刷新...')
       const { useUserStore } = await import('@/stores/user')
       const userStore = useUserStore()
       await userStore.refreshTokenAction()
-      console.log('Token刷新成功')
     }
   } catch (error) {
     console.error('Token检查失败:', error)
-    // 如果刷新失败，尝试继续用现有Token
   }
 }
 
-// 建立连接
+// 建立日志连接
 const connect = async () => {
   try {
     connecting.value = true
-
-    // 先清空之前的日志
     logs.value = []
-
-    // 检查并刷新Token（如果即将过期）
     await ensureValidToken()
 
-    // 创建 EventSource 连接
     const container = activeContainer.value
     const token = localStorage.getItem('token')
     const url = `/api/v1/logs/stream/${container}?token=${token}`
@@ -257,15 +268,12 @@ const connect = async () => {
     }
 
     eventSource.value.onmessage = (event) => {
-      const logLine = event.data
-      addLog(logLine)
+      addLog(event.data)
     }
 
     eventSource.value.onerror = (error) => {
       console.error('EventSource error:', error)
-      // 检查是否是401错误（Token过期）
       if (error.target && error.target.readyState === EventSource.CLOSED) {
-        // 尝试刷新Token后重连
         handleReconnect()
       } else if (isConnected.value) {
         ElMessage.error('连接断开，请重试')
@@ -279,21 +287,17 @@ const connect = async () => {
   }
 }
 
-// 处理重连（Token过期后）
+// Token 过期后重连
 const handleReconnect = async () => {
   try {
-    console.log('尝试刷新Token后重连...')
     const { useUserStore } = await import('@/stores/user')
     const userStore = useUserStore()
     await userStore.refreshTokenAction()
-
-    // 刷新成功，重新连接
     disconnect()
     await connect()
   } catch (refreshError) {
-    console.error('Token刷新失败，需要重新登录:', refreshError)
+    console.error('Token刷新失败:', refreshError)
     ElMessage.error('登录已过期，请重新登录')
-    // 登出并跳转到登录页
     const { useUserStore } = await import('@/stores/user')
     const userStore = useUserStore()
     userStore.logout()
@@ -302,7 +306,7 @@ const handleReconnect = async () => {
   }
 }
 
-// 断开连接
+// 断开日志连接
 const disconnect = () => {
   if (eventSource.value) {
     eventSource.value.close()
@@ -313,20 +317,14 @@ const disconnect = () => {
   ElMessage.info('已断开连接')
 }
 
-// 添加日志
+// 添加日志行
 const addLog = (logLine) => {
-  // 超过500行时，删除最旧的行，添加新行（循环覆盖）
   if (logs.value.length >= maxLogLines) {
-    logs.value.shift() // 删除第一行（最旧的）
+    logs.value.shift()
   }
-
   logs.value.push(logLine)
-
-  // 自动滚动到底部
   if (autoScroll.value) {
-    nextTick(() => {
-      scrollToBottom()
-    })
+    nextTick(() => scrollToBottom())
   }
 }
 
@@ -336,26 +334,16 @@ const clearLogs = () => {
   ElMessage.success('日志已清空')
 }
 
-// 处理Tab切换
-const handleTabChange = (tabName) => {
-  // 如果正在连接，先断开
-  if (isConnected.value) {
-    disconnect()
-  }
-  // 清空日志
+// Tab 切换
+const handleTabChange = () => {
+  if (isConnected.value) disconnect()
   logs.value = []
 }
 
-// 处理滚动事件
+// 滚动事件
 const handleScroll = () => {
   if (!logsContainer.value) return
-  
-  const container = logsContainer.value
-  const scrollTop = container.scrollTop
-  const scrollHeight = container.scrollHeight
-  const clientHeight = container.clientHeight
-  
-  // 判断是否滚动到底部（允许10px误差）
+  const { scrollTop, scrollHeight, clientHeight } = logsContainer.value
   isAtBottom.value = scrollHeight - scrollTop - clientHeight < 10
   autoScroll.value = isAtBottom.value
 }
@@ -369,7 +357,7 @@ const scrollToBottom = () => {
   }
 }
 
-// 获取日志级别样式
+// 日志级别样式
 const getLogLevelClass = (log) => {
   const lowerLog = log.toLowerCase()
   if (lowerLog.includes('error') || lowerLog.includes('exception') || lowerLog.includes('traceback')) {
@@ -384,9 +372,117 @@ const getLogLevelClass = (log) => {
   return ''
 }
 
-// 组件卸载时断开连接
+// ===== Web Terminal 功能 =====
+
+const openTerminal = () => {
+  terminalVisible.value = true
+}
+
+const initTerminal = async () => {
+  await nextTick()
+  if (!terminalEl.value) return
+
+  // 动态 import xterm（tree-shaking 友好）
+  const { Terminal } = await import('xterm')
+  const { FitAddon } = await import('xterm-addon-fit')
+  await import('xterm/css/xterm.css')
+
+  terminal = new Terminal({
+    cursorBlink: true,
+    fontSize: 14,
+    fontFamily: "'Consolas', 'Monaco', 'Courier New', monospace",
+    theme: {
+      background: '#1e1e1e',
+      foreground: '#d4d4d4',
+      cursor: '#ffffff',
+      selectionBackground: '#264f78'
+    },
+    scrollback: 1000
+  })
+
+  fitAddon = new FitAddon()
+  terminal.loadAddon(fitAddon)
+  terminal.open(terminalEl.value)
+  fitAddon.fit()
+
+  // 建立 WebSocket
+  const token = localStorage.getItem('token')
+  const container = activeContainer.value
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsUrl = `${protocol}//${window.location.host}/api/v1/logs/exec/${container}?token=${token}`
+
+  terminalWs = new WebSocket(wsUrl)
+  terminalWs.binaryType = 'arraybuffer'
+
+  terminalWs.onopen = () => {
+    terminal.write(`\r\n\x1b[32m[已连接到 ${containerNames[container]}]\x1b[0m\r\n`)
+    sendResize()
+  }
+
+  terminalWs.onmessage = (event) => {
+    if (event.data instanceof ArrayBuffer) {
+      terminal.write(new Uint8Array(event.data))
+    } else {
+      terminal.write(event.data)
+    }
+  }
+
+  terminalWs.onclose = () => {
+    terminal?.write('\r\n\x1b[33m[连接已断开]\x1b[0m\r\n')
+  }
+
+  terminalWs.onerror = () => {
+    terminal?.write('\r\n\x1b[31m[连接错误，请重试]\x1b[0m\r\n')
+  }
+
+  // 终端输入 → WebSocket
+  terminal.onData((data) => {
+    if (terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+      terminalWs.send(data)
+    }
+  })
+
+  // 容器大小变化时自动 fit
+  resizeObserver = new ResizeObserver(() => {
+    fitAddon?.fit()
+  })
+  resizeObserver.observe(terminalEl.value)
+
+  // 终端 resize → 通知后端
+  terminal.onResize(({ cols, rows }) => {
+    if (terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+      terminalWs.send(JSON.stringify({ type: 'resize', cols, rows }))
+    }
+  })
+}
+
+const sendResize = () => {
+  if (!terminal || !terminalWs || terminalWs.readyState !== WebSocket.OPEN) return
+  const { cols, rows } = terminal
+  terminalWs.send(JSON.stringify({ type: 'resize', cols, rows }))
+}
+
+const closeTerminal = () => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+
+  if (terminalWs) {
+    terminalWs.close()
+    terminalWs = null
+  }
+
+  if (terminal) {
+    terminal.dispose()
+    terminal = null
+  }
+
+  fitAddon = null
+}
+
+// 组件卸载
 onUnmounted(() => {
   disconnect()
+  closeTerminal()
 })
 </script>
 
@@ -522,7 +618,6 @@ onUnmounted(() => {
   flex: 1;
 }
 
-/* 日志级别颜色 */
 .log-error {
   color: #f48771;
   background: rgba(244, 135, 113, 0.1);
@@ -556,7 +651,6 @@ onUnmounted(() => {
   color: var(--text-tertiary);
 }
 
-/* 滚动条样式 */
 .logs-container::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -573,5 +667,22 @@ onUnmounted(() => {
 
 .logs-container::-webkit-scrollbar-thumb:hover {
   background: #4f4f4f;
+}
+
+/* Terminal */
+.terminal-wrapper {
+  width: 100%;
+  height: calc(100vh - 120px);
+  background: #1e1e1e;
+  border-radius: 6px;
+  overflow: hidden;
+}
+</style>
+
+<style>
+/* 覆盖 dialog body 内边距，让终端铺满 */
+.terminal-dialog .el-dialog__body {
+  padding: 12px;
+  background: #1e1e1e;
 }
 </style>

@@ -34,15 +34,11 @@
           </el-menu-item>
           <el-menu-item index="monitoring">
             <el-icon><Monitor /></el-icon>
-            <span>监控配置</span>
+            <span>监控 & 分析配置</span>
           </el-menu-item>
           <el-menu-item index="prometheus_runtime">
             <el-icon><Connection /></el-icon>
             <span>Prometheus配置</span>
-          </el-menu-item>
-          <el-menu-item index="analysis">
-            <el-icon><TrendCharts /></el-icon>
-            <span>分析配置</span>
           </el-menu-item>
           <el-menu-item index="pfs">
             <el-icon><Histogram /></el-icon>
@@ -71,12 +67,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Setting, User, DataBoard, Monitor, TrendCharts, Histogram, Postcard, Connection } from '@element-plus/icons-vue'
+import { Setting, User, DataBoard, Monitor, Histogram, Postcard, Connection } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import CMDBConfig from '@/components/config/CMDBConfig.vue'
 import MonitoringConfig from '@/components/config/MonitoringConfig.vue'
 import PrometheusRuntimeConfig from '@/components/config/PrometheusRuntimeConfig.vue'
-import AnalysisConfig from '@/components/config/AnalysisConfig.vue'
 import PFSConfig from '@/components/config/PFSConfig.vue'
 import APIServerConfig from '@/components/config/APIServerConfig.vue'
 import ICafeConfig from '@/components/config/ICafeConfig.vue'
@@ -103,7 +98,6 @@ const currentComponent = computed(() => {
     cmdb: CMDBConfig,
     monitoring: MonitoringConfig,
     prometheus_runtime: PrometheusRuntimeConfig,
-    analysis: AnalysisConfig,
     pfs: PFSConfig,
     apiserver: APIServerConfig,
     icafe: ICafeConfig,

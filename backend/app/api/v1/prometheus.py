@@ -25,18 +25,6 @@ router = APIRouter()
 
 # ========== 请求/响应模型 ==========
 
-class CookieUpdateRequest(BaseModel):
-    """Cookie更新请求"""
-    cookie_string: str = Field(..., description="从浏览器复制的Cookie字符串")
-
-
-class CookieUpdateResponse(BaseModel):
-    """Cookie更新响应"""
-    success: bool
-    message: str
-    cookies_count: Optional[int] = None
-
-
 class ConnectionTestResponse(BaseModel):
     """连接测试响应"""
     success: bool
@@ -99,47 +87,6 @@ async def get_config():
         logger.error(f"获取配置失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"获取配置失败: {str(e)}")
 
-
-@router.post("/config/cookie", response_model=CookieUpdateResponse, summary="更新Cookie配置")
-async def update_cookie(request: CookieUpdateRequest):
-    """
-    更新Cookie配置
-    
-    - **cookie_string**: 从浏览器开发者工具复制的完整Cookie字符串
-    
-    获取步骤：
-    1. 登录百度云CCE控制台
-    2. 打开任意集群监控页面
-    3. F12打开开发者工具 → Network标签
-    4. 刷新页面，找到包含 'query_range' 的请求
-    5. 复制请求头中的Cookie内容
-    """
-    try:
-        config = get_prometheus_config()
-        
-        # 解析Cookie字符串
-        cookies = config.parse_cookie_string(request.cookie_string)
-        
-        if not cookies:
-            raise HTTPException(status_code=400, detail="Cookie字符串解析失败，请检查格式")
-        
-        # 更新配置
-        success = config.update_cookies(cookies)
-        
-        if success:
-            return CookieUpdateResponse(
-                success=True,
-                message=f"Cookie更新成功！包含 {len(cookies)} 个有效cookie",
-                cookies_count=len(cookies)
-            )
-        else:
-            raise HTTPException(status_code=400, detail="Cookie更新失败，缺少必要字段")
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"更新Cookie失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"更新Cookie失败: {str(e)}")
 
 
 @router.post("/config/test", response_model=ConnectionTestResponse, summary="测试连接")

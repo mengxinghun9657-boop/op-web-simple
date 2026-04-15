@@ -98,6 +98,15 @@ export const getCCEClusterDetail = (clusterId) => axios.get(`/api/v1/cmdb/cce/cl
 // 获取 CCE 集群节点列表
 export const getCCEClusterInstances = (clusterId) => axios.get(`/api/v1/cmdb/cce/cluster/${clusterId}/instances`)
 
+// 获取 BCC 实例 ID 列表（供监控配置同步）
+export const getBCCInstanceIds = () => axios.get('/api/v1/cmdb/bcc/instance-ids')
+
+// 获取 EIP 实例 ID 列表（供监控配置同步）
+export const getEIPInstanceIds = () => axios.get('/api/v1/cmdb/eip/instance-ids')
+
+// 获取 BOS Bucket 名称列表（供监控配置同步）
+export const getBOSBucketNames = () => axios.get('/api/v1/cmdb/bos/bucket-names')
+
 // 下载 KubeConfig（触发浏览器下载，type: vpc | public）
 export const downloadKubeconfig = async (clusterId, type = 'vpc') => {
   const resp = await axios.get(`/api/v1/cmdb/cce/cluster/${clusterId}/kubeconfig`, {

@@ -78,6 +78,7 @@
           placeholder="请选择客户端"
           style="width: 100%;"
           :loading="loadingClients"
+          @change="(val) => emit('update:clientId', val)"
         >
           <el-option label="所有客户端 (.*)" value=".*" />
           <el-option
@@ -345,6 +346,9 @@ const handleInstanceChange = (value) => {
 // 处理级别变化
 const handleLevelChange = (value) => {
   emit('update:level', value)
+  // 切换级别时清空已选指标（集群/客户端指标不兼容）
+  queryForm.value.metrics = []
+  emit('update:metrics', [])
   // 重新加载指标列表
   loadMetrics()
   // 如果切换到客户端级别，加载客户端列表
@@ -402,6 +406,11 @@ const handleQuery = () => {
     ElMessage.warning('请完善查询条件')
     return
   }
+  // 查询前确保父组件同步所有当前值
+  emit('update:metrics', queryForm.value.metrics)
+  emit('update:level', queryForm.value.level)
+  emit('update:instanceId', queryForm.value.instanceId)
+  emit('update:clientId', queryForm.value.clientId)
   emit('query')
 }
 

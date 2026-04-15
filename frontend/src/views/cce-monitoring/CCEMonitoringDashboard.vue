@@ -145,7 +145,8 @@
               v-for="m in clusterData.categories[catKey].metrics"
               :key="m.key"
               class="metric-card"
-              :class="getMetricClass(catKey, m)"
+              :class="[getMetricClass(catKey, m), m.key === 'pending_pvc_count' && m.value > 0 ? 'metric-card--clickable' : '']"
+              @click="m.key === 'pending_pvc_count' && m.value > 0 ? openPvcDrawer() : null"
             >
               <div class="metric-label">{{ m.label }}</div>
               <div class="metric-value">
@@ -202,6 +203,40 @@
       </div>
     </div>
   </div>
+
+  <!-- Pending PVC 详情 Drawer -->
+  <el-drawer
+    v-model="pvcDrawerVisible"
+    title="Pending PVC 详情"
+    size="60%"
+    destroy-on-close
+  >
+    <template #header>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span>Pending PVC 详情</span>
+        <el-tag type="danger" effect="dark">{{ pvcList.length }} 条</el-tag>
+        <span style="font-size:13px;color:#999">集群: {{ selectedCluster }}</span>
+      </div>
+    </template>
+    <div v-if="pvcLoading" style="text-align:center;padding:40px">
+      <el-icon class="is-loading" :size="32"><Refresh /></el-icon>
+      <div style="margin-top:8px;color:#999">加载中...</div>
+    </div>
+    <el-table v-else :data="pvcList" stripe border size="small" style="width:100%">
+      <el-table-column prop="namespace" label="Namespace" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="pvc" label="PVC 名称" min-width="220" show-overflow-tooltip />
+      <el-table-column prop="storageClass" label="StorageClass" min-width="130" show-overflow-tooltip>
+        <template #default="{ row }">
+          <span>{{ row.storageClass || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="capacity" label="容量" width="80">
+        <template #default="{ row }">
+          <span>{{ row.capacity || '-' }}</span>
+        </template>
+      </el-table-column>
+    </el-table>
+  </el-drawer>
 </template>
 
 <script setup>
@@ -209,7 +244,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Monitor, Refresh, ArrowDown } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import { getCCEClusters, getCCEMonitoringConfig, queryCCECluster, queryCCEClusterCharts } from '@/api/cceMonitoring'
+import { getCCEClusters, getCCEMonitoringConfig, queryCCECluster, queryCCEClusterCharts, queryPendingPVCs } from '@/api/cceMonitoring'
 import { getCCEClusterDetail, downloadKubeconfig } from '@/api/cmdb'
 
 // category 展示顺序
@@ -245,6 +280,11 @@ const loadingCharts = ref(false)
 const clusterDetail = ref(null)
 const loadingDetail = ref(false)
 const downloadingKubeconfig = ref(false)
+
+// Pending PVC Drawer
+const pvcDrawerVisible = ref(false)
+const pvcLoading = ref(false)
+const pvcList = ref([])
 
 let autoRefreshTimer = null
 
@@ -397,6 +437,7 @@ const getMetricClass = (catKey, m) => {
       return ''
     }
     if (m.key === 'pending_pods_unschedulable' && m.value > 0) return 'metric-card--warning'
+    if (m.key === 'pending_pvc_count' && m.value > 0) return 'metric-card--warning'
     return ''
   }
 
@@ -528,6 +569,22 @@ const handleDownloadKubeconfig = async (type) => {
   }
 }
 
+const openPvcDrawer = async () => {
+  pvcDrawerVisible.value = true
+  pvcLoading.value = true
+  pvcList.value = []
+  try {
+    const resp = await queryPendingPVCs(selectedCluster.value)
+    if (resp.success) {
+      pvcList.value = resp.data.items || []
+    }
+  } catch (e) {
+    ElMessage.error('获取 Pending PVC 失败')
+  } finally {
+    pvcLoading.value = false
+  }
+}
+
 const fetchConfig = async () => {
   try {
     const resp = await getCCEMonitoringConfig()
@@ -578,6 +635,8 @@ onBeforeUnmount(() => {
   transition: box-shadow 0.2s;
 }
 .metric-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.metric-card--clickable { cursor: pointer; }
+.metric-card--clickable:hover { box-shadow: 0 2px 12px rgba(250,173,20,0.3); }
 .metric-card--ok      { border-color: #b7eb8f; background: #f6ffed; }
 .metric-card--warning { border-color: #ffd591; background: #fffbe6; }
 .metric-card--danger  { border-color: #ffb8b8; background: #fff1f0; }

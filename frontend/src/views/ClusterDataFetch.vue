@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import axios from '@/utils/axios'
 import { ElMessage } from 'element-plus'
-import { Connection, Setting, Download, Search, Loading, List, InfoFilled } from '@element-plus/icons-vue'
+import { Connection, Download, Search, Loading, List, InfoFilled } from '@element-plus/icons-vue'
 import { StateDisplay } from '@/components/common'
 
 const clusterIdsText = ref(`cce-3nusu9su
@@ -21,8 +21,6 @@ cce-p6w3c5z8
 cce-uk1zi507
 cce-k5sn275j
 cce-4nmy1x1s`)
-const showCookieDialog = ref(false)
-const cookieValue = ref('')
 const logs = ref([])
 const fetching = ref(false)
 const progress = ref(0)
@@ -40,33 +38,12 @@ const addLog = (msg, isError = false) => {
   logs.value.push({ time, msg, isError })
 }
 
-const openCookieDialog = () => {
-  showCookieDialog.value = true
-}
-
-const saveCookie = async () => {
-  if (!cookieValue.value.trim()) {
-    ElMessage.warning('Cookie值不能为空')
-    return
-  }
-  
-  try {
-    await axios.post('/api/v1/prometheus/config/cookie', { cookie_string: cookieValue.value.trim() })
-    ElMessage.success('Cookie 配置保存成功')
-    showCookieDialog.value = false
-    addLog('Cookie配置已更新')
-  } catch (error) {
-    ElMessage.error(error.response?.data?.detail || 'Cookie 保存失败')
-    addLog(`Cookie保存失败: ${error.message}`, true)
-  }
-}
-
 const fetchClusterData = async () => {
   if (clusterIds.value.length === 0) {
     ElMessage.warning('请输入集群ID列表')
     return
   }
-  
+
   fetching.value = true
   progress.value = 0
   taskIdRef.value = null
@@ -75,13 +52,13 @@ const fetchClusterData = async () => {
 
   try {
     const response = await axios.post('/api/v1/prometheus/cluster/metrics/batch', { cluster_ids: clusterIds.value })
-    
+
     addLog(`成功获取 ${clusterIds.value.length} 个集群的监控数据`)
     taskIdRef.value = response.task_id || `batch-${Date.now()}`
     statusMessage.value = '集群数据获取完成'
     progress.value = 100
     fetching.value = false
-    
+
     ElMessage.success('集群数据获取完成')
 
   } catch (error) {
@@ -98,10 +75,10 @@ const exportData = async () => {
     ElMessage.warning('请先输入集群ID并获取数据')
     return
   }
-  
+
   try {
     const response = await axios.post('/api/v1/prometheus/cluster/export', { cluster_ids: clusterIds.value })
-    
+
     if (response.success) {
       const url = `/results/${response.file}`
       window.open(url, '_blank')
@@ -117,11 +94,11 @@ const exportData = async () => {
 const testConnection = async () => {
   addLog('正在测试连接...')
   try {
-    await axios.post('/api/v1/prometheus/config/test')
-    ElMessage.success('连接测试成功')
+    const res = await axios.post('/api/v1/prometheus/config/test')
+    ElMessage.success(res.message || '连接测试成功')
     addLog('连接测试成功')
   } catch (error) {
-    ElMessage.error(error.response?.data?.detail || '连接测试失败')
+    ElMessage.error(error.response?.data?.detail || '连接测试失败，请检查 Prometheus 配置')
     addLog(`连接测试失败: ${error.message}`, true)
   }
 }
@@ -183,13 +160,6 @@ const testConnection = async () => {
             <span>导出 JSON</span>
           </el-button>
           <el-button
-            type="warning"
-            :icon="Setting"
-            @click="openCookieDialog"
-          >
-            <span>Cookie 配置</span>
-          </el-button>
-          <el-button
             type="info"
             :icon="Search"
             @click="testConnection"
@@ -230,30 +200,6 @@ const testConnection = async () => {
         </div>
       </div>
     </div>
-
-    <!-- Cookie 配置弹窗 -->
-    <el-dialog
-      v-model="showCookieDialog"
-      title="Cookie 配置"
-      width="560px"
-      class="google-dialog"
-      append-to-body
-    >
-      <el-form label-position="top" class="google-form">
-        <el-form-item label="Cookie 值">
-          <el-input
-            v-model="cookieValue"
-            type="textarea"
-            :rows="6"
-            placeholder="粘贴从浏览器复制的 Cookie 值"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showCookieDialog = false">取消</el-button>
-        <el-button type="primary" @click="saveCookie">保存</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 

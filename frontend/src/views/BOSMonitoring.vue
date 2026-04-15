@@ -9,7 +9,6 @@ import { getFullBackendUrl } from '@/utils/config'
 
 const router = useRouter()
 const bucketsText = ref('')
-const auth = ref({ ak: '', sk: '' })
 const analyzing = ref(false)
 const progress = ref(0)
 const statusMessage = ref('准备就绪 - 配置认证信息并开始分析')
@@ -62,8 +61,7 @@ const startAnalysis = async () => {
   addLog(`开始BOS存储空间分析... (${buckets.value.length || '使用默认'} 个Bucket)`)
   try {
     const response = await axios.post('/api/v1/monitoring/bos/analyze', {
-      buckets: buckets.value,
-      ak: auth.value.ak.trim() || undefined, sk: auth.value.sk.trim() || undefined
+      buckets: buckets.value
     })
     const taskId = response.task_id; addLog(`任务已创建: ${taskId}`); statusMessage.value = `任务已创建: ${taskId}`
     await pollTaskStatus(taskId)
@@ -143,26 +141,6 @@ onMounted(() => {
       </div>
     </div>
     
-    <!-- 认证配置 -->
-    <div class="content-card">
-      <div class="content-card-header">
-        <div class="content-card-title">
-          <el-icon><Coin /></el-icon>
-          BCE认证配置（可选）
-        </div>
-      </div>
-      <div class="content-card-body">
-        <el-form :model="auth" label-width="120px">
-          <el-form-item label="AK (Access Key)">
-            <el-input v-model="auth.ak" placeholder="留空则使用默认配置" />
-          </el-form-item>
-          <el-form-item label="SK (Secret Key)">
-            <el-input v-model="auth.sk" type="password" placeholder="留空则使用默认配置" show-password />
-          </el-form-item>
-        </el-form>
-      </div>
-    </div>
-
     <!-- Bucket列表 -->
     <div class="content-card">
       <div class="content-card-header">

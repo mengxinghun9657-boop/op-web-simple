@@ -283,7 +283,7 @@ docker builder prune --all --force
 
 # 常用部署命令
 unzip /op-web-simple.zip && rm -rf /op-web-simple.zip /__MACOSX && cd /op-web-simple && vim .env
-```
+
 
 ---
 

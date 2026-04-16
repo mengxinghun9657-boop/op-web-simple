@@ -38,10 +38,10 @@ CONFIG = {
     'token': os.getenv('RULIU_TOKEN', ''),
     'encoding_aes_key': os.getenv('RULIU_ENCODING_AES_KEY', ''),
     'mysql_host': os.getenv('MYSQL_HOST', 'localhost'),
-    'mysql_port': int(os.getenv('MYSQL_PORT', '3306')),
+    'mysql_port': int(os.getenv('MYSQL_PORT', '3307')),
     'mysql_user': os.getenv('MYSQL_USER', 'root'),
-    'mysql_password': os.getenv('MYSQL_PASSWORD', ''),
-    'mysql_database': os.getenv('MYSQL_DATABASE', 'cluster_manager'),
+    'mysql_password': os.getenv('MYSQL_PASSWORD', 'Zhang~~1'),
+    'mysql_database': os.getenv('MYSQL_DATABASE', 'cluster_management'),
     'ruliu_api_url': os.getenv('RULIU_API_URL', 'http://apiin.im.baidu.com/api/v1/robot/msg/groupmsgsend'),
     'ruliu_access_token': os.getenv('RULIU_ACCESS_TOKEN', ''),
 }
@@ -341,9 +341,9 @@ def get_ip_alerts(db: Database, keyword: str, scope: str = 'today') -> str:
 
 # 状态图标映射
 STATUS_ICONS = {
-    '运行中': '🟢', '可用': '🟢', 'Active': '🟢', 'active': '🟢',
-    '已停止': '⛔', '停止': '⛔', '不可用': '⛔', 'Inactive': '⛔',
-    '创建中': '⏳', '启动中': '⏳', '删除中': '⏳',
+    '运行中': '🟢', '可用': '🟢', 'Active': '🟢', 'active': '🟢', 'Running': '🟢', 'running': '🟢',
+    '已停止': '⛔', '停止': '⛔', '不可用': '⛔', 'Inactive': '⛔', 'Stopped': '⛔', 'stopped': '⛔',
+    '创建中': '⏳', '启动中': '⏳', '删除中': '⏳', 'Starting': '⏳', 'Stopping': '⏳',
     '维修中': '🔧', '维护中': '🔧', 'processing': '🔧',
     'pending': '⏳', 'resolved': '✅', 'closed': '⛔'
 }
@@ -414,7 +414,7 @@ def query_server_info(db: Database, keyword: str) -> str:
         
         # 查询BCC实例信息
         try:
-            sql_bcc = """SELECT bcc_id, 名称, 状态, 主ipv4私网地址 FROM bce_bcc_instances WHERE `主ipv4私网地址` = %s LIMIT 3"""
+            sql_bcc = """SELECT bcc_id, 名称, 状态, `内网ip` FROM bce_bcc_instances WHERE `内网ip` = %s LIMIT 3"""
             bcc_list = db.query(sql_bcc, (keyword,))
             if bcc_list:
                 found_any = True
@@ -424,14 +424,14 @@ def query_server_info(db: Database, keyword: str) -> str:
                 lines.append("|------|-----|------|-----|")
                 for bcc in bcc_list:
                     status_icon = get_status_icon(bcc['状态'])
-                    lines.append(f"| {bcc['名称']} | {bcc['bcc_id']} | {status_icon} {bcc['状态']} | {bcc['主ipv4私网地址'] or 'N/A'} |")
+                    lines.append(f"| {bcc['名称']} | {bcc['bcc_id']} | {status_icon} {bcc['状态']} | {bcc['内网ip'] or 'N/A'} |")
                 lines.append("")
         except Exception as e:
             logger.warning(f"BCC查询失败: {e}")
         
         # 查询CCE节点信息
         try:
-            sql_cce = """SELECT cluster_id, `节点名称`, `状态`, `ip地址` FROM bce_cce_nodes WHERE `ip地址` = %s LIMIT 3"""
+            sql_cce = """SELECT cluster_id, `节点名称`, `状态`, `内网ip` FROM bce_cce_nodes WHERE `内网ip` = %s LIMIT 3"""
             logger.info(f"正在查询CCE，IP: {keyword}")
             cce_nodes = db.query(sql_cce, (keyword,))
             logger.info(f"CCE查询结果: {len(cce_nodes)} 条记录")
@@ -480,7 +480,7 @@ def query_server_info(db: Database, keyword: str) -> str:
     
     # 4. 查询BCE BCC - 按实例ID
     try:
-        sql = """SELECT bcc_id, 名称, 状态, 主ipv4私网地址 FROM bce_bcc_instances WHERE bcc_id = %s LIMIT 3"""
+        sql = """SELECT bcc_id, 名称, 状态, `内网ip` FROM bce_bcc_instances WHERE bcc_id = %s LIMIT 3"""
         bcc_list = db.query(sql, (keyword,))
         if bcc_list:
             found_any = True
@@ -490,14 +490,14 @@ def query_server_info(db: Database, keyword: str) -> str:
             lines.append("|------|-----|------|-----|")
             for bcc in bcc_list:
                 status_icon = get_status_icon(bcc['状态'])
-                lines.append(f"| {bcc['名称']} | {bcc['bcc_id']} | {status_icon} {bcc['状态']} | {bcc['主ipv4私网地址'] or 'N/A'} |")
+                lines.append(f"| {bcc['名称']} | {bcc['bcc_id']} | {status_icon} {bcc['状态']} | {bcc['内网ip'] or 'N/A'} |")
             lines.append("")
     except Exception as e:
         logger.warning(f"BCC实例ID查询失败: {e}")
     
     # 5. 查询BCE BCC - 按实例名称
     try:
-        sql = """SELECT bcc_id, 名称, 状态, 主ipv4私网地址 FROM bce_bcc_instances WHERE 名称 = %s LIMIT 3"""
+        sql = """SELECT bcc_id, 名称, 状态, `内网ip` FROM bce_bcc_instances WHERE 名称 = %s LIMIT 3"""
         bcc_list = db.query(sql, (keyword,))
         if bcc_list:
             found_any = True
@@ -507,7 +507,7 @@ def query_server_info(db: Database, keyword: str) -> str:
             lines.append("|------|-----|------|-----|")
             for bcc in bcc_list:
                 status_icon = get_status_icon(bcc['状态'])
-                lines.append(f"| {bcc['名称']} | {bcc['bcc_id']} | {status_icon} {bcc['状态']} | {bcc['主ipv4私网地址'] or 'N/A'} |")
+                lines.append(f"| {bcc['名称']} | {bcc['bcc_id']} | {status_icon} {bcc['状态']} | {bcc['内网ip'] or 'N/A'} |")
             lines.append("")
     except Exception as e:
         logger.warning(f"BCC实例名称查询失败: {e}")
@@ -515,7 +515,7 @@ def query_server_info(db: Database, keyword: str) -> str:
     # 6. 查询BCE CCE - 按集群ID
     if keyword.startswith('cce-'):
         try:
-            sql = """SELECT cluster_id, `节点名称`, `状态`, `ip地址` FROM bce_cce_nodes WHERE cluster_id = %s LIMIT 10"""
+            sql = """SELECT cluster_id, `节点名称`, `状态`, `内网ip` FROM bce_cce_nodes WHERE cluster_id = %s LIMIT 10"""
             nodes = db.query(sql, (keyword,))
             if nodes:
                 found_any = True
@@ -525,14 +525,14 @@ def query_server_info(db: Database, keyword: str) -> str:
                 lines.append("|----------|-----|------|")
                 for node in nodes:
                     status_icon = get_status_icon(node['状态'])
-                    lines.append(f"| {node['节点名称']} | {node['ip地址']} | {status_icon} {node['状态']} |")
+                    lines.append(f"| {node['节点名称']} | {node['内网ip']} | {status_icon} {node['状态']} |")
                 lines.append("")
         except Exception as e:
             logger.warning(f"CCE集群查询失败: {e}")
 
     # 7. 查询BCE CCE - 按节点名称
     try:
-        sql = """SELECT cluster_id, `节点名称`, `状态`, `ip地址` FROM bce_cce_nodes WHERE `节点名称` = %s LIMIT 3"""
+        sql = """SELECT cluster_id, `节点名称`, `状态`, `内网ip` FROM bce_cce_nodes WHERE `节点名称` = %s LIMIT 3"""
         nodes = db.query(sql, (keyword,))
         if nodes:
             found_any = True
@@ -542,7 +542,7 @@ def query_server_info(db: Database, keyword: str) -> str:
             lines.append("|----------|------|-----|------|")
             for node in nodes:
                 status_icon = get_status_icon(node['状态'])
-                lines.append(f"| {node['节点名称']} | {node['cluster_id']} | {node['ip地址']} | {status_icon} {node['状态']} |")
+                lines.append(f"| {node['节点名称']} | {node['cluster_id']} | {node['内网ip']} | {status_icon} {node['状态']} |")
             lines.append("")
     except Exception as e:
         logger.warning(f"CCE节点查询失败: {e}")

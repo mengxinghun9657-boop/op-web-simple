@@ -50,49 +50,29 @@ def _make_bcc_client(access_key: str, secret_key: str, region: str):
 
 
 def _make_cce_signed_session(access_key: str, secret_key: str):
-    """返回一个带有 BCE 签名能力的 requests Session（用于 CCE REST API）"""
-    import hashlib
-    import hmac
-    from datetime import timezone
+    """返回一个带有 BCE 签名能力的 requests Session（用于 CCE REST API）
+    使用 bce-python-sdk 的 bce_v1_signer，签名算法与 BCC/BOS/EIP 保持一致
+    """
+    import baidubce.auth.bce_v1_signer as bce_signer
+    from baidubce.auth.bce_credentials import BceCredentials
+    from urllib.parse import urlparse, parse_qs
+
+    creds = BceCredentials(access_key.encode(), secret_key.encode())
 
     class _BCEAuth(requests.auth.AuthBase):
         def __call__(self, r):
-            from urllib.parse import urlparse, quote
-            now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-            expiration = 1800
-            sign_key_info = f"bce-auth-v1/{access_key}/{now}/{expiration}"
-            sign_key = hmac.new(
-                secret_key.encode('utf-8'),
-                sign_key_info.encode('utf-8'),
-                hashlib.sha256
-            ).hexdigest()
-
-            # 注入 x-bce-date header（BOS 强制要求）
-            r.headers['x-bce-date'] = now
-
             parsed = urlparse(r.url)
-            canonical_uri = quote(parsed.path or '/', safe='/-_.~')
-            # 签 host + x-bce-date
-            host_val = parsed.netloc.split(':')[0]
-            signed_headers = 'host;x-bce-date'
-            canonical_headers = f"host:{host_val}\nx-bce-date:{now}"
-            qs = parsed.query or ''
-            # 对 query string 参数按 key 排序规范化
-            if qs:
-                parts = sorted(qs.split('&'))
-                qs = '&'.join(
-                    f"{quote(p.split('=')[0], safe='')}={quote(p.split('=')[1] if '=' in p else '', safe='')}"
-                    for p in parts
-                )
-            canonical_request = f"{r.method}\n{canonical_uri}\n{qs}\n{canonical_headers}"
-            signature = hmac.new(
-                sign_key.encode('utf-8'),
-                canonical_request.encode('utf-8'),
-                hashlib.sha256
-            ).hexdigest()
-            r.headers['Authorization'] = (
-                f"{sign_key_info}/{signed_headers}/{signature}"
+            host = parsed.netloc
+            qs_dict = {}
+            if parsed.query:
+                for k, v_list in parse_qs(parsed.query, keep_blank_values=True).items():
+                    qs_dict[k] = v_list[0] if v_list else ''
+            headers = {b'host': host.encode()}
+            auth_bytes = bce_signer.sign(
+                creds, b'GET', parsed.path.encode(), headers, qs_dict
             )
+            r.headers['Authorization'] = auth_bytes.decode()
+            r.headers['host'] = host
             return r
 
     session = requests.Session()

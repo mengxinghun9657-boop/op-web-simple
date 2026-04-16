@@ -21,7 +21,7 @@ class DatabaseCorrectorService:
         self._cluster_cache: Dict[str, str] = {}
 
     def _get_local_db_connection(self):
-        """获取本地容器数据库连接"""
+        """获取本地容器数据库连接（bce_cce_nodes 表由宿主机脚本同步到容器库）"""
         try:
             return get_db_connection()
         except Exception as e:

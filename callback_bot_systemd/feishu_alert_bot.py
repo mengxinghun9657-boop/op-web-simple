@@ -133,9 +133,9 @@ def get_ip_alerts_data(db: Database, keyword: str, scope: str = 'today') -> list
 
 # ==================== 状态图标映射 ====================
 STATUS_ICONS = {
-    '运行中': '🟢', '可用': '🟢', 'Active': '🟢', 'active': '🟢',
-    '已停止': '⛔', '停止': '⛔', '不可用': '⛔', 'Inactive': '⛔',
-    '创建中': '⏳', '启动中': '⏳', '删除中': '⏳',
+    '运行中': '🟢', '可用': '🟢', 'Active': '🟢', 'active': '🟢', 'Running': '🟢', 'running': '🟢',
+    '已停止': '⛔', '停止': '⛔', '不可用': '⛔', 'Inactive': '⛔', 'Stopped': '⛔', 'stopped': '⛔',
+    '创建中': '⏳', '启动中': '⏳', '删除中': '⏳', 'Starting': '⏳', 'Stopping': '⏳',
     '维修中': '🔧', '维护中': '🔧', 'processing': '🔧',
     'pending': '⏳', 'resolved': '✅', 'closed': '⛔'
 }
@@ -224,7 +224,7 @@ def query_server_info(db: Database, keyword: str) -> dict:
         
         # BCC实例信息
         try:
-            sql_bcc = """SELECT bcc_id, 名称, 状态, 主ipv4私网地址 FROM bce_bcc_instances WHERE `主ipv4私网地址` = %s LIMIT 3"""
+            sql_bcc = """SELECT bcc_id, 名称, 状态, `内网ip` FROM bce_bcc_instances WHERE `内网ip` = %s LIMIT 3"""
             bcc_list = db.query(sql_bcc, (keyword,))
             if bcc_list:
                 found_any = True
@@ -235,7 +235,7 @@ def query_server_info(db: Database, keyword: str) -> dict:
                         "name": bcc['名称'],
                         "id": bcc['bcc_id'],
                         "status": f"{status_icon} {bcc['状态']}",
-                        "ip": bcc['主ipv4私网地址'] or 'N/A'
+                        "ip": bcc['内网ip'] or 'N/A'
                     })
                 elements.extend([
                     {"tag": "markdown", "content": "**🖥️ BCC实例信息**"},
@@ -256,7 +256,7 @@ def query_server_info(db: Database, keyword: str) -> dict:
         
         # CCE节点信息
         try:
-            sql_cce = """SELECT cluster_id, `节点名称`, `状态`, `ip地址` FROM bce_cce_nodes WHERE `ip地址` = %s LIMIT 3"""
+            sql_cce = """SELECT cluster_id, `节点名称`, `状态`, `内网ip` FROM bce_cce_nodes WHERE `内网ip` = %s LIMIT 3"""
             cce_nodes = db.query(sql_cce, (keyword,))
             if cce_nodes:
                 found_any = True

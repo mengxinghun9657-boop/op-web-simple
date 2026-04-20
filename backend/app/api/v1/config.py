@@ -34,7 +34,7 @@ class ConfigSaveRequest(BaseModel):
     @validator('module')
     def validate_module(cls, v):
         """验证模块名称"""
-        allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'prometheus_runtime', 'apiserver', 'icafe', 'bce_sync']
+        allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'prometheus_runtime', 'apiserver', 'icafe', 'bce_sync', 'ai']
         if v not in allowed_modules:
             raise ValueError(f'无效的模块名称：{v}，允许的值：{", ".join(allowed_modules)}')
         return v
@@ -193,7 +193,7 @@ async def load_config(
     - icafe: iCafe配置
     """
     # 验证模块名称
-    allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'prometheus_runtime', 'apiserver', 'icafe', 'bce_sync']
+    allowed_modules = ['cmdb', 'monitoring', 'analysis', 'pfs', 'prometheus_runtime', 'apiserver', 'icafe', 'bce_sync', 'ai']
     if module not in allowed_modules:
         raise HTTPException(
             status_code=400,
@@ -310,10 +310,56 @@ async def test_icafe_connection(
             "success": success,
             "message": message
         }
-        
+
     except Exception as e:
         logger.error(f"测试iCafe连接失败: {e}")
         return {
             "success": False,
             "message": f"测试失败：{str(e)}"
         }
+
+
+class AITestRequest(BaseModel):
+    """AI 连接测试请求"""
+    api_url: str
+    api_key: str
+    model: str
+
+
+@router.post("/ai/test-connection", summary="测试AI模型连接")
+async def test_ai_connection(
+    request: AITestRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    测试 AI 模型 API 连接（发送一条简短消息验证配置可用性）
+    需要管理员权限
+    """
+    if current_user.role not in ['admin', 'super_admin']:
+        raise HTTPException(status_code=403, detail="仅管理员可以测试连接")
+
+    try:
+        import httpx
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {request.api_key}"
+        }
+        body = {
+            "model": request.model,
+            "messages": [{"role": "user", "content": "你好，请回复 ok"}],
+            "temperature": 0.1,
+            "stream": False
+        }
+        async with httpx.AsyncClient(timeout=httpx.Timeout(20)) as client:
+            resp = await client.post(request.api_url, json=body, headers=headers)
+
+        if resp.status_code == 200:
+            data = resp.json()
+            reply = (data.get('choices') or [{}])[0].get('message', {}).get('content', '')
+            return {"success": True, "message": f"连接成功，模型响应：{reply[:50] or '(已收到响应)'}"}
+        else:
+            return {"success": False, "message": f"请求失败，HTTP {resp.status_code}：{resp.text[:200]}"}
+
+    except Exception as e:
+        logger.error(f"测试AI连接失败: {e}")
+        return {"success": False, "message": f"连接失败：{str(e)}"}

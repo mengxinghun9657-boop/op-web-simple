@@ -74,14 +74,20 @@ export function generateFieldCondition(field, values) {
     return ''
   }
 
+  // 对值加引号（已有引号的不重复加）
+  const quote = (v) => {
+    const s = String(v).trim()
+    if (s.startsWith('"') && s.endsWith('"')) return s
+    return `"${s}"`
+  }
+
   // 单个值：使用 = 操作符
   if (values.length === 1) {
-    return `${field} = ${values[0]}`
+    return `${field} = ${quote(values[0])}`
   }
 
   // 多个值：使用 in 操作符
-  // 格式：字段 in (值1, 值2, 值3)
-  const valueList = values.join(', ')
+  const valueList = values.map(quote).join(', ')
   return `${field} in (${valueList})`
 }
 

@@ -35,6 +35,23 @@ class IcafeAPIClient:
         if len(password) <= 4:
             return "****"
         return password[:2] + "****" + password[-2:]
+
+    def _fix_plan_iql(self, iql: str) -> str:
+        """
+        修复 IQL 中所属计划字段的值格式。
+        iCafe 要求 所属计划 的值为 "年份/季度" 格式（如 "2026/2026Q2"），
+        用户常输入简写（如 "2026Q2"），此方法自动补全。
+        """
+        import re
+
+        def replace_plan(m):
+            val = m.group(1).strip().strip('"').strip("'")
+            # YYYYQN 简写 → YYYY/YYYYQN
+            if re.match(r'^\d{4}Q\d$', val, re.IGNORECASE):
+                val = f'{val[:4]}/{val}'
+            return f'所属计划 = "{val}"'
+
+        return re.sub(r'所属计划\s*=\s*"?([^"\s\)]+)"?', replace_plan, iql)
     
     def fetch_data(
         self,
@@ -64,6 +81,10 @@ class IcafeAPIClient:
             logger.info(f"开始获取 API 数据: spacecode={spacecode}, page={page}, pgcount={pgcount}")
             logger.info(f"用户名: {username}, 密码: {self._mask_password(password)}")
             logger.info(f"IQL: {iql}")
+
+            # 预处理 IQL：将 所属计划 = "2026Q2" 补全为 "2026/2026Q2"
+            iql = self._fix_plan_iql(iql)
+            logger.info(f"IQL (预处理后): {iql}")
             
             url = f"{self.config.base_url}/{spacecode}/cards"
             logger.info(f"API 请求 URL: {url}")
@@ -156,7 +177,12 @@ class IcafeAPIClient:
             logger.error(error_msg)
             return None
         except requests.exceptions.HTTPError as e:
-            error_msg = f"HTTP 错误: {str(e)}"
+            error_body = ""
+            try:
+                error_body = e.response.text[:500]
+            except Exception:
+                pass
+            error_msg = f"HTTP 错误: {str(e)}, 响应内容: {error_body}"
             logger.error(error_msg)
             return None
         except json.JSONDecodeError as e:

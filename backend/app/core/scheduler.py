@@ -235,23 +235,47 @@ scheduler = TaskScheduler()
 
 
 def init_scheduler():
-    """初始化调度器并加载配置"""
+    """初始化调度器并加载配置（含 MySQL 就绪等待）"""
+    import time
     from app.core.database import SessionLocal
     from app.services.cmdb_sync_service import CMDBSyncService
-    
+
+    # 等待 MySQL 就绪（最多 60 秒）
+    db = None
+    for attempt in range(1, 13):
+        try:
+            db = SessionLocal()
+            db.execute(__import__('sqlalchemy').text('SELECT 1'))
+            db.close()
+            db = None
+            logger.info("✅ MySQL 已就绪，开始初始化调度器")
+            break
+        except Exception as e:
+            if db:
+                try:
+                    db.close()
+                except Exception:
+                    pass
+                db = None
+            logger.warning(f"MySQL 未就绪，等待重试 ({attempt}/12): {e}")
+            time.sleep(5)
+    else:
+        logger.error("MySQL 等待超时（60s），调度器初始化跳过，定时任务不会运行")
+        return
+
     try:
         # 启动调度器
         scheduler.start()
-        
+
         # 从数据库加载CMDB同步配置
         db = SessionLocal()
         try:
             sync_service = CMDBSyncService(db)
-            
+
             enabled = sync_service.get_config("sync_schedule_enabled", False)
             interval_hours = sync_service.get_config("sync_schedule_interval_hours", 24)
             azones = sync_service.get_config("sync_schedule_azones", ["AZONE-cdhmlcc001"])
-            
+
             if enabled:
                 scheduler.add_cmdb_sync_job(interval_hours, azones)
                 logger.info(f"CMDB定时同步已启用: 间隔{interval_hours}小时")
@@ -287,10 +311,10 @@ def init_scheduler():
                     logger.info(f"BCE 定时同步已启用: 间隔 {interval_hours} 小时")
                 else:
                     logger.info("BCE 定时同步未启用")
-                
+
         finally:
             db.close()
-            
+
     except Exception as e:
         logger.error(f"初始化调度器失败: {e}")
 

@@ -24,14 +24,24 @@
 
       <!-- Token -->
       <el-form-item label="认证 Token">
-        <el-input
-          v-model="configForm.token"
-          type="textarea"
-          :rows="4"
-          placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-          :disabled="!isEditing"
-          show-password
-        />
+        <div class="token-input-wrapper">
+          <el-input
+            v-model="configForm.token"
+            :type="tokenVisible ? 'textarea' : 'password'"
+            :rows="4"
+            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            :disabled="!isEditing"
+            class="token-input"
+          />
+          <el-button
+            class="token-toggle-btn"
+            :icon="tokenVisible ? Hide : View"
+            circle
+            size="small"
+            @click="tokenVisible = !tokenVisible"
+            :title="tokenVisible ? '隐藏 Token' : '显示 Token'"
+          />
+        </div>
         <div class="form-tip">
           <el-icon><InfoFilled /></el-icon>
           用于 Prometheus API 认证的 JWT Token
@@ -189,7 +199,9 @@ import {
   CircleCheck,
   Select,
   Edit,
-  Close
+  Close,
+  View,
+  Hide
 } from '@element-plus/icons-vue'
 import * as configApi from '@/api/config'
 import * as pfsApi from '@/api/pfs'
@@ -217,6 +229,7 @@ const commonPfsIds = ref([
 const testing = ref(false)
 const saving = ref(false)
 const isEditing = ref(false)
+const tokenVisible = ref(false)
 
 // 原始配置（用于取消编辑）
 const originalConfig = ref({})
@@ -399,5 +412,21 @@ onMounted(() => {
 
 .form-tip a:hover {
   text-decoration: underline;
+}
+
+.token-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.token-input {
+  width: 100%;
+}
+
+.token-toggle-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
 }
 </style>

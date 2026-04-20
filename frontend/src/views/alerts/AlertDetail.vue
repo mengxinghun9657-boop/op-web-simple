@@ -280,8 +280,8 @@
                             <div class="device-model" v-if="row.part_model">{{ row.part_model }}</div>
                           </div>
                         </td>
-                        <td>
-                          <el-tag :type="getFaultTagType(row.severity)" size="small">
+                        <td class="cell-wrap">
+                          <el-tag :type="getFaultTagType(row.severity)" size="small" class="tag-break">
                             {{ row.alert_type }}
                           </el-tag>
                           <div class="fault-name">{{ row.fault_name }}</div>
@@ -1071,6 +1071,7 @@ onMounted(() => {
   margin-top: 4px;
   font-size: 13px;
   color: var(--text-primary);
+  word-break: break-all;
 }
 
 .manual-check-code {
@@ -1094,6 +1095,8 @@ onMounted(() => {
   align-items: flex-start;
   gap: 4px;
   min-width: 0;
+  width: 100%;
+  overflow: hidden;
   width: 100%;
 }
 
@@ -1163,6 +1166,19 @@ onMounted(() => {
 .cell-wrap {
   white-space: normal;
   word-break: break-word;
+}
+
+.tag-break {
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.tag-break :deep(.el-tag__content) {
+  white-space: normal;
+  word-break: break-all;
 }
 
 /* 原始数据展开样式 */

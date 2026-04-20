@@ -16,7 +16,24 @@
               <el-input v-model="configForm.grafana_url" :disabled="!isAdmin" placeholder="https://cprom.cd.baidubce.com/select/prometheus" />
             </el-form-item>
             <el-form-item label="认证 Token">
-              <el-input v-model="configForm.token" type="textarea" :rows="4" :disabled="!isAdmin" placeholder="Bearer eyJ..." />
+              <div class="token-input-wrapper">
+                <el-input
+                  v-model="configForm.token"
+                  :type="tokenVisible ? 'textarea' : 'password'"
+                  :rows="4"
+                  :disabled="!isAdmin"
+                  placeholder="Bearer eyJ..."
+                  class="token-input"
+                />
+                <el-button
+                  class="token-toggle-btn"
+                  :icon="tokenVisible ? Hide : View"
+                  circle
+                  size="small"
+                  @click="tokenVisible = !tokenVisible"
+                  :title="tokenVisible ? '隐藏 Token' : '显示 Token'"
+                />
+              </div>
             </el-form-item>
             <el-form-item label="Instance ID">
               <el-input v-model="configForm.instance_id" :disabled="!isAdmin" placeholder="cprom-j5i12oxuqj1z7" />
@@ -63,12 +80,13 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Connection, Check, InfoFilled } from '@element-plus/icons-vue'
+import { Connection, Check, InfoFilled, View, Hide } from '@element-plus/icons-vue'
 import * as configApi from '@/api/config'
 
 const user = computed(() => JSON.parse(localStorage.getItem('user') || '{}'))
 const isAdmin = computed(() => ['admin', 'super_admin'].includes(user.value.role))
 const saving = ref(false)
+const tokenVisible = ref(false)
 const configForm = ref({
   text: '',
   ids: [],
@@ -124,4 +142,7 @@ onMounted(load)
 .analysis-config { display: grid; grid-template-columns: 2fr 1fr; gap: var(--spacing-6); }
 .config-section { display: flex; flex-direction: column; gap: var(--spacing-4); }
 .info-item { color: var(--text-secondary); line-height: 1.8; margin-bottom: 12px; }
+.token-input-wrapper { position: relative; width: 100%; }
+.token-input { width: 100%; }
+.token-toggle-btn { position: absolute; top: 6px; right: 6px; z-index: 1; }
 </style>

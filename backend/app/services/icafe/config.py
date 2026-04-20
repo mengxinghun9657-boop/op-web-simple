@@ -28,7 +28,7 @@ class IcafeConfig:
     default_password: str = ""
     default_page: int = 1
     default_pgcount: int = 100
-    default_iql_template: str = "最后修改时间 > {start_date} AND 最后修改时间 < {end_date}"
+    default_iql_template: str = "创建时间 > {start_date} AND 创建时间 < {end_date}"
     
     # 分析配置
     target_users: list = field(default_factory=list)  # 空列表表示分析所有负责人

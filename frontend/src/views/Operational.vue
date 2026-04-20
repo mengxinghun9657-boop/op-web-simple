@@ -1,246 +1,254 @@
 <template>
-  <div class="page-container">
+  <div class="op-page">
+
     <!-- 页面头部 -->
-    <div class="page-header">
-      <div>
-        <div class="page-title">
-          <div class="page-title-icon">
-            <el-icon><UploadFilled /></el-icon>
-          </div>
-          运营数据分析
+    <div class="op-header">
+      <div class="op-header-left">
+        <div class="op-header-icon">
+          <el-icon><DataAnalysis /></el-icon>
         </div>
-        <div class="page-subtitle">上传数据文件或通过API查询,生成专业的运营分析报告</div>
+        <div>
+          <h1 class="op-title">运营数据分析</h1>
+          <p class="op-subtitle">上传数据文件或通过 API 查询，生成专业的运营分析报告</p>
+        </div>
       </div>
     </div>
 
     <!-- 数据来源选择 -->
-    <div class="content-card">
-      <div class="content-card-header">
-        <div class="content-card-title">
-          <el-icon><Switch /></el-icon>
+    <div class="op-card">
+      <div class="op-card-header">
+        <div class="op-card-title">
+          <span class="op-card-accent accent-primary"></span>
+          <el-icon class="op-card-icon"><Switch /></el-icon>
           数据来源
         </div>
       </div>
-      <div class="content-card-body">
-        <el-radio-group v-model="dataSource" size="large" @change="handleSourceChange">
-          <el-radio-button label="excel">
+      <div class="op-card-body">
+        <div class="source-tabs">
+          <button
+            class="source-tab"
+            :class="{ active: dataSource === 'excel' }"
+            @click="dataSource = 'excel'; handleSourceChange()"
+          >
             <el-icon><Upload /></el-icon>
             <span>Excel 上传</span>
-          </el-radio-button>
-          <el-radio-button label="api">
+          </button>
+          <button
+            class="source-tab"
+            :class="{ active: dataSource === 'api' }"
+            @click="dataSource = 'api'; handleSourceChange()"
+          >
             <el-icon><Connection /></el-icon>
             <span>API 查询</span>
-          </el-radio-button>
-        </el-radio-group>
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Excel 上传模式 -->
-    <div class="content-card" v-if="dataSource === 'excel'">
-      <div class="content-card-header">
-        <div class="content-card-title">
-          <el-icon><Upload /></el-icon>
-          数据文件上传
-          <el-tooltip placement="right" effect="light" :width="300">
-            <template #content>
-              <div class="upload-help-content">
-                <p>• 上传Excel文件后，系统将自动进行数据分析</p>
-                <p>• 分析完成后会生成包含AI智能解读的报告</p>
-                <p>• AI解读位于报告底部，提供数据洞察和建议</p>
-              </div>
-            </template>
-            <el-icon class="help-icon"><QuestionFilled /></el-icon>
-          </el-tooltip>
+    <transition name="op-fade-up">
+      <div class="op-card" v-if="dataSource === 'excel'" key="excel">
+        <div class="op-card-header">
+          <div class="op-card-title">
+            <span class="op-card-accent accent-blue"></span>
+            <el-icon class="op-card-icon"><Upload /></el-icon>
+            数据文件上传
+            <el-tooltip placement="right" effect="light">
+              <template #content>
+                <div class="op-tooltip-content">
+                  <p>• 上传 Excel 文件后，系统将自动进行数据分析</p>
+                  <p>• 分析完成后会生成包含 AI 智能解读的报告</p>
+                  <p>• AI 解读位于报告底部，提供数据洞察和建议</p>
+                </div>
+              </template>
+              <el-icon class="op-help-icon"><QuestionFilled /></el-icon>
+            </el-tooltip>
+          </div>
+        </div>
+        <div class="op-card-body">
+          <FileUpload @file-selected="handleFile" />
+          <div class="op-action-bar">
+            <el-button
+              class="op-primary-btn"
+              :loading="store.loading"
+              :disabled="!file"
+              @click="startExcelAnalysis"
+            >
+              <el-icon v-if="!store.loading"><DataAnalysis /></el-icon>
+              {{ store.loading ? '分析中（含 AI 解读）...' : '开始分析' }}
+            </el-button>
+          </div>
         </div>
       </div>
-      <div class="content-card-body">
-        <FileUpload @file-selected="handleFile" />
-        <div class="upload-actions">
-          <el-button type="primary" size="large" :loading="store.loading" :disabled="!file" @click="startExcelAnalysis">
-            <el-icon v-if="!store.loading"><DataAnalysis /></el-icon>
-            {{ store.loading ? '分析中（含AI解读）...' : '开始分析' }}
-          </el-button>
-        </div>
-      </div>
-    </div>
+    </transition>
 
-    <!-- API 查询模式 -->
-    <div class="content-card" v-if="dataSource === 'api'">
-      <div class="content-card-header">
-        <div class="content-card-title">
-          <el-icon><Connection /></el-icon>
-          API 查询参数
-          <el-tooltip placement="right" effect="light" :width="400">
-            <template #content>
-              <div class="api-help-content">
-                <p>• 任何用户都可以调用API，但调用API所使用的用户名需要有对应空间的权限，否则会报没有空间权限</p>
-                <p>• 权限需跟空间权限一致：只读权限不可以调用API、新建权限可以新建卡片、编辑权限可以新建以及修改卡片、管理员权限可以调用新建修改查询等API</p>
-                <p>• 密码是邮箱密码或者是虚拟密码，建议使用虚拟密码</p>
-                <p>• <a href="https://ku.baidu-int.com/knowledge/HFVrC7hq1Q/_SKPgSwp2G/NbX2gitgSF/RhtGsvv5GGK_hs" target="_blank" class="help-link">获取虚拟密码</a></p>
-                <p style="margin-top: 8px; color: #67c23a;">• 不填写用户名密码将使用默认配置</p>
-              </div>
-            </template>
-            <el-icon class="help-icon"><QuestionFilled /></el-icon>
-          </el-tooltip>
-        </div>
-        <div class="content-card-extra">
-          <QueryHistory @load="loadHistoryQuery" />
-        </div>
-      </div>
-      <div class="content-card-body">
-        <el-form :model="apiForm" label-width="120px" class="api-form">
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="空间代码">
-                <el-input v-model="apiForm.spacecode" placeholder="HMLCC" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="用户名">
-                <el-input v-model="apiForm.username" placeholder="留空使用默认配置" clearable />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="密码">
-                <el-input v-model="apiForm.password" type="password" placeholder="留空使用默认配置" show-password clearable />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="起始页码">
-                <el-input-number v-model="apiForm.page" :min="1" :max="100" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="每页记录数">
-                <el-input-number v-model="apiForm.pgcount" :min="1" :max="100" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
-      </div>
-    </div>
+    <!-- API 模式 -->
+    <transition name="op-fade-up">
+      <div v-if="dataSource === 'api'" key="api" class="op-api-flow">
 
-    <!-- 查询条件构建器 -->
-    <div class="content-card" v-if="dataSource === 'api'">
-      <div class="content-card-header">
-        <div class="content-card-title">
-          <el-icon><Filter /></el-icon>
-          查询条件
-        </div>
-      </div>
-      <div class="content-card-body">
-        <QueryBuilder v-model="apiForm.iql" />
-      </div>
-    </div>
-
-    <!-- IQL 查询语句 -->
-    <div class="content-card" v-if="dataSource === 'api'">
-      <div class="content-card-header">
-        <div class="content-card-title">
-          <el-icon><Document /></el-icon>
-          IQL 查询语句
-          <el-tooltip placement="right" effect="light" :width="300">
-            <template #content>
-              <div class="iql-help-content">
-                <p>• 上方的查询条件会自动生成IQL语句</p>
-                <p>• 您也可以在此直接编辑IQL语句</p>
-                <p>• 点击"语法帮助"查看完整的IQL语法说明</p>
-              </div>
-            </template>
-            <el-icon class="help-icon"><QuestionFilled /></el-icon>
-          </el-tooltip>
-        </div>
-        <div class="content-card-extra">
-          <QueryHistory @load="loadHistoryQuery" />
-        </div>
-      </div>
-      <div class="content-card-body">
-        <IQLEditor v-model="apiForm.iql" />
-      </div>
-    </div>
-
-    <!-- 查询模板 -->
-    <div class="content-card" v-if="dataSource === 'api'">
-      <div class="content-card-header">
-        <div class="content-card-title">
-          <el-icon><Collection /></el-icon>
-          查询模板
-        </div>
-      </div>
-      <div class="content-card-body">
-        <el-form :model="apiForm" label-width="120px" class="api-form">
-          <el-form-item label="系统模板">
-            <div class="template-selector-wrapper">
-              <el-select v-model="selectedTemplate" @change="applyTemplate" placeholder="选择系统模板" clearable style="flex: 1">
-                <el-option v-for="t in iqlTemplates" :key="t.id" :label="t.name" :value="t.id">
-                  <div class="template-option">
-                    <span class="template-name">{{ t.name }}</span>
-                    <span class="template-desc">{{ t.description }}</span>
+        <!-- 查询参数 -->
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-title">
+              <span class="op-card-accent accent-blue"></span>
+              <el-icon class="op-card-icon"><Connection /></el-icon>
+              查询参数
+              <el-tooltip placement="right" effect="light">
+                <template #content>
+                  <div class="op-tooltip-content">
+                    <p>• 用户名和密码从系统配置中读取，无需手动填写</p>
+                    <p>• 空间代码是 iCafe 空间的唯一标识符</p>
+                    <p>• 页码和每页记录数用于控制分页查询范围</p>
                   </div>
-                </el-option>
-              </el-select>
+                </template>
+                <el-icon class="op-help-icon"><QuestionFilled /></el-icon>
+              </el-tooltip>
             </div>
-          </el-form-item>
-
-          <!-- 自定义模板 -->
-          <el-form-item label="自定义模板">
-            <CustomTemplates :current-iql="apiForm.iql" @load="loadCustomTemplate" />
-          </el-form-item>
-        </el-form>
-      </div>
-    </div>
-
-    <!-- 开始查询按钮 -->
-    <div class="content-card" v-if="dataSource === 'api'">
-      <div class="content-card-body">
-        <div class="upload-actions">
-          <el-button type="primary" size="large" :loading="store.loading" :disabled="!apiForm.iql" @click="startApiAnalysis">
-            <el-icon v-if="!store.loading"><DataAnalysis /></el-icon>
-            {{ store.loading ? '查询分析中...' : '开始查询分析' }}
-          </el-button>
+            <div class="op-card-extra">
+              <QueryHistory @load="loadHistoryQuery" />
+            </div>
+          </div>
+          <div class="op-card-body">
+            <div class="op-param-grid">
+              <div class="op-param-item">
+                <label class="op-param-label">空间代码</label>
+                <el-input v-model="apiForm.spacecode" placeholder="HMLCC" class="op-input" />
+              </div>
+              <div class="op-param-item">
+                <label class="op-param-label">起始页码</label>
+                <el-input-number v-model="apiForm.page" :min="1" :max="100" class="op-input-number" />
+              </div>
+              <div class="op-param-item">
+                <label class="op-param-label">每页记录数</label>
+                <el-input-number v-model="apiForm.pgcount" :min="1" :max="100" class="op-input-number" />
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- 步骤连接线 -->
+        <div class="op-flow-line">
+          <div class="op-flow-dot"></div>
+          <div class="op-flow-dash"></div>
+          <div class="op-flow-dot"></div>
+        </div>
+
+        <!-- 查询条件 -->
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-title">
+              <span class="op-card-accent accent-purple"></span>
+              <el-icon class="op-card-icon"><Filter /></el-icon>
+              查询条件
+            </div>
+          </div>
+          <div class="op-card-body">
+            <QueryBuilder ref="queryBuilderRef" v-model="apiForm.iql" />
+            <div class="op-apply-bar">
+              <span class="op-apply-hint">修改条件后点击「应用」生成 IQL 语句</span>
+              <el-button class="op-apply-btn" @click="applyQueryConditions">
+                <el-icon><Check /></el-icon>
+                应用条件
+              </el-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 步骤连接线 -->
+        <div class="op-flow-line">
+          <div class="op-flow-dot"></div>
+          <div class="op-flow-dash"></div>
+          <div class="op-flow-dot"></div>
+        </div>
+
+        <!-- IQL 查询语句 -->
+        <div class="op-card">
+          <div class="op-card-header">
+            <div class="op-card-title">
+              <span class="op-card-accent accent-green"></span>
+              <el-icon class="op-card-icon"><Document /></el-icon>
+              IQL 查询语句
+              <el-tooltip placement="right" effect="light">
+                <template #content>
+                  <div class="op-tooltip-content">
+                    <p>• 上方的查询条件点击「应用」后会生成 IQL 语句</p>
+                    <p>• 您也可以在此直接编辑 IQL 语句</p>
+                  </div>
+                </template>
+                <el-icon class="op-help-icon"><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </div>
+          </div>
+          <div class="op-card-body">
+            <IQLEditor v-model="apiForm.iql" />
+            <div class="op-action-bar">
+              <el-button
+                class="op-primary-btn"
+                :loading="store.loading"
+                :disabled="!apiForm.iql"
+                @click="startApiAnalysis"
+              >
+                <el-icon v-if="!store.loading"><DataAnalysis /></el-icon>
+                {{ store.loading ? '查询分析中...' : '开始查询分析' }}
+              </el-button>
+            </div>
+          </div>
+        </div>
+
       </div>
-    </div>
+    </transition>
 
     <!-- 分析结果 -->
-    <transition name="fade-slide">
-      <div class="content-card" v-if="store.taskId" style="grid-column: span 2;">
+    <transition name="op-result-slide">
+      <div class="op-card op-result-card" v-if="store.taskId">
         <StateDisplay
           v-if="store.loading"
           state="loading"
           loading-text="正在生成分析报告..."
         >
           <ProgressBar :percentage="progress" />
-          <p class="loading-hint">请稍候，这可能需要几分钟时间</p>
+          <p class="op-loading-hint">请稍候，这可能需要几分钟时间</p>
         </StateDisplay>
-        
+
         <div v-else-if="store.result" class="result-container">
-          <div class="result-header">
-            <div class="result-status">
-              <div class="status-dot"></div>
-              <span class="status-text">分析完成</span>
-              <span v-if="store.result.total_records" class="record-count">（共 {{ store.result.total_records }} 条记录）</span>
+          <div class="op-result-header">
+            <div class="op-result-status">
+              <div class="op-status-dot"></div>
+              <span class="op-status-text">分析完成</span>
+              <span v-if="store.result.total_records" class="op-record-count">
+                共 {{ store.result.total_records }} 条记录
+              </span>
             </div>
-            <div class="result-actions">
-              <el-button type="primary" @click="downloadReport"><el-icon><Download /></el-icon>下载报告</el-button>
-              <el-button @click="openReport"><el-icon><FullScreen /></el-icon>全屏查看</el-button>
+            <div class="op-result-actions">
+              <el-button class="op-ghost-btn" @click="openReport">
+                <el-icon><FullScreen /></el-icon>全屏查看
+              </el-button>
+              <el-button class="op-primary-btn" @click="downloadReport">
+                <el-icon><Download /></el-icon>下载报告
+              </el-button>
             </div>
           </div>
           <div class="report-preview">
-            <div v-if="iframeLoading" class="preview-loading"><el-icon class="spin-icon"><Loading /></el-icon><p>报告加载中...</p></div>
-            <div v-if="reportUrl" class="preview-frame"><iframe :src="reportUrl" @load="handleIframeLoad" @error="handleIframeError"></iframe></div>
+            <div v-if="iframeLoading" class="preview-loading">
+              <el-icon class="spin-icon"><Loading /></el-icon>
+              <p>报告加载中...</p>
+            </div>
+            <div v-if="reportUrl" class="preview-frame">
+              <iframe :src="reportUrl" @load="handleIframeLoad" @error="handleIframeError"></iframe>
+            </div>
             <div v-else class="preview-empty">
               <el-icon class="empty-icon"><Warning /></el-icon>
               <h3>报告预览不可用</h3>
               <p>请点击下载按钮获取完整报告文件</p>
-              <el-button type="primary" @click="downloadReport"><el-icon><Download /></el-icon>立即下载</el-button>
+              <el-button class="op-primary-btn" @click="downloadReport">
+                <el-icon><Download /></el-icon>立即下载
+              </el-button>
             </div>
           </div>
         </div>
       </div>
     </transition>
+
   </div>
 </template>
 
@@ -249,18 +257,17 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Download, FullScreen, Loading, UploadFilled, DataAnalysis, Warning, Upload, Connection, Switch, QuestionFilled, Filter, Document, Collection } from '@element-plus/icons-vue'
+import { Download, FullScreen, Loading, DataAnalysis, Warning, Upload, Connection, Switch, QuestionFilled, Filter, Document, Check } from '@element-plus/icons-vue'
 import { Card, StateDisplay } from '@/components/common'
 import { useOperationalStore } from '@/stores/operational'
 import { getFullBackendUrl } from '@/utils/config'
-import { getOperationalDefaults, getIQLTemplates } from '@/api/operational'
+import { getOperationalDefaults } from '@/api/operational'
 import FileUpload from '@/components/common/FileUpload.vue'
 import ProgressBar from '@/components/common/ProgressBar.vue'
 import DateRangePicker from '@/components/operational/DateRangePicker.vue'
 import QueryBuilder from '@/components/operational/QueryBuilder.vue'
 import IQLEditor from '@/components/operational/IQLEditor.vue'
 import QueryHistory from '@/components/operational/QueryHistory.vue'
-import CustomTemplates from '@/components/operational/CustomTemplates.vue'
 import { useQueryHistory } from '@/composables/useQueryHistory'
 
 const route = useRoute()
@@ -270,6 +277,7 @@ const file = ref(null)
 const progress = ref(0)
 const iframeLoading = ref(false)
 const dataSource = ref('excel')
+const queryBuilderRef = ref(null)
 
 // 定时器引用，用于清理
 let pollTimer = null
@@ -277,16 +285,9 @@ let pollTimer = null
 // 查询历史
 const { addHistory } = useQueryHistory()
 
-// IQL 模板相关
-const iqlTemplates = ref([])
-const selectedTemplate = ref('')
-const syntaxHelp = ref({ operators: [], common_fields: [], field_examples: {} })
-
 // API 查询表单
 const apiForm = ref({
   spacecode: 'HMLCC',
-  username: '',
-  password: '',
   iql: '',
   page: 1,
   pgcount: 100
@@ -297,26 +298,10 @@ const isApiFormValid = computed(() => {
   return apiForm.value.spacecode && apiForm.value.iql
 })
 
-// 应用模板
-const applyTemplate = (templateId) => {
-  const template = iqlTemplates.value.find(t => t.id === templateId)
-  if (template && template.template) {
-    apiForm.value.iql = template.template
-    
-    // 提示用户
-    ElMessage.success({
-      message: `已应用模板: ${template.name}`,
-      duration: 3000
-    })
-    
-    // 如果模板有参数，提示用户修改
-    if (template.params && template.params.length > 0) {
-      ElMessage.info({
-        message: '请根据实际需求修改模板中的参数',
-        duration: 5000,
-        showClose: true
-      })
-    }
+// 应用查询条件（由"应用条件"按钮触发）
+const applyQueryConditions = () => {
+  if (queryBuilderRef.value) {
+    queryBuilderRef.value.applyConditions()
   }
 }
 
@@ -340,21 +325,14 @@ onMounted(async () => {
     })
   }
   
-  // 加载默认配置和模板
+  // 加载默认配置
   try {
-    const [defaults, templatesData] = await Promise.all([
-      getOperationalDefaults(),
-      getIQLTemplates()
-    ])
+    const defaults = await getOperationalDefaults()
     if (defaults) {
       apiForm.value.spacecode = defaults.spacecode || 'HMLCC'
       apiForm.value.iql = defaults.default_iql || ''
       apiForm.value.page = defaults.default_page || 1
       apiForm.value.pgcount = defaults.default_pgcount || 100
-    }
-    if (templatesData) {
-      iqlTemplates.value = templatesData.templates || []
-      syntaxHelp.value = templatesData.syntax_help || {}
     }
   } catch (e) {
     console.warn('加载配置失败:', e)
@@ -417,7 +395,6 @@ const startApiAnalysis = async () => {
     // 保存查询历史
     addHistory({
       spacecode: apiForm.value.spacecode,
-      username: apiForm.value.username,
       iql: apiForm.value.iql,
       page: apiForm.value.page,
       pgcount: apiForm.value.pgcount,
@@ -459,7 +436,6 @@ const startApiAnalysis = async () => {
     if (store.result?.total_records) {
       addHistory({
         spacecode: apiForm.value.spacecode,
-        username: apiForm.value.username,
         iql: apiForm.value.iql,
         page: apiForm.value.page,
         pgcount: apiForm.value.pgcount,
@@ -484,16 +460,10 @@ const startApiAnalysis = async () => {
 // 加载历史查询
 const loadHistoryQuery = (historyItem) => {
   apiForm.value.spacecode = historyItem.spacecode
-  apiForm.value.username = historyItem.username || ''
   apiForm.value.iql = historyItem.iql
   apiForm.value.page = historyItem.page
   apiForm.value.pgcount = historyItem.pgcount
   ElMessage.success('已加载历史查询')
-}
-
-// 加载自定义模板
-const loadCustomTemplate = (iql) => {
-  apiForm.value.iql = iql
 }
 
 const poll = async (taskId) => {
@@ -544,197 +514,490 @@ onUnmounted(() => {
 
 
 <style scoped>
-/* 帮助图标 */
-.help-icon {
-  margin-left: var(--space-2);
-  color: var(--primary);
-  cursor: pointer;
+/* ─── 页面容器 ─────────────────────────────────────────── */
+.op-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 0 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ─── 页面头部 ─────────────────────────────────────────── */
+.op-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px 0 24px;
+}
+
+.op-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.op-header-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 22px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+}
+
+.op-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #202124;
+  margin: 0 0 4px;
+  letter-spacing: -0.3px;
+}
+
+.op-subtitle {
+  font-size: 13px;
+  color: #80868b;
+  margin: 0;
+}
+
+/* ─── 卡片通用 ─────────────────────────────────────────── */
+.op-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e8eaed;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.08), 0 1px 4px rgba(60, 64, 67, 0.04);
+  margin-bottom: 16px;
+  transition: box-shadow 200ms cubic-bezier(0.2, 0, 0, 1),
+              border-color 200ms cubic-bezier(0.2, 0, 0, 1);
+  overflow: hidden;
+}
+
+.op-card:hover {
+  box-shadow: 0 2px 8px rgba(60, 64, 67, 0.12), 0 2px 6px rgba(60, 64, 67, 0.06);
+  border-color: #dadce0;
+}
+
+.op-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 0;
+}
+
+.op-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.op-card-accent {
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.accent-primary { background: #1a73e8; }
+.accent-blue    { background: #4285f4; }
+.accent-purple  { background: #7c4dff; }
+.accent-green   { background: #1e8e3e; }
+.accent-orange  { background: #e37400; }
+
+.op-card-icon {
   font-size: 16px;
-  vertical-align: middle;
-  transition: all var(--transition-fast);
+  color: #5f6368;
 }
 
-.help-icon:hover {
-  color: var(--primary);
-  transform: scale(1.1);
+.op-card-extra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.upload-help-content,
-.api-help-content,
-.iql-help-content {
+.op-card-body {
+  padding: 16px 20px 20px;
+}
+
+/* ─── 帮助图标 ─────────────────────────────────────────── */
+.op-help-icon {
+  font-size: 15px;
+  color: #bdc1c6;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+.op-help-icon:hover { color: #1a73e8; }
+
+.op-tooltip-content {
   font-size: 13px;
   line-height: 1.8;
-  padding: var(--space-2);
+  padding: 4px 2px;
+  color: #5f6368;
+}
+.op-tooltip-content p { margin: 4px 0; }
+
+/* ─── 数据来源 tab ─────────────────────────────────────── */
+.source-tabs {
+  display: inline-flex;
+  background: #f1f3f4;
+  border-radius: 10px;
+  padding: 4px;
+  gap: 2px;
 }
 
-.upload-help-content p,
-.api-help-content p,
-.iql-help-content p {
-  margin: var(--space-2) 0;
-}
-
-.api-help-content .help-link {
-  color: var(--primary);
-  text-decoration: underline;
-  transition: color var(--transition-fast);
-}
-
-.api-help-content .help-link:hover {
-  color: var(--primary);
-}
-
-/* API 表单 */
-.api-form {
-  margin-bottom: var(--space-4);
-}
-
-.api-form .el-form-item {
-  margin-bottom: var(--space-5);
-}
-
-.api-form :deep(.el-form-item__label) {
-  font-weight: 500;
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-}
-
-/* 模板选择器 */
-.template-selector-wrapper {
+.source-tab {
   display: flex;
-  gap: var(--space-3);
+  align-items: center;
+  gap: 7px;
+  padding: 8px 20px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #5f6368;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 200ms cubic-bezier(0.2, 0, 0, 1),
+              color 200ms cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 200ms cubic-bezier(0.2, 0, 0, 1);
+  outline: none;
+  white-space: nowrap;
+}
+
+.source-tab .el-icon {
+  font-size: 15px;
+}
+
+.source-tab:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #202124;
+}
+
+.source-tab.active {
+  background: #fff;
+  color: #1a73e8;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(60, 64, 67, 0.18);
+}
+
+/* ─── API 流程包裹 ──────────────────────────────────────── */
+.op-api-flow {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── 步骤连接线 ──────────────────────────────────────── */
+.op-flow-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 28px;
+  gap: 0;
+  margin-bottom: 0;
+}
+
+.op-flow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #dadce0;
+  flex-shrink: 0;
+}
+
+.op-flow-dash {
+  flex: 1;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #dadce0 0px,
+    #dadce0 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+/* ─── 查询参数网格 ─────────────────────────────────────── */
+.op-param-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+}
+
+.op-param-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.op-param-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #5f6368;
+}
+
+.op-input {
   width: 100%;
 }
 
+.op-input-number {
+  width: 100%;
+}
+
+.op-input-number :deep(.el-input-number) {
+  width: 100%;
+}
+
+/* ─── 应用条件栏 ─────────────────────────────────────────── */
+.op-apply-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f3f4;
+}
+
+.op-apply-hint {
+  font-size: 12px;
+  color: #bdc1c6;
+}
+
+.op-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1.5px solid #1a73e8;
+  background: transparent;
+  color: #1a73e8;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease, box-shadow 150ms ease, transform 100ms ease;
+  outline: none;
+}
+
+.op-apply-btn:hover {
+  background: rgba(26, 115, 232, 0.06);
+  box-shadow: 0 1px 4px rgba(26, 115, 232, 0.2);
+  transform: translateY(-1px);
+}
+
+.op-apply-btn:active {
+  transform: translateY(0);
+  background: rgba(26, 115, 232, 0.12);
+}
+
+/* ─── 主操作按钮 ──────────────────────────────────────── */
+.op-action-bar {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f3f4;
+}
+
+.op-primary-btn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 7px;
+  height: 40px !important;
+  min-width: 180px;
+  padding: 0 24px !important;
+  border-radius: 10px !important;
+  border: none !important;
+  background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%) !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.28) !important;
+  transition: box-shadow 200ms cubic-bezier(0.2, 0, 0, 1),
+              transform 150ms cubic-bezier(0.2, 0, 0, 1),
+              opacity 200ms ease !important;
+}
+
+.op-primary-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 14px rgba(26, 115, 232, 0.38) !important;
+  transform: translateY(-1px);
+}
+
+.op-primary-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(26, 115, 232, 0.2) !important;
+}
+
+.op-primary-btn:disabled {
+  background: linear-gradient(135deg, #bdc1c6 0%, #dadce0 100%) !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+/* ─── Ghost 按钮 ─────────────────────────────────────── */
+.op-ghost-btn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  height: 36px !important;
+  padding: 0 16px !important;
+  border-radius: 8px !important;
+  border: 1px solid #dadce0 !important;
+  background: #fff !important;
+  color: #5f6368 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  transition: border-color 150ms ease, background 150ms ease, transform 100ms ease !important;
+}
+
+.op-ghost-btn:hover {
+  border-color: #1a73e8 !important;
+  color: #1a73e8 !important;
+  background: rgba(26, 115, 232, 0.04) !important;
+  transform: translateY(-1px);
+}
+
+/* ─── 模板区 ────────────────────────────────────────── */
+.op-template-section {
+  padding: 4px 0;
+}
+
+.op-section-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #5f6368;
+  margin: 0 0 10px;
+}
+
+.op-template-select {
+  width: 100%;
+}
+
+.op-template-divider {
+  height: 1px;
+  background: #f1f3f4;
+  margin: 16px 0;
+}
+
+/* ─── 模板下拉选项 ─────────────────────────────────── */
 .template-option {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: var(--space-1) 0;
+  gap: 3px;
+  padding: 3px 0;
 }
 
 .template-name {
   font-weight: 600;
-  color: var(--text-primary);
-  font-size: var(--text-sm);
+  color: #202124;
+  font-size: 13px;
 }
 
 .template-desc {
-  font-size: var(--text-xs);
-  color: var(--text-tertiary);
+  font-size: 12px;
+  color: #80868b;
   line-height: 1.4;
 }
 
-/* 上传操作 */
-.upload-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: var(--space-6);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border-color);
+/* ─── 加载状态 ──────────────────────────────────────── */
+.op-loading-hint {
+  font-size: 13px;
+  color: #80868b;
+  margin-top: 8px;
+  text-align: center;
 }
 
-.upload-actions .el-button {
-  min-width: 160px;
-  height: 44px;
-  font-weight: 500;
-  transition: all var(--transition-fast);
-}
-
-/* 加载状态 */
 .spin-icon {
-  font-size: 48px;
-  color: var(--primary);
-  animation: spin 1s linear infinite;
+  font-size: 40px;
+  color: #1a73e8;
+  animation: op-spin 1s linear infinite;
 }
 
-@keyframes spin {
+@keyframes op-spin {
   from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  to   { transform: rotate(360deg); }
 }
 
-.loading-hint {
-  font-size: var(--text-sm);
-  color: var(--text-tertiary);
-  margin-top: var(--space-2);
+/* ─── 结果卡片 ──────────────────────────────────────── */
+.op-result-card {
+  border-color: #e8eaed;
+  overflow: hidden;
 }
 
-/* 结果展示 */
-.result-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.result-header {
+.op-result-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-5) var(--space-6);
-  border-bottom: 2px solid var(--border-color);
-  background: linear-gradient(to bottom, var(--bg-container), var(--bg-secondary));
+  padding: 16px 20px;
+  background: linear-gradient(to right, #f8f9fa, #fff);
+  border-bottom: 1px solid #f1f3f4;
 }
 
-.result-status {
+.op-result-status {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 10px;
 }
 
-.status-dot {
-  width: 12px;
-  height: 12px;
-  background: var(--color-success);
+.op-status-dot {
+  width: 10px;
+  height: 10px;
+  background: #1e8e3e;
   border-radius: 50%;
-  animation: pulse 2s infinite;
   box-shadow: 0 0 0 0 rgba(30, 142, 62, 0.4);
+  animation: op-pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 rgba(30, 142, 62, 0.4);
-  }
-  50% {
-    opacity: 0.8;
-    box-shadow: 0 0 0 8px rgba(30, 142, 62, 0);
-  }
+@keyframes op-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(30, 142, 62, 0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(30, 142, 62, 0); }
 }
 
-.status-text {
-  font-size: var(--text-lg);
+.op-status-text {
+  font-size: 15px;
   font-weight: 600;
-  color: var(--color-success);
-  letter-spacing: -0.01em;
+  color: #1e8e3e;
 }
 
-.record-count {
-  font-size: var(--text-sm);
-  color: var(--text-tertiary);
-  font-weight: 400;
+.op-record-count {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 11px;
+  background: rgba(30, 142, 62, 0.08);
+  color: #1e8e3e;
+  font-size: 12px;
+  font-weight: 500;
 }
 
-.result-actions {
+.op-result-actions {
   display: flex;
-  gap: var(--space-3);
+  gap: 10px;
+  align-items: center;
 }
 
-.result-actions .el-button {
-  transition: background-color var(--duration-fast) var(--ease-standard),
-              box-shadow var(--duration-fast) var(--ease-standard);
-}
-
-.result-actions .el-button:hover {
-  box-shadow: var(--shadow-sm);
-}
-
-/* 报告预览 */
+/* ─── 报告预览 ─────────────────────────────────────── */
 .report-preview {
   flex: 1;
   position: relative;
-  background: var(--bg-secondary);
-  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-  overflow: hidden;
+  background: #f8f9fa;
   min-height: 600px;
+  overflow: hidden;
+}
+
+.result-container {
+  display: flex;
+  flex-direction: column;
 }
 
 .preview-loading {
@@ -744,16 +1007,16 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
   z-index: 10;
+  gap: 12px;
 }
 
 .preview-loading p {
-  margin-top: var(--space-4);
-  color: var(--text-primary);
+  color: #5f6368;
   font-weight: 500;
-  font-size: var(--text-base);
+  font-size: 14px;
 }
 
 .preview-frame {
@@ -773,44 +1036,83 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-16);
+  padding: 80px 24px;
   text-align: center;
-  min-height: 500px;
 }
 
 .empty-icon {
-  font-size: 72px;
-  color: var(--color-warning);
-  margin-bottom: var(--space-5);
-  opacity: 0.8;
+  font-size: 56px;
+  color: #e37400;
+  margin-bottom: 16px;
+  opacity: 0.7;
 }
 
 .preview-empty h3 {
-  font-size: var(--text-xl);
+  font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 var(--space-3);
-  letter-spacing: -0.01em;
+  color: #202124;
+  margin: 0 0 10px;
 }
 
 .preview-empty p {
-  color: var(--text-tertiary);
-  margin-bottom: var(--space-5);
+  color: #80868b;
+  margin-bottom: 20px;
   line-height: 1.6;
-  max-width: 400px;
+  max-width: 360px;
+  font-size: 13px;
 }
 
-.preview-empty .el-button {
-  min-width: 140px;
+/* ─── 过渡动画 ─────────────────────────────────────── */
+.op-fade-up-enter-active {
+  transition: opacity 280ms cubic-bezier(0, 0, 0.2, 1),
+              transform 280ms cubic-bezier(0, 0, 0.2, 1);
+}
+.op-fade-up-leave-active {
+  transition: opacity 180ms cubic-bezier(0.4, 0, 1, 1),
+              transform 180ms cubic-bezier(0.4, 0, 1, 1);
+}
+.op-fade-up-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+.op-fade-up-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
-/* 过渡动画 */
-.fade-slide-enter-active, .fade-slide-leave-active {
-  transition: all 0.3s ease;
+.op-result-slide-enter-active {
+  transition: opacity 350ms cubic-bezier(0, 0, 0.2, 1),
+              transform 350ms cubic-bezier(0, 0, 0.2, 1);
 }
-
-.fade-slide-enter-from, .fade-slide-leave-to {
+.op-result-slide-leave-active {
+  transition: opacity 200ms cubic-bezier(0.4, 0, 1, 1);
+}
+.op-result-slide-enter-from {
   opacity: 0;
   transform: translateY(20px);
+}
+.op-result-slide-leave-to {
+  opacity: 0;
+}
+
+/* ─── 响应式 ───────────────────────────────────────── */
+@media (max-width: 640px) {
+  .op-param-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .op-header-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .op-title {
+    font-size: 18px;
+  }
+
+  .op-apply-hint {
+    display: none;
+  }
 }
 </style>

@@ -125,8 +125,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { generateFieldCondition, mergeConditions } from '@/utils/iqlGenerator'
+import { ref, onMounted, watch } from 'vue'
+import { generateFieldCondition } from '@/utils/iqlGenerator'
 import DateRangePicker from './DateRangePicker.vue'
 
 const props = defineProps({
@@ -138,8 +138,11 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
-// 本地IQL值,用于同步
-const localIql = ref(props.modelValue || '')
+// 时间条件（由 DateRangePicker 维护，单独存储）
+const timeIql = ref('')
+
+// 给 DateRangePicker 的 v-model：始终只传时间部分，避免字段条件污染
+const localIql = ref('')
 
 // 查询条件
 const conditions = ref({
@@ -247,65 +250,58 @@ watch(() => conditions.value.plan, (newValues, oldValues) => {
 // 生成字段条件的IQL
 const generateFieldsIql = () => {
   const parts = []
-  
+
   if (conditions.value.responsiblePeople.length > 0) {
     parts.push(generateFieldCondition('负责人', conditions.value.responsiblePeople))
   }
-  
+
   if (conditions.value.status.length > 0) {
     parts.push(generateFieldCondition('流程状态', conditions.value.status))
   }
-  
+
   if (conditions.value.type.length > 0) {
     parts.push(generateFieldCondition('类型', conditions.value.type))
   }
-  
+
   if (conditions.value.labels.length > 0) {
     parts.push(generateFieldCondition('测试『Label』标签', conditions.value.labels))
   }
-  
+
   if (conditions.value.plan.length > 0) {
     parts.push(generateFieldCondition('所属计划', conditions.value.plan))
   }
-  
+
   return parts.join(' AND ')
 }
 
-// 处理条件变化 - 实时更新IQL
+// 处理条件变化（不 emit，等待"应用"按钮）
 const handleConditionChange = () => {
+  // 仅做本地状态更新，不 emit
+}
+
+// 暴露给父组件调用，手动将当前条件 emit 出去
+const applyConditions = () => {
   updateIql()
 }
 
-// 更新IQL
+// 更新IQL并 emit
 const updateIql = () => {
   const fieldsIql = generateFieldsIql()
-  
-  // 合并时间条件和字段条件
   const parts = []
-  
-  // 提取时间条件(如果存在)
-  const timePattern = /(最后修改时间|创建时间|完成时间)\s*[><]=?\s*"[^"]+"/g
-  const timeMatches = localIql.value.match(timePattern)
-  const timeConditions = timeMatches ? timeMatches.join(' AND ') : ''
-  
-  if (timeConditions) {
-    parts.push(timeConditions)
-  }
-  
-  if (fieldsIql) {
-    parts.push(fieldsIql)
-  }
-  
+  if (timeIql.value) parts.push(timeIql.value)
+  if (fieldsIql) parts.push(fieldsIql)
   const newIql = parts.join(' AND ')
-  localIql.value = newIql
   emit('update:modelValue', newIql)
 }
 
-// 处理DateRangePicker的更新
+// DateRangePicker 更新时，只保存时间部分
 const handleIqlUpdate = (newIql) => {
-  localIql.value = newIql
-  // 重新应用字段条件
-  updateIql()
+  // newIql 是 DateRangePicker 基于 localIql（纯时间）合并后的结果
+  // 提取时间条件部分
+  const timePattern = /(最后修改时间|创建时间|完成时间)\s*[><]=?\s*"[^"]+"/g
+  const matches = newIql.match(timePattern)
+  timeIql.value = matches ? matches.join(' AND ') : ''
+  localIql.value = timeIql.value
 }
 
 const clearConditions = () => {
@@ -316,14 +312,19 @@ const clearConditions = () => {
     labels: [],
     plan: []
   }
-  // 清空后立即更新IQL(只保留时间条件)
+  // 清空后立即更新IQL（只保留时间条件）
   updateIql()
 }
 
-// 监听外部变化
+// 监听外部变化（如 IQLEditor 手动编辑、历史记录加载）
+// 只提取时间条件部分同步给 DateRangePicker，字段条件由 conditions 管理
 watch(() => props.modelValue, (newVal) => {
-  if (newVal !== localIql.value) {
-    localIql.value = newVal || ''
+  const timePattern = /(最后修改时间|创建时间|完成时间)\s*[><]=?\s*"[^"]+"/g
+  const matches = (newVal || '').match(timePattern)
+  const extractedTime = matches ? matches.join(' AND ') : ''
+  if (extractedTime !== timeIql.value) {
+    timeIql.value = extractedTime
+    localIql.value = extractedTime
   }
 })
 
@@ -331,6 +332,8 @@ watch(() => props.modelValue, (newVal) => {
 onMounted(() => {
   loadCache()
 })
+
+defineExpose({ applyConditions })
 </script>
 
 <style scoped>

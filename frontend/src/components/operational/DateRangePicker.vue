@@ -16,6 +16,7 @@
           v-model="timeField"
           placeholder="时间字段"
           style="width: 140px; margin-left: 12px"
+          @change="handleDateChange"
         >
           <el-option label="创建时间" value="创建时间" />
           <el-option label="最后修改时间" value="最后修改时间" />
@@ -39,16 +40,18 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
+const dateRange = ref(getDefaultDateRange())
+const timeField = ref('创建时间')
+// 记录上一次使用的时间字段，切换时用于清除旧条件
+let prevTimeField = '创建时间'
+
 // 默认设置为最近7天
-const getDefaultDateRange = () => {
+function getDefaultDateRange() {
   const end = new Date()
   const start = new Date()
   start.setDate(start.getDate() - 7)
   return [start, end]
 }
-
-const dateRange = ref(getDefaultDateRange())
-const timeField = ref('最后修改时间')
 
 // 快捷日期选项
 const shortcuts = [
@@ -118,18 +121,28 @@ const shortcuts = [
 
 const handleDateChange = () => {
   if (!dateRange.value) {
-    // 清空日期：移除时间条件
-    emit('update:modelValue', removeTimeCondition(props.modelValue, timeField.value))
+    // 清空日期：移除当前字段和旧字段的时间条件
+    let iql = removeTimeCondition(props.modelValue, timeField.value)
+    if (prevTimeField !== timeField.value) {
+      iql = removeTimeCondition(iql, prevTimeField)
+    }
+    prevTimeField = timeField.value
+    emit('update:modelValue', iql)
     return
   }
-  
+
   try {
-    // 生成时间条件
     const [start, end] = dateRange.value
     const timeCondition = generateTimeCondition(timeField.value, start, end)
-    
-    // 合并到现有IQL
-    const newIql = mergeTimeCondition(props.modelValue, timeCondition, timeField.value)
+
+    // 先移除旧字段的时间条件，再合并新字段条件
+    let base = props.modelValue
+    if (prevTimeField !== timeField.value) {
+      base = removeTimeCondition(base, prevTimeField)
+    }
+    prevTimeField = timeField.value
+
+    const newIql = mergeTimeCondition(base, timeCondition, timeField.value)
     emit('update:modelValue', newIql)
   } catch (error) {
     console.error('生成时间条件失败:', error)

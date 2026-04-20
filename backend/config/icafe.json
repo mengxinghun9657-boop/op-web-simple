@@ -8,6 +8,6 @@
   "default_password": "VVVsktrAkfsFk5w8ldDg3eGBExfUEmaCvS4",
   "default_page": 1,
   "default_pgcount": 100,
-  "default_iql_template": "最后修改时间 > \"start_date\" AND 最后修改时间 < \"end_date\"",
+  "default_iql_template": "创建时间 > \"start_date\" AND 创建时间 < \"end_date\"",
   "target_users": []
 }

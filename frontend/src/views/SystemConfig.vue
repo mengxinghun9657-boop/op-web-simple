@@ -52,6 +52,10 @@
             <el-icon><Connection /></el-icon>
             <span>BCE同步配置</span>
           </el-menu-item>
+          <el-menu-item index="ai">
+            <el-icon><Cpu /></el-icon>
+            <span>AI模型配置</span>
+          </el-menu-item>
         </el-menu>
       </aside>
 
@@ -67,7 +71,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Setting, User, DataBoard, Monitor, Histogram, Postcard, Connection } from '@element-plus/icons-vue'
+import { Setting, User, DataBoard, Monitor, Histogram, Postcard, Connection, Cpu } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import CMDBConfig from '@/components/config/CMDBConfig.vue'
 import MonitoringConfig from '@/components/config/MonitoringConfig.vue'
@@ -75,6 +79,7 @@ import PrometheusRuntimeConfig from '@/components/config/PrometheusRuntimeConfig
 import PFSConfig from '@/components/config/PFSConfig.vue'
 import APIServerConfig from '@/components/config/APIServerConfig.vue'
 import ICafeConfig from '@/components/config/ICafeConfig.vue'
+import AIConfig from '@/components/config/AIConfig.vue'
 import BCESyncConfig from '@/components/config/BCESyncConfig.vue'
 
 const router = useRouter()
@@ -101,7 +106,8 @@ const currentComponent = computed(() => {
     pfs: PFSConfig,
     apiserver: APIServerConfig,
     icafe: ICafeConfig,
-    bce_sync: BCESyncConfig
+    bce_sync: BCESyncConfig,
+    ai: AIConfig
   }
   return components[activeSection.value] || CMDBConfig
 })

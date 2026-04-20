@@ -18,20 +18,21 @@ from loguru import logger
 class ReportGenerator:
     """HTML 报告生成器"""
     
-    def __init__(self, enable_ai_interpretation: bool = True):
+    def __init__(self, enable_ai_interpretation: bool = True, db=None):
         """
         初始化报告生成器
-        
+
         Args:
             enable_ai_interpretation: 是否启用 AI 解读功能
+            db: SQLAlchemy Session，用于读取数据库中的 AI 配置
         """
         self.enable_ai_interpretation = enable_ai_interpretation
         self.ai_interpreter = None
-        
+
         if enable_ai_interpretation:
             try:
                 from app.services.ai.report_ai_interpreter import get_report_ai_interpreter
-                self.ai_interpreter = get_report_ai_interpreter()
+                self.ai_interpreter = get_report_ai_interpreter(db=db)
                 logger.info("✅ 报告生成器已启用 AI 解读功能")
             except Exception as e:
                 logger.warning(f"⚠️ 无法加载 AI 解读服务: {e}，将跳过 AI 解读")
@@ -114,87 +115,86 @@ class ReportGenerator:
         return html
     
     def _generate_chart_scripts(self, results: Dict) -> List[str]:
-        """生成图表脚本"""
+        """生成图表脚本（月/日自适应趋势）"""
         chart_scripts = []
-        
-        # 每月处理卡片数趋势
+
+        # 卡片处理量趋势（月粒度或日粒度，由 analyzer 根据数据跨度决定）
         if results.get('monthly_trends'):
-            months = [item[0] for item in self._safe_get(results, 'monthly_trends', [])]
-            counts = [item[1] for item in self._safe_get(results, 'monthly_trends', [])]
-            
+            monthly_data = self._safe_get(results, 'monthly_trends', [])
+            months = [item[0] for item in monthly_data]
+            totals = [item[1] for item in monthly_data]
+            finished_counts = [item[2] if len(item) > 2 else 0 for item in monthly_data]
+            closure_rates = [item[3] if len(item) > 3 else 0 for item in monthly_data]
+
+            # 推断粒度标题：日粒度的标签格式为 "MM/DD"
+            is_daily = months and '/' in str(months[0])
+            chart_title = '每日卡片处理量与闭环率趋势' if is_daily else '每月卡片处理量与闭环率趋势'
+
             chart_scripts.append(f"""
             const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
             new Chart(monthlyCtx, {{
-                type: 'line',
-                data: {{
-                    labels: {json.dumps(months)},
-                    datasets: [{{
-                        label: '处理卡片数',
-                        data: {json.dumps(counts)},
-                        borderColor: '#1976D2',
-                        backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 6
-                    }}]
-                }},
-                options: {{
-                    responsive: true,
-                    plugins: {{ title: {{ display: true, text: '每月处理卡片数趋势' }} }}
-                }}
-            }});
-            """)
-        
-        # 每天卡片数量统计
-        if results.get('daily_trends'):
-            dates = [item[0] for item in self._safe_get(results, 'daily_trends', [])]
-            daily_counts = [item[1] for item in self._safe_get(results, 'daily_trends', [])]
-            
-            chart_scripts.append(f"""
-            const dailyCtx = document.getElementById('dailyChart').getContext('2d');
-            new Chart(dailyCtx, {{
                 type: 'bar',
                 data: {{
-                    labels: {json.dumps(dates)},
-                    datasets: [{{
-                        label: '卡片数量',
-                        data: {json.dumps(daily_counts)},
-                        backgroundColor: '#42A5F5',
-                        borderColor: '#1976D2',
-                        borderWidth: 1
-                    }}]
+                    labels: {json.dumps(months)},
+                    datasets: [
+                        {{
+                            label: '总卡片数',
+                            data: {json.dumps(totals)},
+                            backgroundColor: 'rgba(25, 118, 210, 0.6)',
+                            yAxisID: 'y'
+                        }},
+                        {{
+                            label: '已完成数',
+                            data: {json.dumps(finished_counts)},
+                            backgroundColor: 'rgba(56, 142, 60, 0.6)',
+                            yAxisID: 'y'
+                        }},
+                        {{
+                            type: 'line',
+                            label: '闭环率(%)',
+                            data: {json.dumps(closure_rates)},
+                            borderColor: '#F57C00',
+                            backgroundColor: 'transparent',
+                            tension: 0.4,
+                            pointRadius: 5,
+                            yAxisID: 'y1'
+                        }}
+                    ]
                 }},
                 options: {{
                     responsive: true,
-                    plugins: {{ 
-                        title: {{ display: true, text: '每天卡片数量统计' }},
-                        legend: {{ display: false }}
-                    }},
+                    interaction: {{ mode: 'index', intersect: false }},
+                    plugins: {{ title: {{ display: true, text: '{chart_title}' }} }},
                     scales: {{
-                        x: {{ ticks: {{ maxRotation: 45, minRotation: 45 }} }},
-                        y: {{ beginAtZero: true }}
+                        y: {{ type: 'linear', position: 'left', title: {{ display: true, text: '卡片数' }} }},
+                        y1: {{ type: 'linear', position: 'right', min: 0, max: 100, title: {{ display: true, text: '闭环率(%)' }}, grid: {{ drawOnChartArea: false }} }}
                     }}
                 }}
             }});
             """)
-        
+
         return chart_scripts
 
     def _generate_more_chart_scripts(self, results: Dict) -> List[str]:
         """生成更多图表脚本"""
         chart_scripts = []
-        
-        # 每周处理卡片趋势
+
+        # 处理卡片趋势（周粒度或日粒度，由 analyzer 根据数据跨度决定）
         if results.get('weekly_trends'):
-            weeks = [item['周期'] for item in self._safe_get(results, 'weekly_trends', [])]
-            follow_counts = [item['问题跟进数'] for item in self._safe_get(results, 'weekly_trends', [])]
-            close_counts = [item['闭环个数'] for item in self._safe_get(results, 'weekly_trends', [])]
-            resolution_rates = [item['问题解决率'] for item in self._safe_get(results, 'weekly_trends', [])]
-            
+            weekly_data = self._safe_get(results, 'weekly_trends', [])
+            weeks = [item.get('周期标签') or item['周期'] for item in weekly_data]
+            follow_counts = [item['问题跟进数'] for item in weekly_data]
+            close_counts = [item['闭环个数'] for item in weekly_data]
+            resolution_rates = [item['问题解决率'] for item in weekly_data]
+
             import statistics
             follow_median = statistics.median(follow_counts) if follow_counts else 0
             close_median = statistics.median(close_counts) if close_counts else 0
-            
+
+            # 推断粒度标题：日粒度标签格式为 "MM/DD"（无 "-" 分隔符的区间）
+            is_daily = weeks and '-' not in str(weeks[0])
+            weekly_chart_title = '每日处理卡片趋势（含中位数参考线）' if is_daily else '每周处理卡片趋势（含中位数参考线）'
+
             chart_scripts.append(f"""
             const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
             new Chart(weeklyCtx, {{
@@ -247,8 +247,8 @@ class ReportGenerator:
                 }},
                 options: {{
                     responsive: true,
-                    plugins: {{ 
-                        title: {{ display: true, text: '每周处理卡片趋势（含中位数参考线）' }},
+                    plugins: {{
+                        title: {{ display: true, text: '{weekly_chart_title}' }},
                         legend: {{ position: 'top' }}
                     }},
                     scales: {{
@@ -404,110 +404,135 @@ class ReportGenerator:
         
         return chart_scripts
 
-    def _generate_hardware_chart_scripts(self, results: Dict) -> List[str]:
-        """生成硬件故障图表脚本"""
+    def _generate_quality_chart_scripts(self, results: Dict) -> List[str]:
+        """生成质量指标图表脚本（有感事件、升级率、月度趋势）"""
         chart_scripts = []
-        
-        # 硬件故障分类分布
-        if self._safe_get(results, 'hardware_analysis', []):
-            hardware_labels = [item['name'] for item in self._safe_get(results, 'hardware_analysis', [])]
-            hardware_counts = [item['value'] for item in self._safe_get(results, 'hardware_analysis', [])]
-            
+        quality = self._safe_get(results, 'quality_metrics', {})
+
+        # 各产品有感率横向对比
+        product_quality = quality.get('product_quality', [])
+        if product_quality:
+            prod_labels = [item['产品'] for item in product_quality]
+            prod_totals = [item['卡片总数'] for item in product_quality]
+            prod_feels = [item['有感事件数'] for item in product_quality]
+            prod_esc = [item['升级到研或OP数'] for item in product_quality]
+
             chart_scripts.append(f"""
-            const hardwareCtx = document.getElementById('hardwareChart').getContext('2d');
-            new Chart(hardwareCtx, {{
+            const prodQualityCtx = document.getElementById('productQualityChart').getContext('2d');
+            new Chart(prodQualityCtx, {{
                 type: 'bar',
                 data: {{
-                    labels: {json.dumps(hardware_labels)},
+                    labels: {json.dumps(prod_labels)},
                     datasets: [{{
-                        label: '故障数量',
-                        data: {json.dumps(hardware_counts)},
-                        backgroundColor: '#1976D2',
-                        borderColor: '#0D47A1',
-                        borderWidth: 1
+                        label: '卡片总数',
+                        data: {json.dumps(prod_totals)},
+                        backgroundColor: 'rgba(25, 118, 210, 0.5)',
+                        yAxisID: 'y'
+                    }}, {{
+                        label: '有感事件数',
+                        data: {json.dumps(prod_feels)},
+                        backgroundColor: '#FF5722',
+                        yAxisID: 'y'
+                    }}, {{
+                        label: '升级到研或OP数',
+                        data: {json.dumps(prod_esc)},
+                        backgroundColor: '#FF9800',
+                        yAxisID: 'y'
                     }}]
                 }},
                 options: {{
                     responsive: true,
-                    plugins: {{ title: {{ display: true, text: '硬件故障分类分布' }}, legend: {{ display: false }} }},
+                    plugins: {{
+                        title: {{ display: true, text: '各产品有感事件 & 升级数量（Top 15）' }},
+                        legend: {{ position: 'top' }}
+                    }},
                     scales: {{ y: {{ beginAtZero: true }} }}
                 }}
             }});
             """)
-        
-        # 硬件故障周度趋势
-        hardware_summary = self._safe_get(results, 'hardware_summary', {})
-        if hardware_summary and hardware_summary.get('周度趋势'):
-            trend_data = hardware_summary['周度趋势']
-            trend_weeks = [item['周期'] for item in trend_data]
-            trend_counts = [item['硬件故障数'] for item in trend_data]
-            trend_resolved = [item['已解决数'] for item in trend_data]
-            
+
+        # 月度有感事件趋势折线图
+        monthly_feels = quality.get('monthly_feels_trend', [])
+        if monthly_feels:
+            mf_months = [item['月份'] for item in monthly_feels]
+            mf_totals = [item['总卡片数'] for item in monthly_feels]
+            mf_feels = [item['有感事件数'] for item in monthly_feels]
+
             chart_scripts.append(f"""
-            const hardwareTrendCtx = document.getElementById('hardwareTrendChart').getContext('2d');
-            new Chart(hardwareTrendCtx, {{
+            const monthlyFeelsCtx = document.getElementById('monthlyFeelsChart').getContext('2d');
+            new Chart(monthlyFeelsCtx, {{
                 type: 'line',
                 data: {{
-                    labels: {json.dumps(trend_weeks)},
+                    labels: {json.dumps(mf_months)},
                     datasets: [{{
-                        label: '硬件故障数',
-                        data: {json.dumps(trend_counts)},
-                        borderColor: '#F44336',
-                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                        label: '卡片总数',
+                        data: {json.dumps(mf_totals)},
+                        borderColor: '#1976D2',
+                        backgroundColor: 'rgba(25, 118, 210, 0.1)',
                         tension: 0.4,
-                        pointRadius: 6
+                        yAxisID: 'y',
+                        pointRadius: 4
                     }}, {{
-                        label: '已解决数',
-                        data: {json.dumps(trend_resolved)},
-                        borderColor: '#4CAF50',
-                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        label: '有感事件数',
+                        data: {json.dumps(mf_feels)},
+                        borderColor: '#FF5722',
+                        backgroundColor: 'rgba(255, 87, 34, 0.1)',
                         tension: 0.4,
-                        pointRadius: 6
+                        yAxisID: 'y',
+                        pointRadius: 5
                     }}]
                 }},
                 options: {{
                     responsive: true,
-                    plugins: {{ title: {{ display: true, text: '硬件故障周度趋势' }}, legend: {{ position: 'top' }} }},
+                    plugins: {{
+                        title: {{ display: true, text: '月度有感事件趋势' }},
+                        legend: {{ position: 'top' }}
+                    }},
                     scales: {{ y: {{ beginAtZero: true }} }}
                 }}
             }});
             """)
-        
-        # 人效分析柱状图
-        if self._safe_get(results, 'efficiency_data', []):
-            efficiency_users = [item['创建人'] for item in self._safe_get(results, 'efficiency_data', [])]
-            total_cards = [item['总卡片数'] for item in self._safe_get(results, 'efficiency_data', [])]
-            completed_cards = [item['已完成数量'] for item in self._safe_get(results, 'efficiency_data', [])]
-            uncompleted_cards = [item['未完成数量'] for item in self._safe_get(results, 'efficiency_data', [])]
-            
-            chart_scripts.append(f"""
-            const efficiencyCtx = document.getElementById('efficiencyChart').getContext('2d');
-            new Chart(efficiencyCtx, {{
-                type: 'bar',
-                data: {{
-                    labels: {json.dumps(efficiency_users)},
-                    datasets: [{{
-                        label: '总卡片数',
-                        data: {json.dumps(total_cards)},
-                        backgroundColor: '#1976D2'
-                    }}, {{
-                        label: '已完成数量',
-                        data: {json.dumps(completed_cards)},
-                        backgroundColor: '#42A5F5'
-                    }}, {{
-                        label: '未完成数量',
-                        data: {json.dumps(uncompleted_cards)},
-                        backgroundColor: '#FF9800'
-                    }}]
-                }},
-                options: {{
-                    responsive: true,
-                    plugins: {{ title: {{ display: true, text: '人效分析' }} }}
-                }}
-            }});
-            """)
-        
+
         return chart_scripts
+
+    def _generate_quality_html(self, results: Dict) -> str:
+        """生成质量指标 HTML 表格"""
+        quality = self._safe_get(results, 'quality_metrics', {})
+
+        # 产品质量指标表格
+        product_quality = quality.get('product_quality', [])
+        pq_html = ''
+        if product_quality:
+            rows = ''.join(
+                f"<tr><td>{item['产品']}</td><td>{item['卡片总数']}</td>"
+                f"<td>{item['有感事件数']} ({item['有感率']})</td>"
+                f"<td>{item['升级到研或OP数']} ({item['升级率']})</td></tr>"
+                for item in product_quality
+            )
+            pq_html = f"""
+            <h3>各产品质量指标明细（Top 15）</h3>
+            <table class="data-table">
+                <thead><tr><th>产品</th><th>卡片总数</th><th>有感事件</th><th>升级到研或OP</th></tr></thead>
+                <tbody>{rows}</tbody>
+            </table>"""
+
+        return pq_html
+
+    def _generate_workload_html(self, results: Dict) -> str:
+        """生成负责人工作量分析 HTML 表格"""
+        workload = self._safe_get(results, 'person_workload', [])
+        if not workload:
+            return ''
+        rows = ''.join(
+            f"<tr><td>{item['创建人']}</td><td>{item['总卡片数']}</td>"
+            f"<td>{item['已完成数量']}</td><td>{item['未完成数量']}</td></tr>"
+            for item in workload
+        )
+        return f"""
+        <table class="data-table">
+            <thead><tr><th>负责人</th><th>总卡片数</th><th>已完成</th><th>进行中/待处理</th></tr></thead>
+            <tbody>{rows}</tbody>
+        </table>"""
 
     def _get_html_styles(self) -> str:
         """获取 HTML 样式"""
@@ -626,13 +651,6 @@ class ReportGenerator:
 
     def generate_html_report(self, results: Dict[str, Any]) -> str:
         """生成完整的 HTML 报告"""
-        # 收集所有图表脚本
-        chart_scripts = []
-        chart_scripts.extend(self._generate_chart_scripts(results))
-        chart_scripts.extend(self._generate_more_chart_scripts(results))
-        chart_scripts.extend(self._generate_pie_chart_scripts(results))
-        chart_scripts.extend(self._generate_hardware_chart_scripts(results))
-        
         # 获取数据
         total_cards = self._safe_get_nested(results, 'overview', '总卡片数', '0')
         avg_weekly = self._safe_get_nested(results, 'overview', '平均每周卡片处理量', '0')
@@ -646,47 +664,14 @@ class ReportGenerator:
         req_rate = self._safe_get_nested(results, 'overview', '需求闭环率', '0')
         risk_total = self._safe_get_nested(results, 'overview', '风险治理总数', '0')
         risk_completed = self._safe_get_nested(results, 'overview', '风险治理完成数量', '0')
-        
-        report_time = datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")
-        
+
         # 生成异常检测表格
         anomalies = self._safe_get(results, 'anomalies', {})
         c_anomalies_html = self._generate_table_html(anomalies.get('c_anomalies', []), ['编号', '标题', '故障等级', '创建人'])
         r_anomalies_html = self._generate_table_html(anomalies.get('r_anomalies', []), ['编号', '标题', '故障等级', '创建人'])
         k_anomalies_html = self._generate_table_html(anomalies.get('k_anomalies', []), ['编号', '标题', '故障等级', '创建人'])
         classification_anomalies_html = self._generate_table_html(anomalies.get('classification_anomalies', []), ['编号', '标题', '创建人'])
-        
-        # 生成产品详细统计
-        product_detail_html = self._generate_product_detail_html(self._safe_get(results, 'top5_products', []))
-        
-        # 生成硬件故障详情表格
-        hardware_details_html = self._generate_table_html(
-            self._safe_get(results, 'hardware_details', []),
-            ['编号', '标题', '流程状态', '故障等级', '是否已解决', '细分分类', '负责人'],
-            has_links=True
-        )
-        
-        # 生成人效分析表格
-        efficiency_html = self._generate_table_html(
-            self._safe_get(results, 'efficiency_data', []),
-            ['创建人', '总卡片数', '已完成数量', '未完成数量', '完成率'],
-            has_links=False
-        )
-        
-        # 生成历史数据概览表格
-        historical_html = self._generate_table_html(
-            self._safe_get(results, 'historical_overview', []),
-            ['周期', '运维事件个数', '闭环个数', '解决率', '正在进行中需求个数', '本周完成需求个数'],
-            has_links=False
-        )
-        
-        # 硬件故障汇总数据
-        hw_summary = self._safe_get(results, 'hardware_summary', {})
-        hw_total = hw_summary.get('硬件故障总数', 0)
-        hw_resolved = hw_summary.get('已解决数量', 0)
-        hw_unresolved = hw_summary.get('未解决数量', 0)
-        hw_rate = hw_summary.get('解决率', '0%')
-        
+
         html = f'''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -799,51 +784,85 @@ class ReportGenerator:
         """生成完整的 HTML 报告（包含所有部分）"""
         # 获取基础部分
         html = self.generate_html_report(results)
-        
+
         # 收集所有图表脚本
         chart_scripts = []
         chart_scripts.extend(self._generate_chart_scripts(results))
         chart_scripts.extend(self._generate_more_chart_scripts(results))
         chart_scripts.extend(self._generate_pie_chart_scripts(results))
-        chart_scripts.extend(self._generate_hardware_chart_scripts(results))
-        
-        # 生成表格
+        chart_scripts.extend(self._generate_quality_chart_scripts(results))
+
+        # 生成各 section 的 HTML 内容
         product_detail_html = self._generate_product_detail_html(self._safe_get(results, 'top5_products', []))
-        hardware_details_html = self._generate_table_html(
-            self._safe_get(results, 'hardware_details', []),
-            ['编号', '标题', '流程状态', '故障等级', '是否已解决', '细分分类', '负责人'],
-            has_links=True
-        )
-        efficiency_html = self._generate_table_html(
-            self._safe_get(results, 'efficiency_data', []),
-            ['创建人', '总卡片数', '已完成数量', '未完成数量', '完成率'],
-            has_links=False
-        )
-        historical_html = self._generate_table_html(
-            self._safe_get(results, 'historical_overview', []),
-            ['周期', '运维事件个数', '闭环个数', '解决率', '正在进行中需求个数', '本周完成需求个数'],
-            has_links=False
-        )
-        
-        # 硬件故障汇总数据
-        hw_summary = self._safe_get(results, 'hardware_summary', {})
-        hw_total = hw_summary.get('硬件故障总数', 0)
-        hw_resolved = hw_summary.get('已解决数量', 0)
-        hw_unresolved = hw_summary.get('未解决数量', 0)
-        hw_rate = hw_summary.get('解决率', '0%')
-        
+        quality_html = self._generate_quality_html(results)
+        workload_html = self._generate_workload_html(results)
+
         report_time = datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")
-        
+
+        # 从 overview 中读取有感/升级汇总数据（N/A 表示数据中无对应列）
+        overview = self._safe_get(results, 'overview', {})
+        feels_yes = overview.get('有感事件数', 'N/A')
+        feels_rate = overview.get('有感率', 'N/A')
+        escalated = overview.get('升级到研或OP数', 'N/A')
+        escalate_rate = overview.get('升级率', 'N/A')
+
+        # 只有数据中存在有感/升级列时才展示对应 card
+        has_feels_data = str(feels_rate) != 'N/A'
+        has_escalate_data = str(escalate_rate) != 'N/A'
+        quality_metrics = self._safe_get(results, 'quality_metrics', {})
+        has_product_quality = bool(quality_metrics.get('product_quality'))
+        has_monthly_feels = bool(quality_metrics.get('monthly_feels_trend'))
+
+        # 质量指标卡片 HTML（仅在有数据时生成）
+        feels_cards_html = ''
+        if has_feels_data:
+            feels_cards_html += f'<div class="card fault"><div class="card-number">{feels_yes}</div><div class="card-label">有感事件数</div></div>'
+            feels_cards_html += f'<div class="card fault"><div class="card-number">{feels_rate}</div><div class="card-label">有感率</div></div>'
+        if has_escalate_data:
+            feels_cards_html += f'<div class="card risk"><div class="card-number">{escalated}</div><div class="card-label">升级到研或OP数</div></div>'
+            feels_cards_html += f'<div class="card risk"><div class="card-number">{escalate_rate}</div><div class="card-label">升级率</div></div>'
+
+        product_quality_chart_html = ''
+        if has_product_quality:
+            product_quality_chart_html = '<h3>各产品有感事件与升级数量</h3><div class="chart-container"><canvas id="productQualityChart" style="max-height: 450px;"></canvas></div>'
+
+        monthly_feels_chart_html = ''
+        if has_monthly_feels:
+            monthly_feels_chart_html = '<h3>月度有感事件趋势</h3><div class="chart-container"><canvas id="monthlyFeelsChart" style="max-height: 350px;"></canvas></div>'
+
+        quality_section_content = feels_cards_html or product_quality_chart_html or monthly_feels_chart_html or quality_html
+        quality_section_html = ''
+        if quality_section_content:
+            quality_section_html = f'''
+        <!-- 质量指标分析 -->
+        <section>
+            <h2>质量指标分析</h2>
+            {'<div class="overview-cards">' + feels_cards_html + '</div>' if feels_cards_html else ''}
+            {product_quality_chart_html}
+            {monthly_feels_chart_html}
+            {quality_html}
+        </section>'''
+
+        # 推断月度图和周度图的粒度标题
+        monthly_data_check = self._safe_get(results, 'monthly_trends', [])
+        weekly_data_check = self._safe_get(results, 'weekly_trends', [])
+        monthly_section_title = '每日处理卡片数趋势' if (
+            monthly_data_check and '/' in str(monthly_data_check[0][0])
+        ) else '每月处理卡片数趋势'
+        weekly_section_title = '每日处理卡片趋势' if (
+            weekly_data_check and '-' not in str(
+                weekly_data_check[0].get('周期标签') or weekly_data_check[0].get('周期', '')
+            )
+        ) else '每周处理卡片趋势'
+
         # 添加数据可视化部分
         html += f'''
         <!-- 数据可视化 -->
         <section>
             <h2>数据可视化</h2>
-            <h3>每月处理卡片数趋势</h3>
+            <h3>{monthly_section_title}</h3>
             <div class="chart-container"><canvas id="monthlyChart" style="max-height: 400px;"></canvas></div>
-            <h3>每天卡片数量统计</h3>
-            <div class="chart-container"><canvas id="dailyChart" style="max-height: 400px;"></canvas></div>
-            <h3>每周处理卡片趋势</h3>
+            <h3>{weekly_section_title}</h3>
             <div class="chart-container"><canvas id="weeklyChart" style="max-height: 400px;"></canvas></div>
             <h3>产品处理量分布</h3>
             <div class="chart-container"><canvas id="volumeChart" style="max-height: 400px;"></canvas></div>
@@ -852,66 +871,42 @@ class ReportGenerator:
                 <div class="chart-wrapper"><h4>事务分类分布</h4><canvas id="summaryChart"></canvas></div>
             </div>
             <div class="chart-row">
-                <div class="chart-wrapper"><h4>运维事件每月统计折线图</h4><canvas id="maintenanceMonthlyChart"></canvas></div>
+                <div class="chart-wrapper"><h4>运维事件统计折线图</h4><canvas id="maintenanceMonthlyChart"></canvas></div>
                 <div class="chart-wrapper"><h4>完成状态分析</h4><canvas id="statusChart"></canvas></div>
             </div>
         </section>
-        
+
         <!-- 产品详细统计 -->
         <section>
             <h2>产品详细统计（Top 5）</h2>
             {product_detail_html}
         </section>
-        
-        <!-- 硬件故障分析 -->
+
+        {quality_section_html}
+
+        <!-- 负责人卡片承接情况 -->
         <section>
-            <h2>硬件故障分析</h2>
-            <div class="overview-cards">
-                <div class="card fault"><div class="card-number">{hw_total}</div><div class="card-label">硬件故障总数</div></div>
-                <div class="card fault"><div class="card-number">{hw_resolved}</div><div class="card-label">已解决数量</div></div>
-                <div class="card fault"><div class="card-number">{hw_unresolved}</div><div class="card-label">未解决数量</div></div>
-                <div class="card fault"><div class="card-number">{hw_rate}</div><div class="card-label">解决率</div></div>
-            </div>
-            <h3>硬件故障分类分布</h3>
-            <div class="chart-container"><canvas id="hardwareChart" style="max-height: 400px;"></canvas></div>
-            <h3>硬件故障周度趋势</h3>
-            <div class="chart-container"><canvas id="hardwareTrendChart" style="max-height: 400px;"></canvas></div>
-            <button class="anomaly-toggle" onclick="toggleHardwareDetails()">展开/收起硬件故障详细信息</button>
-            <div class="anomaly-content" id="hardwareDetails">{hardware_details_html}</div>
+            <h2>负责人卡片承接情况</h2>
+            <p style="color:#666;font-size:13px;margin-bottom:12px;">
+                说明：未完成包含进行中、待处理、验证中、长期跟踪等正常状态，不代表工作滞后。
+            </p>
+            {workload_html}
         </section>
-        
-        <!-- 人效分析 -->
-        <section>
-            <h2>人效分析</h2>
-            <div class="chart-container"><canvas id="efficiencyChart" style="max-height: 400px;"></canvas></div>
-            {efficiency_html}
-        </section>
-        
-        <!-- 历史数据概览 -->
-        <section>
-            <h2>历史数据概览</h2>
-            {historical_html}
-        </section>
-        
+
         <div class="footer">
             <p>📊 报告生成时间: {report_time}</p>
             <p>🔧 分析工具: 长安LCC运营数据分析系统</p>
         </div>
     </div>
-    
+
     <script>
         {chr(10).join(chart_scripts)}
-        
+
         function toggleAnomalySection() {{
             const content = document.getElementById('anomalyContent');
             content.classList.toggle('show');
         }}
-        
-        function toggleHardwareDetails() {{
-            const content = document.getElementById('hardwareDetails');
-            content.classList.toggle('show');
-        }}
-        
+
         function toggleProductDetail(productId) {{
             const detail = document.getElementById(productId);
             if (detail.style.display === 'none') {{
@@ -923,7 +918,7 @@ class ReportGenerator:
     </script>
 </body>
 </html>'''
-        
+
         return html
     
     def save_report(self, html_content: str, output_path: str) -> str:

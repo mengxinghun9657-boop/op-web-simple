@@ -27,15 +27,23 @@ async def analyze_operational_file(file_path: str, task_id: str) -> dict:
     Returns:
         分析结果字典
     """
+    db = None
     try:
         logger.info(f"开始分析运营数据文件: {file_path}")
-        
+
         # 使用新的 icafe 分析引擎
         from app.services.icafe import OperationalAnalyzer, ReportGenerator
-        
+
+        # 获取 db session 以读取数据库中的 AI 配置
+        try:
+            from app.core.deps import SessionLocal
+            db = SessionLocal()
+        except Exception as e:
+            logger.warning(f"无法创建 DB session，将使用环境变量 AI 配置: {e}")
+
         # 创建分析器和报告生成器
         analyzer = OperationalAnalyzer()
-        report_generator = ReportGenerator(enable_ai_interpretation=True)
+        report_generator = ReportGenerator(enable_ai_interpretation=True, db=db)
         
         # 执行分析
         analysis_results = analyzer.analyze(file_path)
@@ -107,6 +115,12 @@ async def analyze_operational_file(file_path: str, task_id: str) -> dict:
             "success": False,
             "error": f"分析异常: {str(e)}\n{traceback.format_exc()}"
         }
+    finally:
+        if db is not None:
+            try:
+                db.close()
+            except Exception:
+                pass
 
 
 async def analyze_api_data(

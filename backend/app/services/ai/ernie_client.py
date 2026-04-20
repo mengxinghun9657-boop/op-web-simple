@@ -44,20 +44,29 @@ class ERNIEClient:
     ```
     """
     
-    # 可用模型列表（按优先级排序）
+    # 可用模型列表（按优先级排序，所有模型均通过内网网关 llms-se.baidu-int.com:8200 访问）
     AVAILABLE_MODELS = [
-        'ernie-4.5-turbo-32k',      # 优先使用：额度最大（1000万）
-        'ernie-4.5-turbo-128k',     # 备用1：额度100万
-        'ernie-4.5-turbo-128k-preview',  # 备用2：额度100万
-        'ernie-x1-turbo-32k',       # 备用3：额度100万
-        'ernie-x1-turbo-32k-preview',  # 备用4：额度100万
-        'ernie-x1-32k-preview',     # 备用5：额度100万
-        'ernie-4.5-21b-a3b',        # 备用6：额度100万
-        'ernie-4.5-0.3b',           # 备用7：额度100万（轻量级）
-        'deepseek-v3.2',            # 备用8：额度100万
-        'deepseek-v3.2-think',      # 备用9：额度100万（思考模式）
-        'qwen3-235b-a22b-thinking-2507',  # 备用10：额度100万（已使用部分）
-        'ernie-4.5-8k-preview',     # 最后备用：额度50万（已使用大部分）
+        # ── ERNIE Turbo 系列（速度快，优先降级目标）──
+        'ernie-4.5-turbo-32k',           # 优先：文心4.5 Turbo，32k上下文
+        'ernie-4.5-turbo-128k',           # 备用：文心4.5 Turbo，128k上下文
+        'ernie-4.5-turbo-128k-preview',   # 备用：文心4.5 Turbo 预览版，效果更强
+        # ── ERNIE X1 深度思考系列 ──
+        'ernie-x1-turbo-32k',             # 备用：文心X1 Turbo，深度思考
+        'ernie-x1-turbo-32k-preview',     # 备用：文心X1 Turbo 预览版
+        'ernie-x1-32k-preview',           # 备用：文心X1，32k上下文
+        # ── ERNIE 开源系列 ──
+        'ernie-4.5-21b-a3b',              # 备用：21B MoE 开源模型
+        'ernie-4.5-0.3b',                 # 备用：0.3B 轻量开源模型，速度最快
+        # ── DeepSeek 系列 ──
+        'deepseek-v3.2',                  # 备用：671B，非思考模式，128k上下文
+        'deepseek-v3.1-250821',           # 备用：V3.1 最新版，混合推理
+        'deepseek-v3.2-think',            # 备用：671B，思考模式，144k上下文
+        'deepseek-v3.1-think-250821',     # 备用：V3.1 思考模式
+        # ── Qwen 系列 ──
+        'qwen3-235b-a22b-thinking-2507',  # 备用：Qwen3 235B 思考版
+        'qwen3-next-80b-a3b-instruct',    # 备用：Qwen3 80B 非思考版
+        # ── 最终兜底 ──
+        'ernie-4.5-8k-preview',           # 最后备用：5k上下文，额度有限
     ]
     
     def __init__(
@@ -613,7 +622,39 @@ def get_ernie_client() -> ERNIEClient:
 async def close_ernie_client():
     """关闭全局 ERNIE 客户端实例"""
     global _ernie_client_instance
-    
+
     if _ernie_client_instance is not None:
         await _ernie_client_instance.close()
         _ernie_client_instance = None
+
+
+def get_ernie_client_with_db_config(db=None) -> ERNIEClient:
+    """
+    创建 ERNIE 客户端，优先从数据库读取 ai 模块配置，降级到环境变量。
+    每次调用都返回新实例（用于需要实时配置的场景，如 AI 对话）。
+
+    Args:
+        db: SQLAlchemy Session，为 None 时直接使用环境变量配置
+    """
+    api_url = None
+    api_key = None
+    model = None
+
+    if db is not None:
+        try:
+            import json
+            from app.models.system_config import SystemConfig
+            config_record = db.query(SystemConfig).filter(
+                SystemConfig.module == 'ai',
+                SystemConfig.config_key == 'main'
+            ).first()
+            if config_record and config_record.config_value:
+                cfg = json.loads(config_record.config_value)
+                api_url = cfg.get('api_url') or None
+                api_key = cfg.get('api_key') or None
+                model = cfg.get('model') or None
+        except Exception as e:
+            logger.warning(f"从数据库加载 AI 配置失败，降级到环境变量: {e}")
+
+    timeout = getattr(settings, 'ERNIE_TIMEOUT', 60)
+    return ERNIEClient(api_url=api_url, api_key=api_key, model=model, timeout=timeout)

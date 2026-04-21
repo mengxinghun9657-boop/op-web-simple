@@ -87,7 +87,7 @@
         </el-form-item>
         <el-form-item v-if="formData.type === 'ruliu'" label="群组ID" prop="group_id">
           <el-input v-model="formData.group_id" placeholder="如流群组ID（必填）" />
-          <div class="form-tip">💡 如流机器人需要配置群组ID，可在如流群组设置中查看</div>
+          <div class="form-tip"><el-icon style="vertical-align: middle; margin-right: 3px;"><InfoFilled /></el-icon>如流机器人需要配置群组ID，可在如流群组设置中查看</div>
         </el-form-item>
         <el-form-item label="严重程度过滤">
           <el-checkbox-group v-model="severityFilters">
@@ -101,7 +101,7 @@
         </el-form-item>
         <el-form-item label="关键词" prop="keywords">
           <el-input v-model="formData.keywords" placeholder="飞书机器人关键词(如: 告警)" />
-          <div class="form-tip">💡 仅飞书自定义机器人需要配置关键词。消息中必须包含该关键词才能发送成功。如流无此限制。</div>
+          <div class="form-tip"><el-icon style="vertical-align: middle; margin-right: 3px;"><InfoFilled /></el-icon>仅飞书自定义机器人需要配置关键词。消息中必须包含该关键词才能发送成功。如流无此限制。</div>
         </el-form-item>
         <el-form-item label="启用">
           <el-switch v-model="formData.enabled" />
@@ -118,7 +118,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Connection } from '@element-plus/icons-vue'
+import { Plus, Connection, InfoFilled } from '@element-plus/icons-vue'
 import { getWebhooks, createWebhook, updateWebhook, deleteWebhook, testWebhook } from '@/api/webhooks'
 
 const loading = ref(false)

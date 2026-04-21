@@ -123,7 +123,7 @@ watch(() => props.modelValue, (newVal) => {
 .editor-wrapper :deep(.el-textarea__inner) {
   min-height: 150px;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Consolas', monospace;
-  font-size: 14px;
+  font-size: var(--text-base);
   line-height: 1.6;
   border-radius: var(--radius-lg);
   border: 2px solid var(--border-color);
@@ -176,7 +176,7 @@ watch(() => props.modelValue, (newVal) => {
 .editor-actions .el-button {
   transition: all var(--transition-fast);
   color: var(--color-primary-600); /* 增强文字颜色 */
-  font-weight: 500;
+  font-weight: var(--font-medium);
 }
 
 .editor-actions .el-button:hover {

@@ -573,8 +573,8 @@ onBeforeUnmount(() => {
 }
 
 .stat-value {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
   color: var(--text-primary);
 }
 
@@ -586,7 +586,7 @@ onBeforeUnmount(() => {
   width: 100%;
   min-height: 720px;
   border: none;
-  background: #fff;
+  background: var(--bg-primary);
 }
 
 .chart-block {

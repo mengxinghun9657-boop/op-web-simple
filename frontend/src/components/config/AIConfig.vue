@@ -4,7 +4,7 @@
     <div class="bento-card">
       <div class="bento-card-header">
         <div class="bento-card-title">
-          <div class="bento-card-title-icon" style="background: linear-gradient(135deg, #0ea5e9, #6366f1);">
+          <div class="bento-card-title-icon icon-bg-secondary">
             <el-icon :size="16"><Cpu /></el-icon>
           </div>
           AI 模型配置
@@ -121,7 +121,9 @@
               <el-icon><Connection /></el-icon>
               测试连接
             </el-button>
-            <span v-if="testResult" :class="testResultClass" class="test-result-text">
+            <span v-if="testResult !== null" class="result-text" :class="testResultClass === 'test-success' ? 'is-success' : testResultClass === 'test-error' ? 'is-error' : ''">
+              <el-icon v-if="testResultClass === 'test-success'"><CircleCheck /></el-icon>
+              <el-icon v-else-if="testResultClass === 'test-error'"><CircleClose /></el-icon>
               {{ testResult }}
             </span>
           </el-form-item>
@@ -154,7 +156,7 @@
       <div class="bento-card info-card">
         <div class="bento-card-header">
           <div class="bento-card-title">
-            <div class="bento-card-title-icon" style="background: linear-gradient(135deg, #059669, #047857);">
+            <div class="bento-card-title-icon icon-bg-success">
               <el-icon :size="16"><List /></el-icon>
             </div>
             自动降级顺序
@@ -175,7 +177,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Cpu, Check, Connection, InfoFilled, List, View, Hide } from '@element-plus/icons-vue'
+import { Cpu, Check, Connection, InfoFilled, List, View, Hide, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import { loadConfig, saveConfig } from '@/api/config'
 import axios from '@/utils/axios'
 
@@ -271,17 +273,16 @@ const handleTestConnection = async () => {
     })
     const data = response
     if (data.success) {
-      testResult.value = `✅ ${data.message}`
+      testResult.value = data.message
       testResultClass.value = 'test-success'
     } else {
-      testResult.value = `❌ ${data.message}`
+      testResult.value = data.message
       testResultClass.value = 'test-error'
     }
   } catch (error) {
     if (error !== 'validation failed') {
-      // 拦截器对 success:false 会 reject(new Error(message))，直接展示 message
       const msg = error.message || error.response?.data?.detail || '未知错误'
-      testResult.value = `❌ ${msg}`
+      testResult.value = msg
       testResultClass.value = 'test-error'
     }
   } finally {
@@ -304,10 +305,10 @@ onMounted(loadAIConfig)
 }
 
 .form-tip {
-  font-size: 12px;
-  color: var(--text-secondary, #909399);
-  margin-top: 4px;
-  line-height: 1.5;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+  line-height: var(--leading-relaxed);
 }
 
 .token-input-wrapper {
@@ -326,14 +327,7 @@ onMounted(loadAIConfig)
   z-index: 1;
 }
 
-.test-result-text {
-  margin-left: 12px;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.test-success { color: #67c23a; }
-.test-error   { color: #f56c6c; }
+/* .test-result-text / .test-success / .test-error 已移至全局 google-components.css 的 .result-text.is-success/.is-error */
 
 .info-cards {
   display: grid;
@@ -349,7 +343,7 @@ onMounted(loadAIConfig)
 }
 
 .info-list li {
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .fallback-list {
@@ -357,13 +351,13 @@ onMounted(loadAIConfig)
   padding-left: 20px;
   color: var(--text-secondary, #606266);
   line-height: 1.9;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-family: monospace;
 }
 
 .fallback-list .primary-model {
-  color: #0ea5e9;
-  font-weight: 600;
+  color: var(--color-info);
+  font-weight: var(--font-semibold);
 }
 
 @media (max-width: 768px) {

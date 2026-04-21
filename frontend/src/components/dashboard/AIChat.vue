@@ -2,7 +2,7 @@
   <div class="bento-card ai-chat-card">
     <div class="bento-card-header">
       <div class="bento-card-title">
-        <div class="bento-card-title-icon" style="background: linear-gradient(135deg, var(--color-secondary-500), var(--color-primary-500));">
+        <div class="bento-card-title-icon icon-bg-secondary">
           <el-icon :size="16"><ChatDotRound /></el-icon>
         </div>
         AI 助手
@@ -396,7 +396,7 @@ onMounted(() => {
 
 .empty-text {
   font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   margin: 0 0 var(--spacing-2);
 }

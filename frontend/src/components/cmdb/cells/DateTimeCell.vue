@@ -95,7 +95,7 @@ const copyToClipboard = async () => {
   transition: opacity var(--transition-fast);
   cursor: pointer;
   color: var(--color-primary);
-  font-size: 14px;
+  font-size: var(--text-base);
   flex-shrink: 0;
 }
 

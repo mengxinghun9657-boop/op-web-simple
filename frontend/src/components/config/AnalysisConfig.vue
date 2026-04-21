@@ -4,7 +4,7 @@
     <div class="bento-card">
       <div class="bento-card-header">
         <div class="bento-card-title">
-          <div class="bento-card-title-icon" style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));">
+          <div class="bento-card-title-icon icon-bg-primary">
             <el-icon :size="16"><Cpu /></el-icon>
           </div>
           资源分析配置
@@ -214,14 +214,14 @@ onMounted(() => {
   align-items: center;
   gap: var(--spacing-2);
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   margin-bottom: var(--spacing-3);
   padding-right: var(--spacing-4);
 }
 
 .config-label .el-icon {
-  font-size: 18px;
+  font-size: var(--text-xl);
   color: var(--color-primary);
 }
 
@@ -335,7 +335,7 @@ onMounted(() => {
   flex: 1;
   height: 44px;
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   border-radius: var(--radius-lg);
   transition: var(--transition-all);
 }
@@ -374,7 +374,7 @@ onMounted(() => {
 
 .info-icon {
   flex-shrink: 0;
-  font-size: 28px;
+  font-size: var(--text-3xl);
   color: var(--color-primary);
   margin-top: 2px;
 }
@@ -384,7 +384,7 @@ onMounted(() => {
 }
 
 .info-title {
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   font-size: var(--font-size-base);
   color: var(--text-primary);
   margin-bottom: var(--spacing-2);

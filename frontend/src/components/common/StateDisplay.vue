@@ -141,7 +141,7 @@ defineProps({
 
 .state-text {
   font-size: var(--text-base);
-  font-weight: 500;
+  font-weight: var(--font-medium);
   color: var(--text-primary);
 }
 

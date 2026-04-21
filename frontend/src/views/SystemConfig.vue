@@ -141,7 +141,7 @@ onMounted(() => {
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   color: var(--primary);
-  font-weight: 500;
+  font-weight: var(--font-medium);
 }
 
 /* 主容器 */
@@ -175,7 +175,7 @@ onMounted(() => {
   padding: var(--space-4);
   color: var(--text-primary) !important;
   transition: all var(--transition-normal);
-  font-weight: 500;
+  font-weight: var(--font-medium);
   font-size: var(--text-base);
   min-height: 48px;
   height: auto;
@@ -187,7 +187,7 @@ onMounted(() => {
 }
 
 .config-menu :deep(.el-menu-item .el-icon) {
-  font-size: 20px;
+  font-size: var(--text-2xl);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -207,25 +207,25 @@ onMounted(() => {
 .config-menu :deep(.el-menu-item.is-active),
 .config-menu :deep(.el-menu-item.is-active:hover),
 .config-menu :deep(.el-menu-item.is-active:focus) {
-  background: linear-gradient(135deg, var(--primary), #1557c0) !important;
-  color: #ffffff !important;
-  font-weight: 600;
+  background: var(--icon-bg-primary) !important;
+  color: var(--text-inverse) !important;
+  font-weight: var(--font-semibold);
   box-shadow: 0 4px 12px rgba(26, 115, 232, 0.25);
 }
 
 .config-menu :deep(.el-menu-item.is-active .el-icon),
 .config-menu :deep(.el-menu-item.is-active:hover .el-icon) {
-  color: #ffffff !important;
+  color: var(--text-inverse) !important;
 }
 
 .config-menu :deep(.el-menu-item.is-active span),
 .config-menu :deep(.el-menu-item.is-active:hover span) {
-  color: #ffffff !important;
+  color: var(--text-inverse) !important;
 }
 
 /* 确保激活状态下所有文字都是白色 */
 .config-menu :deep(.el-menu-item.is-active *) {
-  color: #ffffff !important;
+  color: var(--text-inverse) !important;
 }
 
 /* 右侧内容区 */

@@ -29,7 +29,10 @@
                   <div>2. 按 F12 打开开发者工具 → Network（网络）标签</div>
                   <div>3. 刷新页面，点击任意请求，在 Headers 中找到 Cookie</div>
                   <div>4. 复制完整的 Cookie 字符串（必须包含 BDUSS 和 amisid_https）</div>
-                  <div style="color: var(--color-warning); margin-top: 8px;"><strong>⚠️ 重要：必须包含 BDUSS 和 amisid_https 两个字段，否则无法通过验证</strong></div>
+                  <div style="color: var(--color-warning); margin-top: 8px; display: flex; align-items: center; gap: 4px;">
+                    <el-icon><WarningFilled /></el-icon>
+                    <strong>重要：必须包含 BDUSS 和 amisid_https 两个字段，否则无法通过验证</strong>
+                  </div>
                 </div>
               </div>
             </el-form-item>
@@ -279,7 +282,8 @@ import {
   Edit,
   Close,
   Refresh,
-  MagicStick
+  MagicStick,
+  WarningFilled
 } from '@element-plus/icons-vue'
 import * as cmdbApi from '@/api/cmdb'
 import * as configApi from '@/api/config'
@@ -418,13 +422,13 @@ const handleValidateCookie = () => {
   const hasAmisId = cookie.includes('amisid_https=')
   
   if (hasBDUSS && hasAmisId) {
-    ElMessage.success('✅ Cookie格式正确，包含必需的 BDUSS 和 amisid_https 字段')
+    ElMessage.success('Cookie格式正确，包含必需的 BDUSS 和 amisid_https 字段')
   } else if (hasBDUSS && !hasAmisId) {
-    ElMessage.warning('⚠️ Cookie缺少 amisid_https 字段，可能无法通过验证')
+    ElMessage.warning('Cookie缺少 amisid_https 字段，可能无法通过验证')
   } else if (!hasBDUSS && hasAmisId) {
-    ElMessage.warning('⚠️ Cookie缺少 BDUSS 字段，无法通过验证')
+    ElMessage.warning('Cookie缺少 BDUSS 字段，无法通过验证')
   } else {
-    ElMessage.error('❌ Cookie格式不正确，缺少 BDUSS 和 amisid_https 字段')
+    ElMessage.error('Cookie格式不正确，缺少 BDUSS 和 amisid_https 字段')
   }
 }
 
@@ -641,14 +645,14 @@ onMounted(() => {
   align-items: center;
   gap: var(--spacing-3);
   font-size: var(--font-size-2xl);
-  font-weight: 700;
+  font-weight: var(--font-bold);
   color: var(--text-primary);
   margin: 0 0 var(--spacing-2) 0;
   line-height: 1;
 }
 
 .config-title .el-icon {
-  font-size: 28px;
+  font-size: var(--text-3xl);
   color: var(--color-primary);
   display: flex;
   align-items: center;
@@ -679,7 +683,7 @@ onMounted(() => {
 
 .config-tabs :deep(.el-tabs__item) {
   color: var(--text-secondary);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   font-size: var(--font-size-base);
   padding: 0 var(--spacing-5) !important;
   height: 44px !important;
@@ -693,7 +697,7 @@ onMounted(() => {
 
 .config-tabs :deep(.el-tabs__item.is-active) {
   color: var(--color-primary) !important;
-  font-weight: 700;
+  font-weight: var(--font-bold);
 }
 
 .config-tabs :deep(.el-tabs__active-bar) {
@@ -720,7 +724,7 @@ onMounted(() => {
 }
 
 .config-form :deep(.el-form-item__label) {
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   font-size: var(--font-size-base);
   color: var(--text-primary);
   margin-bottom: var(--spacing-3);
@@ -831,7 +835,7 @@ onMounted(() => {
 }
 
 .form-tip .el-icon {
-  font-size: 16px;
+  font-size: var(--text-lg);
   color: var(--color-primary);
   margin-top: 2px;
   flex-shrink: 0;
@@ -839,13 +843,13 @@ onMounted(() => {
 
 .form-tip strong {
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
 }
 
 .form-tip a {
   color: var(--color-primary);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: var(--font-medium);
 }
 
 .form-tip a:hover {
@@ -865,7 +869,7 @@ onMounted(() => {
 .config-form :deep(.el-button) {
   height: 44px;
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   border-radius: var(--radius-lg);
   padding: 0 var(--spacing-6);
   transition: var(--transition-all);
@@ -881,7 +885,7 @@ onMounted(() => {
 }
 
 .config-form :deep(.el-button .el-icon) {
-  font-size: 18px;
+  font-size: var(--text-xl);
 }
 
 /* 日志表格样式增强 */
@@ -898,7 +902,7 @@ onMounted(() => {
 .logs-table :deep(th.el-table__cell) {
   background-color: var(--bg-spotlight);
   color: var(--text-primary);
-  font-weight: 700;
+  font-weight: var(--font-bold);
   font-size: var(--font-size-sm);
   padding: var(--spacing-4) var(--spacing-3);
   border-bottom: 2px solid var(--border-color);
@@ -915,7 +919,7 @@ onMounted(() => {
 }
 
 .logs-table :deep(.el-tag) {
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   border-radius: var(--radius-md);
   padding: var(--spacing-1) var(--spacing-2);
 }
@@ -935,7 +939,7 @@ onMounted(() => {
 
 .stat-value {
   color: var(--text-primary);
-  font-weight: 700;
+  font-weight: var(--font-bold);
   font-size: var(--font-size-sm);
 }
 
@@ -948,7 +952,7 @@ onMounted(() => {
 .table-footer .el-button {
   height: 36px;
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   border-radius: var(--radius-lg);
   transition: var(--transition-all);
 }

@@ -407,7 +407,7 @@ onMounted(() => { fetchTasks() })
 /* 进度详情 */
 .progress-detail {
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--primary);
 }
 

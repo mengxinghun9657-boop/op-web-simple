@@ -7,7 +7,12 @@
       :class="`toast-${toast.type}`"
     >
       <div class="toast-icon">
-        {{ getIcon(toast.type) }}
+        <el-icon :size="20">
+          <CircleClose v-if="toast.type === 'error'" />
+          <WarningFilled v-else-if="toast.type === 'warning'" />
+          <CircleCheck v-else-if="toast.type === 'success'" />
+          <InfoFilled v-else />
+        </el-icon>
       </div>
       <div class="toast-content">
         <div class="toast-title">{{ toast.title }}</div>
@@ -27,9 +32,11 @@
 
 <script>
 import { ref } from 'vue';
+import { CircleClose, WarningFilled, CircleCheck, InfoFilled } from '@element-plus/icons-vue';
 
 export default {
   name: 'ErrorToast',
+  components: { CircleClose, WarningFilled, CircleCheck, InfoFilled },
   setup() {
     const toasts = ref([]);
     let toastId = 0;
@@ -72,22 +79,11 @@ export default {
       removeToast(toast.id);
     };
 
-    const getIcon = (type) => {
-      const icons = {
-        error: '✕',
-        warning: '⚠',
-        success: '✓',
-        info: 'ℹ'
-      };
-      return icons[type] || icons.info;
-    };
-
     return {
       toasts,
       addToast,
       removeToast,
-      handleRetry,
-      getIcon
+      handleRetry
     };
   }
 };
@@ -134,10 +130,12 @@ export default {
 }
 
 .toast-icon {
-  font-size: var(--text-2xl);
   flex-shrink: 0;
   width: 24px;
-  text-align: center;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toast-error .toast-icon {
@@ -161,7 +159,7 @@ export default {
 }
 
 .toast-title {
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   margin-bottom: var(--space-1);
   color: var(--text-primary);
 }

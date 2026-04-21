@@ -491,7 +491,8 @@ const initChart = () => {
   }
 }
 
-const DD_COLORS = ['#632ca6', '#00a4bd', '#e5a111', '#e5273b', '#00c984', '#9d66b7', '#0085c8', '#f0a30a']
+// 图表配色 - 与项目 Google Blue 设计系统对齐
+const DD_COLORS = ['#1a73e8', '#06b6d4', '#f9ab00', '#d93025', '#1e8e3e', '#9c27b0', '#0288d1', '#e65100']
 
 // 更新分类图表
 const updateCategoryChart = (category) => {
@@ -610,14 +611,14 @@ const updateCategoryChart = (category) => {
     xAxis: {
       type: 'time',
       boundaryGap: false,
-      axisLabel: { color: '#8c8c8c' },
-      axisLine: { lineStyle: { color: '#e0e0e0' } },
+      axisLabel: { color: '#80868b' },
+      axisLine: { lineStyle: { color: '#dadce0' } },
       axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: '#8c8c8c' },
-      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+      axisLabel: { color: '#80868b' },
+      splitLine: { lineStyle: { color: '#f1f3f4', type: 'dashed' } },
       axisLine: { show: false },
       axisTick: { show: false },
     },
@@ -658,9 +659,9 @@ const updateCompareChart = () => {
         data: todayData,
         smooth: false,
         symbol: 'none',
-        lineStyle: { width: 1.5, color: '#632ca6' },
-        itemStyle: { color: '#632ca6' },
-        areaStyle: { color: '#632ca6', opacity: 0.06 },
+        lineStyle: { width: 1.5, color: '#1a73e8' },
+        itemStyle: { color: '#1a73e8' },
+        areaStyle: { color: '#1a73e8', opacity: 0.06 },
         emphasis: { focus: 'series' }
       })
     }
@@ -680,8 +681,8 @@ const updateCompareChart = () => {
         data: yesterdayData,
         smooth: false,
         symbol: 'none',
-        lineStyle: { width: 1.5, color: '#e5a111', type: 'dashed' },
-        itemStyle: { color: '#e5a111' },
+        lineStyle: { width: 1.5, color: '#f9ab00', type: 'dashed' },
+        itemStyle: { color: '#f9ab00' },
         emphasis: { focus: 'series' }
       })
     }
@@ -756,7 +757,7 @@ const updateCompareChart = () => {
       type: 'time',
       boundaryGap: false,
       axisLabel: {
-        color: '#8c8c8c',
+        color: '#80868b',
         formatter: (value) => {
           const date = new Date(value)
           return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
@@ -767,8 +768,8 @@ const updateCompareChart = () => {
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: '#8c8c8c' },
-      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+      axisLabel: { color: '#80868b' },
+      splitLine: { lineStyle: { color: '#f1f3f4', type: 'dashed' } },
       axisLine: { show: false },
       axisTick: { show: false },
     },
@@ -898,7 +899,7 @@ onUnmounted(() => {
 
 .chart-title {
   font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   margin: 0;
 }
@@ -923,7 +924,7 @@ onUnmounted(() => {
 
 .table-title {
   font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   margin: 0;
 }
@@ -955,7 +956,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   padding: 8px 0;
   border-bottom: 1px solid var(--border-color);

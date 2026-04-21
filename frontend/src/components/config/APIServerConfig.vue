@@ -3,7 +3,7 @@
     <div class="bento-card">
       <div class="bento-card-header">
         <div class="bento-card-title">
-          <div class="bento-card-title-icon" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
+          <div class="bento-card-title-icon icon-bg-error">
             <el-icon :size="16"><Monitor /></el-icon>
           </div>
           APIServer 告警配置

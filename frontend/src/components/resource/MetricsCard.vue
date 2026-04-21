@@ -41,7 +41,7 @@ const props = defineProps({
 
 .metrics-card-value {
   font-size: var(--text-2xl);
-  font-weight: 700;
+  font-weight: var(--font-bold);
   color: var(--text-primary);
 }
 

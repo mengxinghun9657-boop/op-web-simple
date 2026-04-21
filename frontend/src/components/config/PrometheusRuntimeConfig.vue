@@ -3,7 +3,7 @@
     <div class="bento-card">
       <div class="bento-card-header">
         <div class="bento-card-title">
-          <div class="bento-card-title-icon" style="background: linear-gradient(135deg, #2563eb, #0f172a);">
+          <div class="bento-card-title-icon icon-bg-primary">
             <el-icon :size="16"><Connection /></el-icon>
           </div>
           Prometheus 配置

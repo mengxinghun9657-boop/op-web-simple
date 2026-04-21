@@ -350,7 +350,7 @@ defineExpose({ applyConditions })
 }
 
 .builder-form :deep(.el-form-item__label) {
-  font-weight: 500;
+  font-weight: var(--font-medium);
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
 }

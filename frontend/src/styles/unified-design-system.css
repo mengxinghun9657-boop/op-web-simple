@@ -322,6 +322,41 @@
   --z-card-hover: 10;
 }
 
+/* ==================== 8-ext. 图标背景色变量 ==================== */
+/*
+ * 用于 .bento-card-title-icon 等场景的背景渐变
+ * 统一在此定义，各组件通过 class 引用，不再使用内联 style
+ */
+:root {
+  /* 蓝色系 - 主色/AI/信息类 */
+  --icon-bg-primary:   linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+  /* 青色/辅色 */
+  --icon-bg-secondary: linear-gradient(135deg, #06b6d4, #0891b2);
+  /* 绿色 - 成功/同步/健康 */
+  --icon-bg-success:   linear-gradient(135deg, #10b981, var(--color-success));
+  /* 橙黄 - 警告/监控 */
+  --icon-bg-warning:   linear-gradient(135deg, #f59e0b, #d97706);
+  /* 红色 - 错误/危险/告警 */
+  --icon-bg-error:     linear-gradient(135deg, var(--color-error), #b91c1c);
+  /* 紫色 - iCafe/任务/扩展功能 */
+  --icon-bg-purple:    linear-gradient(135deg, #7c3aed, #4f46e5);
+  /* 中性 - 配置/设置 */
+  --icon-bg-neutral:   linear-gradient(135deg, var(--color-neutral-600), var(--color-neutral-800));
+}
+
+/* ==================== 终端主题色（深色日志区专用）==================== */
+:root {
+  --terminal-bg:              #1e1e1e;
+  --terminal-fg:              #d4d4d4;
+  --terminal-line-number:     #858585;
+  --terminal-error:           #f48771;
+  --terminal-warning:         #dcdcaa;
+  --terminal-success:         #4ec9b0;
+  --terminal-debug:           #9cdcfe;
+  --terminal-scrollbar:       #424242;
+  --terminal-scrollbar-hover: #4f4f4f;
+}
+
 /* ==================== 8. 浅色主题 (默认且唯一) ==================== */
 :root,
 [data-theme="light"] {
@@ -542,3 +577,13 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ==================== 12. 通用文本颜色工具 class ==================== */
+.text-primary   { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary  { color: var(--text-tertiary); }
+.text-disabled  { color: var(--text-disabled); }
+.text-success   { color: var(--color-success); }
+.text-warning   { color: var(--color-warning); }
+.text-error     { color: var(--color-error); }
+.text-info      { color: var(--color-info); }

@@ -2,7 +2,7 @@
   <div class="bento-card quick-note-card">
     <div class="bento-card-header">
       <div class="bento-card-title">
-        <div class="bento-card-title-icon" style="background: linear-gradient(135deg, var(--color-secondary-500), var(--color-primary-500));">
+        <div class="bento-card-title-icon icon-bg-secondary">
           <el-icon :size="16"><ChatDotRound /></el-icon>
         </div>
         快捷备忘

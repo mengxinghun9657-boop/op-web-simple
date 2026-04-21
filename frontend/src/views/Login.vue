@@ -215,7 +215,7 @@ const handleLogin = async () => {
   position: relative;
   z-index: 1;
   text-align: center;
-  color: #ffffff;
+  color: var(--text-inverse);
 }
 
 .brand-icon {
@@ -234,7 +234,7 @@ const handleLogin = async () => {
   font-size: var(--text-3xl);
   font-weight: var(--font-bold);
   margin: 0 0 var(--space-3);
-  color: #ffffff;
+  color: var(--text-inverse);
   letter-spacing: -0.02em;
 }
 

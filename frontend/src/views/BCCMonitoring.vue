@@ -263,7 +263,7 @@ onMounted(() => {
 
 .config-link {
   color: var(--primary);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   text-decoration: none;
   transition: color var(--transition-fast);
 }

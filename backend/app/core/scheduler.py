@@ -201,6 +201,68 @@ class TaskScheduler:
             if db:
                 db.close()
     
+    def reload_config_from_db(self):
+        """从数据库重新读取三个定时任务的配置并更新调度器（worker 轮询 + 启动时调用）"""
+        from app.core.database import SessionLocal
+        from app.services.cmdb_sync_service import CMDBSyncService
+        from app.models.system_config import SystemConfig
+        import json
+
+        db = None
+        try:
+            db = SessionLocal()
+
+            # --- CMDB ---
+            sync_service = CMDBSyncService(db)
+            enabled = sync_service.get_config("sync_schedule_enabled", False)
+            interval_hours = sync_service.get_config("sync_schedule_interval_hours", 24)
+            azones = sync_service.get_config("sync_schedule_azones", ["AZONE-cdhmlcc001"])
+            if enabled:
+                self.add_cmdb_sync_job(interval_hours, azones)
+            else:
+                self.remove_cmdb_sync_job()
+
+            # --- APIServer ---
+            apiserver_row = db.query(SystemConfig).filter_by(
+                module='apiserver', config_key='main'
+            ).first()
+            if apiserver_row and apiserver_row.config_value:
+                apiserver_cfg = json.loads(apiserver_row.config_value)
+                if apiserver_cfg.get('auto_check_enabled'):
+                    self.add_apiserver_alert_job(int(apiserver_cfg.get('check_interval_minutes', 10)))
+                else:
+                    self.remove_apiserver_alert_job()
+            else:
+                self.remove_apiserver_alert_job()
+
+            # --- BCE ---
+            bce_row = db.query(SystemConfig).filter_by(
+                module='bce_sync', config_key='sync_config'
+            ).first()
+            if bce_row and bce_row.config_value:
+                bce_cfg = json.loads(bce_row.config_value)
+                if bce_cfg.get('enabled'):
+                    hours = max(1, bce_cfg.get('sync_interval', 3600) // 3600)
+                    self.add_bce_sync_job(hours, bce_cfg.get('auto_sync_bcc', True), bce_cfg.get('auto_sync_cce', True))
+                else:
+                    self.remove_bce_sync_job()
+            else:
+                self.remove_bce_sync_job()
+
+        except Exception as e:
+            logger.error(f"reload_config_from_db 失败: {e}")
+        finally:
+            if db:
+                db.close()
+
+    def _config_watcher(self):
+        """每60秒轮询一次DB，检测配置变化后自动重新注册定时任务"""
+        try:
+            self.reload_config_from_db()
+            logger.debug("config_watcher: 配置同步完成")
+        except Exception as e:
+            logger.error(f"config_watcher 执行失败: {e}")
+
     def get_job_info(self, job_id: str):
         """获取任务信息"""
         try:
@@ -238,7 +300,6 @@ def init_scheduler():
     """初始化调度器并加载配置（含 MySQL 就绪等待）"""
     import time
     from app.core.database import SessionLocal
-    from app.services.cmdb_sync_service import CMDBSyncService
 
     # 等待 MySQL 就绪（最多 60 秒）
     db = None
@@ -267,53 +328,19 @@ def init_scheduler():
         # 启动调度器
         scheduler.start()
 
-        # 从数据库加载CMDB同步配置
-        db = SessionLocal()
-        try:
-            sync_service = CMDBSyncService(db)
+        # 从数据库加载所有定时任务配置
+        scheduler.reload_config_from_db()
+        logger.info("✅ 所有定时任务配置已加载")
 
-            enabled = sync_service.get_config("sync_schedule_enabled", False)
-            interval_hours = sync_service.get_config("sync_schedule_interval_hours", 24)
-            azones = sync_service.get_config("sync_schedule_azones", ["AZONE-cdhmlcc001"])
-
-            if enabled:
-                scheduler.add_cmdb_sync_job(interval_hours, azones)
-                logger.info(f"CMDB定时同步已启用: 间隔{interval_hours}小时")
-            else:
-                logger.info("CMDB定时同步未启用")
-
-            from app.models.system_config import SystemConfig
-            import json
-            apiserver_config_record = db.query(SystemConfig).filter(
-                SystemConfig.module == 'apiserver',
-                SystemConfig.config_key == 'main'
-            ).first()
-            if apiserver_config_record and apiserver_config_record.config_value:
-                apiserver_config = json.loads(apiserver_config_record.config_value)
-                if apiserver_config.get('auto_check_enabled'):
-                    scheduler.add_apiserver_alert_job(int(apiserver_config.get('check_interval_minutes', 10)))
-                    logger.info("APIServer定时检测已启用")
-                else:
-                    logger.info("APIServer定时检测未启用")
-
-            # 加载 BCE 自动同步配置
-            bce_sync_config_record = db.query(SystemConfig).filter(
-                SystemConfig.module == 'bce_sync',
-                SystemConfig.config_key == 'sync_config'
-            ).first()
-            if bce_sync_config_record and bce_sync_config_record.config_value:
-                bce_sync_config = json.loads(bce_sync_config_record.config_value)
-                if bce_sync_config.get('enabled'):
-                    interval_hours = max(1, bce_sync_config.get('sync_interval', 3600) // 3600)
-                    auto_sync_bcc = bce_sync_config.get('auto_sync_bcc', True)
-                    auto_sync_cce = bce_sync_config.get('auto_sync_cce', True)
-                    scheduler.add_bce_sync_job(interval_hours, auto_sync_bcc, auto_sync_cce)
-                    logger.info(f"BCE 定时同步已启用: 间隔 {interval_hours} 小时")
-                else:
-                    logger.info("BCE 定时同步未启用")
-
-        finally:
-            db.close()
+        # 注册配置轮询任务（每60秒检查一次DB，感知页面配置变更）
+        scheduler.scheduler.add_job(
+            func=scheduler._config_watcher,
+            trigger=IntervalTrigger(seconds=60),
+            id="config_watcher",
+            name="配置变更轮询",
+            replace_existing=True,
+        )
+        logger.info("✅ 配置变更轮询任务已注册（间隔60秒）")
 
     except Exception as e:
         logger.error(f"初始化调度器失败: {e}")

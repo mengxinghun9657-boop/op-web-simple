@@ -206,7 +206,7 @@ const trendText = computed(() => {
 
 .metric-name {
   font-size: var(--text-lg);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   margin: 0 0 var(--space-1) 0;
 }
@@ -219,7 +219,7 @@ const trendText = computed(() => {
 }
 
 .status-icon {
-  font-size: 24px;
+  font-size: var(--text-3xl);
 }
 
 .status-icon.status-normal {
@@ -247,7 +247,7 @@ const trendText = computed(() => {
 
 .value {
   font-size: var(--text-3xl);
-  font-weight: 700;
+  font-weight: var(--font-bold);
   color: var(--text-primary);
 }
 
@@ -274,7 +274,7 @@ const trendText = computed(() => {
 
 .stat-value {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
 }
 

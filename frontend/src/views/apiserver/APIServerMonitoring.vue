@@ -152,7 +152,7 @@ onBeforeUnmount(() => {
 .stat-label { font-size:var(--text-sm); color:var(--text-tertiary); }
 .stat-value { font-size:28px; font-weight:700; color:var(--text-primary); }
 .stat-value.danger { color: var(--color-danger); }
-.stat-value.warning { color: #f59e0b; }
+.stat-value.warning { color: var(--color-warning); }
 .chart-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-5); }
 .chart-card-wide { grid-column:1 / -1; }
 .chart-block { width:100%; height:320px; }

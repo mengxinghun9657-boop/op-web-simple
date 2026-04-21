@@ -124,7 +124,7 @@ const formatTime = (timestamp) => {
 }
 
 .history-title {
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   font-size: var(--font-size-base);
   letter-spacing: -0.01em;
@@ -180,7 +180,7 @@ const formatTime = (timestamp) => {
 .history-time {
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
-  font-weight: 500;
+  font-weight: var(--font-medium);
 }
 
 .history-iql {

@@ -939,7 +939,7 @@ onMounted(() => {
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   font-family: 'Courier New', monospace;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .ai-interpretation :deep(pre) {
@@ -997,7 +997,7 @@ onMounted(() => {
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
-  font-size: 14px;
+  font-size: var(--text-base);
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -1027,7 +1027,7 @@ onMounted(() => {
 .diagnosis-processing .processing-text {
   margin-top: var(--space-4);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--text-base);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1048,7 +1048,7 @@ onMounted(() => {
 
 .alert-type-tag {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 /* 手册匹配表格样式 */
@@ -1057,26 +1057,26 @@ onMounted(() => {
 }
 
 .device-name {
-  font-weight: 500;
+  font-weight: var(--font-medium);
   color: var(--text-primary);
 }
 
 .device-model {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   margin-top: 2px;
 }
 
 .fault-name {
   margin-top: 4px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-primary);
   word-break: break-all;
 }
 
 .manual-check-code {
   font-family: 'Courier New', monospace;
-  font-size: 11px;
+  font-size: var(--text-xs);
   background-color: var(--bg-secondary);
   padding: 4px 6px;
   border-radius: 3px;
@@ -1103,7 +1103,7 @@ onMounted(() => {
 .copy-icon {
   opacity: 0.4;
   cursor: pointer;
-  color: var(--color-primary, #409eff);
+  color: var(--color-primary-600);
   transition: opacity 0.2s ease;
   flex-shrink: 0;
 }
@@ -1148,8 +1148,8 @@ onMounted(() => {
 .native-detail-table th {
   background: var(--bg-secondary);
   color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
   white-space: nowrap;
 }
 
@@ -1184,7 +1184,7 @@ onMounted(() => {
 /* 原始数据展开样式 */
 .case-info-code {
   font-family: 'Courier New', monospace;
-  font-size: 12px;
+  font-size: var(--text-sm);
   background-color: var(--bg-tertiary);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
@@ -1201,10 +1201,10 @@ onMounted(() => {
 }
 
 .error-types-section .section-title {
-  font-weight: 500;
+  font-weight: var(--font-medium);
   color: var(--text-primary);
   margin-bottom: var(--space-3);
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 .no-data {

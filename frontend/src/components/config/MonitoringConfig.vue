@@ -5,7 +5,7 @@
     <div class="bento-card">
       <div class="bento-card-header">
         <div class="bento-card-title">
-          <div class="bento-card-title-icon" style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));">
+          <div class="bento-card-title-icon icon-bg-primary">
             <el-icon :size="16"><Cpu /></el-icon>
           </div>
           集群ID配置
@@ -53,7 +53,7 @@
     <div class="bento-card">
       <div class="bento-card-header">
         <div class="bento-card-title">
-          <div class="bento-card-title-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+          <div class="bento-card-title-icon icon-bg-success">
             <el-icon :size="16"><Connection /></el-icon>
           </div>
           EIP监控配置
@@ -101,7 +101,7 @@
     <div class="bento-card">
       <div class="bento-card-header">
         <div class="bento-card-title">
-          <div class="bento-card-title-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+          <div class="bento-card-title-icon icon-bg-warning">
             <el-icon :size="16"><Monitor /></el-icon>
           </div>
           BCC监控配置
@@ -149,7 +149,7 @@
     <div class="bento-card">
       <div class="bento-card-header">
         <div class="bento-card-title">
-          <div class="bento-card-title-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+          <div class="bento-card-title-icon icon-bg-primary">
             <el-icon :size="16"><Coin /></el-icon>
           </div>
           BOS监控配置
@@ -381,13 +381,13 @@ onMounted(loadConfig)
   align-items: center;
   gap: var(--spacing-2);
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   margin-bottom: var(--spacing-3);
 }
 
 .config-label .el-icon {
-  font-size: 18px;
+  font-size: var(--text-xl);
   color: var(--color-primary);
 }
 
@@ -411,7 +411,7 @@ onMounted(loadConfig)
   flex: 1;
   height: 44px;
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   border-radius: var(--radius-lg);
   transition: var(--transition-all);
 }

@@ -119,7 +119,7 @@ const openConsole = () => window.open(consoleUrl, '_blank')
 
 <style scoped>
 .minio-icon {
-  background: linear-gradient(135deg, #f97316, #dc2626) !important;
+  background: linear-gradient(135deg, var(--color-warning), var(--color-error)) !important;
 }
 
 .console-desc {
@@ -155,12 +155,12 @@ const openConsole = () => window.open(consoleUrl, '_blank')
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: var(--text-lg);
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: var(--font-medium);
 }
 
 .credentials-section {
-  background: rgba(249, 115, 22, 0.1);
-  border: 1px solid rgba(249, 115, 22, 0.3);
+  background: rgba(249, 171, 0, 0.1);
+  border: 1px solid rgba(249, 171, 0, 0.3);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
 }
@@ -170,7 +170,7 @@ const openConsole = () => window.open(consoleUrl, '_blank')
   align-items: center;
   gap: var(--space-2);
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   margin: 0 0 var(--space-4) 0;
 }
@@ -199,7 +199,7 @@ const openConsole = () => window.open(consoleUrl, '_blank')
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: var(--text-base);
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: var(--font-medium);
 }
 
 .features-grid {
@@ -222,7 +222,7 @@ const openConsole = () => window.open(consoleUrl, '_blank')
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 20px;
+  font-size: var(--text-2xl);
 }
 
 .feature-icon.blue {
@@ -236,8 +236,8 @@ const openConsole = () => window.open(consoleUrl, '_blank')
 }
 
 .feature-icon.purple {
-  background: rgba(168, 85, 247, 0.2);
-  color: #a855f7;
+  background: rgba(124, 58, 237, 0.2);
+  color: #7c3aed;
 }
 
 .feature-content {
@@ -246,7 +246,7 @@ const openConsole = () => window.open(consoleUrl, '_blank')
 
 .feature-title {
   font-size: var(--text-base);
-  font-weight: 500;
+  font-weight: var(--font-medium);
   color: var(--text-primary);
   margin-bottom: var(--space-1);
 }

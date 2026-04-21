@@ -362,7 +362,7 @@ watch(visible, (newVal) => {
 }
 
 .group-name {
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
 }
 
@@ -405,7 +405,7 @@ watch(visible, (newVal) => {
 .drag-handle {
   cursor: move;
   color: var(--text-tertiary);
-  font-size: 18px;
+  font-size: var(--text-xl);
 }
 
 .drag-handle:hover {
@@ -413,7 +413,7 @@ watch(visible, (newVal) => {
 }
 
 .field-label {
-  font-weight: 500;
+  font-weight: var(--font-medium);
   color: var(--text-primary);
   margin-right: var(--spacing-2);
 }
@@ -441,7 +441,7 @@ watch(visible, (newVal) => {
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-3) var(--spacing-4);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
 }
 

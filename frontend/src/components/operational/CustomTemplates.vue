@@ -306,7 +306,7 @@ onMounted(() => {
   align-items: center;
   gap: var(--spacing-2);
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
 }
 
@@ -382,7 +382,7 @@ onMounted(() => {
 
 .template-name {
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   letter-spacing: -0.01em;
 }
@@ -433,12 +433,12 @@ onMounted(() => {
 }
 
 .unified-dialog :deep(.el-dialog__title) {
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   font-size: var(--font-size-lg);
 }
 
 .unified-dialog :deep(.el-form-item__label) {
-  font-weight: 500;
+  font-weight: var(--font-medium);
   color: var(--text-secondary);
 }
 

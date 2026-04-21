@@ -156,13 +156,13 @@ const clearFile = () => {
 }
 
 .upload-text {
-  font-size: 16px;
+  font-size: var(--text-lg);
   color: var(--el-text-color-primary);
   margin-bottom: 8px;
 }
 
 .upload-hint {
-  font-size: 14px;
+  font-size: var(--text-base);
   color: var(--el-text-color-secondary);
 }
 
@@ -193,15 +193,15 @@ const clearFile = () => {
 }
 
 .file-name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
   color: var(--el-text-color-primary);
   margin: 0 0 4px 0;
   word-break: break-all;
 }
 
 .file-size {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--el-text-color-secondary);
   margin: 0;
 }

@@ -260,7 +260,7 @@ onMounted(() => {
 
 .config-link {
   color: var(--color-success);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   text-decoration: none;
   transition: color var(--transition-fast);
 }

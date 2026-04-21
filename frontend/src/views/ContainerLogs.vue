@@ -499,8 +499,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 24px;
-  font-weight: 600;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   margin-bottom: 8px;
 }
@@ -513,13 +513,13 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 20px;
+  color: var(--text-inverse);
+  font-size: var(--text-2xl);
 }
 
 .page-subtitle {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--text-base);
   margin-left: 52px;
 }
 
@@ -569,17 +569,18 @@ onUnmounted(() => {
 }
 
 .log-count {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
 }
 
+/* ── 终端日志区：使用专用深色变量 ── */
 .logs-container {
   height: calc(100vh - 380px);
   min-height: 400px;
   overflow-y: auto;
-  background: #1e1e1e;
+  background: var(--terminal-bg, #1e1e1e);
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.6;
 }
 
@@ -597,7 +598,7 @@ onUnmounted(() => {
 .log-line {
   display: flex;
   padding: 2px 0;
-  color: #d4d4d4;
+  color: var(--terminal-fg, #d4d4d4);
   white-space: pre-wrap;
   word-break: break-all;
 }
@@ -608,7 +609,7 @@ onUnmounted(() => {
 
 .log-index {
   min-width: 50px;
-  color: #858585;
+  color: var(--terminal-line-number, #858585);
   text-align: right;
   padding-right: 12px;
   user-select: none;
@@ -619,21 +620,21 @@ onUnmounted(() => {
 }
 
 .log-error {
-  color: #f48771;
+  color: var(--terminal-error, #f48771);
   background: rgba(244, 135, 113, 0.1);
 }
 
 .log-warning {
-  color: #dcdcaa;
+  color: var(--terminal-warning, #dcdcaa);
   background: rgba(220, 220, 170, 0.1);
 }
 
 .log-success {
-  color: #4ec9b0;
+  color: var(--terminal-success, #4ec9b0);
 }
 
 .log-debug {
-  color: #9cdcfe;
+  color: var(--terminal-debug, #9cdcfe);
 }
 
 .logs-footer {
@@ -647,7 +648,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-top: 8px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
 }
 
@@ -657,23 +658,23 @@ onUnmounted(() => {
 }
 
 .logs-container::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: var(--terminal-bg, #1e1e1e);
 }
 
 .logs-container::-webkit-scrollbar-thumb {
-  background: #424242;
+  background: var(--terminal-scrollbar, #424242);
   border-radius: 5px;
 }
 
 .logs-container::-webkit-scrollbar-thumb:hover {
-  background: #4f4f4f;
+  background: var(--terminal-scrollbar-hover, #4f4f4f);
 }
 
 /* Terminal */
 .terminal-wrapper {
   width: 100%;
   height: calc(100vh - 120px);
-  background: #1e1e1e;
+  background: var(--terminal-bg, #1e1e1e);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -683,6 +684,6 @@ onUnmounted(() => {
 /* 覆盖 dialog body 内边距，让终端铺满 */
 .terminal-dialog .el-dialog__body {
   padding: 12px;
-  background: #1e1e1e;
+  background: var(--terminal-bg, #1e1e1e);
 }
 </style>

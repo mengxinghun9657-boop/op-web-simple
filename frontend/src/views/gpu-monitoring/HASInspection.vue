@@ -282,8 +282,8 @@ onMounted(fetchData)
 }
 
 .stat-value {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
   color: var(--text-primary);
 }
 
@@ -297,7 +297,7 @@ onMounted(fetchData)
 
 .stat-time {
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-secondary);
   line-height: 1.5;
 }

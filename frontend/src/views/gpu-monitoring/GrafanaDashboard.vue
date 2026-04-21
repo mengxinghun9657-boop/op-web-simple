@@ -111,7 +111,7 @@ onMounted(fetchGrafanaInfo)
 
 .action-title {
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   margin-bottom: var(--space-2);
 }
@@ -130,7 +130,7 @@ onMounted(fetchGrafanaInfo)
   width: 100%;
   min-height: 760px;
   border: none;
-  background: #fff;
+  background: var(--bg-primary);
 }
 
 @media (max-width: 900px) {

@@ -839,3 +839,41 @@
 .el-badge__content.is-fixed {
   box-shadow: 0 0 0 2px var(--bg-primary) !important;
 }
+
+/* ==================== 通用工具 class ==================== */
+
+/* 测试连接 / 操作结果状态文本 */
+.result-text {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: var(--space-3);
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+}
+.result-text.is-success { color: var(--color-success); }
+.result-text.is-error   { color: var(--color-error); }
+.result-text.is-warning { color: var(--color-warning); }
+
+/* 表单提示文字 */
+.form-tip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+  line-height: var(--leading-relaxed);
+}
+.form-tip.is-success { color: var(--color-success); }
+.form-tip.is-warning { color: var(--color-warning); }
+.form-tip.is-error   { color: var(--color-error); }
+
+/* bento-card-title-icon 语义背景 class */
+.icon-bg-primary   { background: var(--icon-bg-primary) !important; }
+.icon-bg-secondary { background: var(--icon-bg-secondary) !important; }
+.icon-bg-success   { background: var(--icon-bg-success) !important; }
+.icon-bg-warning   { background: var(--icon-bg-warning) !important; }
+.icon-bg-error     { background: var(--icon-bg-error) !important; }
+.icon-bg-purple    { background: var(--icon-bg-purple) !important; }
+.icon-bg-neutral   { background: var(--icon-bg-neutral) !important; }

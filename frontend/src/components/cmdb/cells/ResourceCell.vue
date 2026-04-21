@@ -96,8 +96,8 @@ const copyToClipboard = async () => {
 }
 
 .resource-text {
-  font-size: 11px;
-  color: var(--text-secondary, #6b7280);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
   white-space: nowrap;
   flex: 1;
   overflow: hidden;
@@ -107,7 +107,7 @@ const copyToClipboard = async () => {
 .progress-track {
   width: 100%;
   height: 4px;
-  background: var(--border-primary, #e5e7eb);
+  background: var(--border-primary);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -124,7 +124,7 @@ const copyToClipboard = async () => {
   transition: opacity var(--transition-fast);
   cursor: pointer;
   color: var(--color-primary);
-  font-size: 12px;
+  font-size: var(--text-sm);
   flex-shrink: 0;
 }
 

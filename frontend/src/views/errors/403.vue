@@ -23,7 +23,7 @@
 
 .error-code {
   font-size: var(--text-6xl);
-  font-weight: 700;
+  font-weight: var(--font-bold);
   color: var(--color-error);
   margin-bottom: var(--space-4);
 }

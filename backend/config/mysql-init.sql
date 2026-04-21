@@ -738,7 +738,7 @@ CREATE TABLE IF NOT EXISTS `chat_history` (
 CREATE TABLE IF NOT EXISTS `user_notes` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT NOT NULL UNIQUE COMMENT '用户ID',
-    `content` TEXT DEFAULT '' COMMENT '备忘内容',
+    `content` TEXT COMMENT '备忘内容',
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     CONSTRAINT `fk_user_notes_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户备忘';

@@ -234,7 +234,7 @@ const filteredCategories = computed(() => {
 }
 
 .field-name {
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   font-size: var(--font-size-base);
   letter-spacing: -0.01em;
@@ -252,12 +252,12 @@ const filteredCategories = computed(() => {
 .operators-label {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: var(--font-medium);
 }
 
 .operator-tag {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
-  font-weight: 500;
+  font-weight: var(--font-medium);
   transition: all var(--transition-fast);
 }
 
@@ -279,7 +279,7 @@ const filteredCategories = computed(() => {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   flex-shrink: 0;
-  font-weight: 500;
+  font-weight: var(--font-medium);
 }
 
 .example-code {

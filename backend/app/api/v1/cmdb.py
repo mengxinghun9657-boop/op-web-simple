@@ -708,27 +708,8 @@ async def update_sync_schedule(
             updated_by=current_user.username
         )
         
-        # 实时更新调度器
-        try:
-            from app.core.scheduler import scheduler
-            
-            if enabled:
-                # 启用定时任务
-                scheduler.add_cmdb_sync_job(interval_hours, azones)
-                logger.info(f"定时同步任务已更新: 间隔{interval_hours}小时, 可用区{azones}")
-            else:
-                # 禁用定时任务
-                scheduler.remove_cmdb_sync_job()
-                logger.info("定时同步任务已禁用")
-                
-        except Exception as e:
-            logger.error(f"更新调度器失败: {e}")
-            # 配置已保存，但调度器更新失败
-            raise HTTPException(
-                status_code=500, 
-                detail=f"配置已保存，但调度器更新失败: {str(e)}"
-            )
-        
+        # 配置已保存，worker 的 config_watcher 将在 60 秒内自动感知并更新调度器
+
         message = f"定时同步已{'启用' if enabled else '禁用'}，间隔{interval_hours}小时"
         logger.info(f"用户 {current_user.username} 更新了定时同步配置: {message}")
         
@@ -997,20 +978,7 @@ async def update_bce_sync_config(
 
         db.commit()
 
-        # 实时更新调度器（复用 CMDB 同步逻辑）
-        try:
-            from app.core.scheduler import scheduler
-            if current.get('enabled'):
-                interval_hours = max(1, current.get('sync_interval', 3600) // 3600)
-                auto_sync_bcc = current.get('auto_sync_bcc', True)
-                auto_sync_cce = current.get('auto_sync_cce', True)
-                scheduler.add_bce_sync_job(interval_hours, auto_sync_bcc, auto_sync_cce)
-                logger.info(f"BCE 定时同步任务已更新: 间隔 {interval_hours} 小时")
-            else:
-                scheduler.remove_bce_sync_job()
-                logger.info("BCE 定时同步任务已禁用")
-        except Exception as e:
-            logger.error(f"更新 BCE 调度器失败: {e}")
+        # 配置已保存，worker 的 config_watcher 将在 60 秒内自动感知并更新调度器
 
         return APIResponse(
             success=True,

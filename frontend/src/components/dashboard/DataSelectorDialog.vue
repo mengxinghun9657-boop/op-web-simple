@@ -135,7 +135,7 @@ watch(visible, (newVal) => {
 
 .selector-label {
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-secondary);
 }
 

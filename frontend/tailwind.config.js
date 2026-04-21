@@ -7,25 +7,25 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
-      // 颜色系统 - 与 design-tokens.css 保持同步
+      // 颜色系统 - 与 unified-design-system.css 保持同步（Google Blue 体系）
       colors: {
-        // 主色 - 专业蓝
+        // 主色 - Google Blue
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          DEFAULT: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50:  '#e8f0fe',
+          100: '#d2e3fc',
+          200: '#aecbfa',
+          300: '#8ab4f8',
+          400: '#669df6',
+          500: '#4285f4',
+          DEFAULT: '#1a73e8',
+          600: '#1a73e8',
+          700: '#1967d2',
+          800: '#185abc',
+          900: '#174ea6',
         },
-        // 次要色 - 青色
+        // 次要色 - 青色（与设计系统 --color-secondary 对齐）
         secondary: {
-          50: '#ecfeff',
+          50:  '#ecfeff',
           100: '#cffafe',
           200: '#a5f3fc',
           300: '#67e8f9',
@@ -37,49 +37,48 @@ export default {
           800: '#155e75',
           900: '#164e63',
         },
-        // 中性色 - Slate
-        slate: {
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          300: '#cbd5e1',
-          400: '#94a3b8',
-          500: '#64748b',
-          600: '#475569',
-          700: '#334155',
-          800: '#1e293b',
-          900: '#0f172a',
-          950: '#020617',
+        // 中性色 - Google Gray（与 --color-neutral-* 对齐）
+        neutral: {
+          50:  '#f8f9fa',
+          100: '#f1f3f4',
+          200: '#e8eaed',
+          300: '#dadce0',
+          400: '#bdc1c6',
+          500: '#9aa0a6',
+          600: '#80868b',
+          700: '#5f6368',
+          800: '#3c4043',
+          900: '#202124',
         },
-        // 语义色
+        // 语义色 - 与 --color-success/warning/error 对齐
         success: {
-          light: '#86efac',
-          DEFAULT: '#22c55e',
-          dark: '#16a34a',
+          light: '#81c995',
+          DEFAULT: '#1e8e3e',
+          dark: '#137333',
         },
         warning: {
-          light: '#fde047',
-          DEFAULT: '#eab308',
-          dark: '#ca8a04',
+          light: '#fdd663',
+          DEFAULT: '#f9ab00',
+          dark: '#e37400',
         },
         error: {
-          light: '#fca5a5',
-          DEFAULT: '#ef4444',
-          dark: '#dc2626',
+          light: '#f28b82',
+          DEFAULT: '#d93025',
+          dark: '#b31412',
         },
         info: {
-          light: '#93c5fd',
-          DEFAULT: '#3b82f6',
-          dark: '#2563eb',
+          light: '#8ab4f8',
+          DEFAULT: '#1a73e8',
+          dark: '#1967d2',
         },
-        // 背景色
+        // 背景色（浅色主题，与 --bg-* 对齐）
         bg: {
-          primary: '#0f172a',
-          secondary: '#1e293b',
-          tertiary: '#334155',
+          primary:   '#ffffff',
+          secondary: '#f8f9fa',
+          tertiary:  '#f1f3f4',
         },
       },
-      // 间距系统 - 4px 基准
+      // 间距系统 - 4px 基准（与 --space-* 对齐）
       spacing: {
         '0.5': '2px',
         '1': '4px',
@@ -103,121 +102,92 @@ export default {
         '20': '80px',
         '24': '96px',
       },
-      // 字体大小
+      // 字体大小（与 --text-* 对齐）
       fontSize: {
-        'xs': ['12px', { lineHeight: '16px' }],
-        'sm': ['14px', { lineHeight: '20px' }],
-        'base': ['16px', { lineHeight: '24px' }],
-        'lg': ['18px', { lineHeight: '28px' }],
-        'xl': ['20px', { lineHeight: '28px' }],
-        '2xl': ['24px', { lineHeight: '32px' }],
-        '3xl': ['30px', { lineHeight: '36px' }],
-        '4xl': ['36px', { lineHeight: '40px' }],
-        '5xl': ['48px', { lineHeight: '1' }],
+        'xs':   ['11px', { lineHeight: '16px' }],
+        'sm':   ['12px', { lineHeight: '18px' }],
+        'base': ['14px', { lineHeight: '21px' }],
+        'lg':   ['16px', { lineHeight: '24px' }],
+        'xl':   ['18px', { lineHeight: '28px' }],
+        '2xl':  ['22px', { lineHeight: '32px' }],
+        '3xl':  ['28px', { lineHeight: '36px' }],
+        '4xl':  ['34px', { lineHeight: '40px' }],
+        '5xl':  ['40px', { lineHeight: '1' }],
       },
-      // 圆角
+      // 圆角（与 --radius-* 对齐）
       borderRadius: {
-        'none': '0',
-        'sm': '4px',
+        'none':  '0',
+        'sm':    '4px',
         'DEFAULT': '8px',
-        'md': '12px',
-        'lg': '16px',
-        'xl': '20px',
-        '2xl': '24px',
-        'full': '9999px',
+        'md':    '8px',
+        'lg':    '12px',
+        'xl':    '16px',
+        '2xl':   '20px',
+        'full':  '9999px',
       },
-      // 阴影系统
+      // 阴影系统（与 --shadow-* 对齐）
       boxShadow: {
-        'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-        'DEFAULT': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
-        'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-        'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
-        'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-        '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        'sm':  '0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15)',
+        'DEFAULT': '0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15)',
+        'md':  '0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15)',
+        'lg':  '0 2px 6px 2px rgba(60, 64, 67, 0.15), 0 8px 16px 4px rgba(60, 64, 67, 0.15)',
+        'xl':  '0 4px 12px 4px rgba(60, 64, 67, 0.15), 0 12px 24px 8px rgba(60, 64, 67, 0.15)',
         'inner': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)',
-        // 玻璃阴影
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+        'glass':    '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
         'glass-sm': '0 4px 16px 0 rgba(0, 0, 0, 0.25)',
         'glass-lg': '0 12px 48px 0 rgba(0, 0, 0, 0.45)',
-        // 光晕效果
-        'glow': '0 0 20px rgba(59, 130, 246, 0.5)',
-        'glow-sm': '0 0 10px rgba(59, 130, 246, 0.3)',
-        'glow-lg': '0 0 40px rgba(59, 130, 246, 0.6)',
-        'glow-cyan': '0 0 20px rgba(6, 182, 212, 0.5)',
-        'glow-success': '0 0 20px rgba(34, 197, 94, 0.5)',
-        'glow-warning': '0 0 20px rgba(234, 179, 8, 0.5)',
-        'glow-error': '0 0 20px rgba(239, 68, 68, 0.5)',
+        'glow':         '0 0 0 3px rgba(26, 115, 232, 0.2)',
+        'glow-sm':      '0 0 0 3px rgba(26, 115, 232, 0.15)',
+        'glow-success': '0 0 0 3px rgba(30, 142, 62, 0.2)',
+        'glow-warning': '0 0 0 3px rgba(249, 171, 0, 0.2)',
+        'glow-error':   '0 0 0 3px rgba(217, 48, 37, 0.2)',
       },
       // 背景渐变
       backgroundImage: {
-        'tech-gradient': 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
-        'accent-gradient': 'linear-gradient(135deg, #06b6d4 0%, #22c55e 100%)',
-        'dark-gradient': 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+        'tech-gradient':  'linear-gradient(135deg, #1a73e8 0%, #06b6d4 100%)',
+        'accent-gradient':'linear-gradient(135deg, #06b6d4 0%, #1e8e3e 100%)',
         'glass-gradient': 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
       },
       // 动画
       animation: {
         'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'fade-in': 'fadeIn 0.2s ease-out',
-        'fade-out': 'fadeOut 0.15s ease-in',
-        'slide-up': 'slideUp 0.3s ease-out',
+        'fade-in':    'fadeIn 0.2s ease-out',
+        'fade-out':   'fadeOut 0.15s ease-in',
+        'slide-up':   'slideUp 0.3s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',
-        'scale-in': 'scaleIn 0.2s ease-out',
-        'shimmer': 'shimmer 2s infinite linear',
+        'scale-in':   'scaleIn 0.2s ease-out',
+        'shimmer':    'shimmer 2s infinite linear',
       },
       keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        fadeOut: {
-          '0%': { opacity: '1' },
-          '100%': { opacity: '0' },
-        },
-        slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        slideDown: {
-          '0%': { opacity: '0', transform: 'translateY(-10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        scaleIn: {
-          '0%': { opacity: '0', transform: 'scale(0.95)' },
-          '100%': { opacity: '1', transform: 'scale(1)' },
-        },
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
-        },
+        fadeIn:    { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+        fadeOut:   { '0%': { opacity: '1' }, '100%': { opacity: '0' } },
+        slideUp:   { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+        slideDown: { '0%': { opacity: '0', transform: 'translateY(-10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+        scaleIn:   { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
+        shimmer:   { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
       },
-      // 过渡时长
+      // 过渡时长（与 --duration-* 对齐）
       transitionDuration: {
-        'fast': '150ms',
+        'fast':   '100ms',
         'normal': '200ms',
-        'slow': '300ms',
+        'slow':   '300ms',
       },
       // 背景模糊
       backdropBlur: {
-        'xs': '2px',
-        'sm': '4px',
-        'DEFAULT': '8px',
-        'md': '12px',
-        'lg': '16px',
-        'xl': '24px',
-        '2xl': '40px',
-        '3xl': '64px',
+        'xs': '2px', 'sm': '4px', 'DEFAULT': '8px',
+        'md': '12px', 'lg': '16px', 'xl': '24px',
+        '2xl': '40px', '3xl': '64px',
       },
-      // Z-index 层级
+      // Z-index 层级（与 --z-* 对齐）
       zIndex: {
-        'dropdown': '1000',
-        'sticky': '1020',
-        'fixed': '1030',
+        'dropdown':       '1000',
+        'sticky':         '1020',
+        'fixed':          '1030',
         'modal-backdrop': '1040',
-        'modal': '1050',
-        'popover': '1060',
-        'tooltip': '1070',
-        'toast': '1080',
+        'modal':          '1050',
+        'popover':        '1060',
+        'tooltip':        '1070',
+        'toast':          '1080',
       },
     },
   },

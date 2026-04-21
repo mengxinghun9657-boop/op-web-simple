@@ -593,9 +593,10 @@ const bceContextLoading = ref(false)
 const bceContextLoaded = ref(false)
 
 // 资源使用 Tab - 进度条颜色阶梯（数组格式，兼容 el-progress）
-const progressColorStops = [  { color: '#67c23a', percentage: 70 },
-  { color: '#e6a23c', percentage: 90 },
-  { color: '#f56c6c', percentage: 100 },
+const progressColorStops = [
+  { color: 'var(--color-success)', percentage: 70 },
+  { color: 'var(--color-warning)', percentage: 90 },
+  { color: 'var(--color-error)',   percentage: 100 },
 ]
 
 // 资源使用 Tab - 动态 KV 字段（过滤掉 null/0/空，展示有意义的字段）
@@ -1009,8 +1010,8 @@ onMounted(() => {
 }
 
 .google-table :deep(.el-table__header th) {
-  background: var(--bg-secondary, #f9fafb);
-  font-weight: 600;
+  background: var(--bg-secondary);
+  font-weight: var(--font-semibold);
   white-space: normal;
   line-height: 1.3;
   padding: 8px 4px;
@@ -1057,7 +1058,7 @@ onMounted(() => {
   position: absolute;
   bottom: -18px;
   left: 4px;
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--primary);
 }
 
@@ -1112,7 +1113,7 @@ onMounted(() => {
   transition: opacity 0.2s ease;
   cursor: pointer;
   color: var(--color-primary);
-  font-size: 14px;
+  font-size: var(--text-base);
   flex-shrink: 0;
   margin-right: 4px;
 }
@@ -1141,7 +1142,7 @@ onMounted(() => {
 }
 
 .bce-cell-text {
-  font-size: 12px;
+  font-size: var(--text-sm);
   white-space: nowrap;
 }
 
@@ -1162,8 +1163,8 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2px;
-  background: var(--border-primary, #e5e7eb);
-  border: 1px solid var(--border-primary, #e5e7eb);
+  background: var(--border-primary);
+  border: 1px solid var(--border-primary);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -1179,22 +1180,22 @@ onMounted(() => {
 }
 .kv-label {
   flex-shrink: 0;
-  font-size: 12px;
-  color: var(--text-tertiary, #9ca3af);
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
   min-width: 72px;
 }
 .kv-label-warn {
-  color: #e6a23c;
+  color: var(--color-warning);
 }
 .kv-value {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-primary, #111827);
   word-break: break-all;
 }
 .kv-value.copyable {
   cursor: pointer;
   font-family: var(--font-mono, monospace);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 .kv-value.copyable:hover {
   color: var(--primary, #3b82f6);
@@ -1212,7 +1213,7 @@ onMounted(() => {
   opacity: 0;
   transition: opacity 0.2s ease;
   color: var(--primary, #3b82f6);
-  font-size: 14px;
+  font-size: var(--text-base);
   flex-shrink: 0;
 }
 
@@ -1232,7 +1233,7 @@ onMounted(() => {
 }
 .resource-card {
   padding: 16px;
-  border: 1px solid var(--border-primary, #e5e7eb);
+  border: 1px solid var(--border-primary);
   border-radius: 8px;
   background: var(--bg-primary, #fff);
 }
@@ -1243,27 +1244,27 @@ onMounted(() => {
   margin-bottom: 10px;
 }
 .resource-card-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
   color: var(--text-secondary, #6b7280);
 }
 .resource-card-value {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: var(--font-bold);
   color: var(--text-primary, #111827);
   font-family: var(--font-mono, monospace);
 }
 .resource-card-sub {
   margin-top: 8px;
-  font-size: 11px;
-  color: var(--text-tertiary, #9ca3af);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
 }
 
 /* 进度条样式 - 资源使用卡片 */
 .progress-track {
   width: 100%;
   height: 4px;
-  background: var(--border-primary, #e5e7eb);
+  background: var(--border-primary);
   border-radius: 2px;
   overflow: hidden;
   margin-top: 8px;
@@ -1281,8 +1282,8 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 .drawer-sub-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
   color: var(--text-secondary, #6b7280);
   margin-bottom: 8px;
   display: flex;
@@ -1298,9 +1299,9 @@ onMounted(() => {
   padding: 0 5px;
   background: var(--bg-secondary, #f3f4f6);
   border-radius: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-tertiary, #9ca3af);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--text-tertiary);
 }
 .drawer-bce-placeholder {
   display: flex;
@@ -1314,7 +1315,7 @@ onMounted(() => {
 .table-wrapper {
   width: 100%;
   border-radius: 8px;
-  border: 1px solid var(--border-primary, #e5e7eb);
+  border: 1px solid var(--border-primary);
   overflow: hidden;
 }
 
@@ -1334,18 +1335,18 @@ onMounted(() => {
 
 .native-drawer-table th,
 .native-drawer-table td {
-  border-right: 1px solid var(--border-primary, #e5e7eb);
-  border-bottom: 1px solid var(--border-primary, #e5e7eb);
+  border-right: 1px solid var(--border-primary);
+  border-bottom: 1px solid var(--border-primary);
   padding: 8px 10px;
   box-sizing: border-box;
   vertical-align: top;
 }
 
 .native-drawer-table th {
-  background: var(--bg-secondary, #f9fafb);
+  background: var(--bg-secondary);
   white-space: nowrap;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
   color: var(--text-secondary, #6b7280);
 }
 

@@ -366,7 +366,7 @@ onMounted(() => {
   align-items: center;
   gap: var(--spacing-2);
   font-size: var(--font-size-xl);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text-primary);
   margin: 0 0 var(--spacing-2) 0;
 }

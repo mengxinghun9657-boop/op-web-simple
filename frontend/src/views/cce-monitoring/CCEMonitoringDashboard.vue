@@ -178,7 +178,9 @@
         <div class="content-card-extra">
           <el-text type="info" size="small" v-if="lastRefreshTime">
             上次刷新：{{ lastRefreshTime }}
-            <span v-if="autoRefreshSec > 0" style="margin-left:6px;color:#52c41a">● 自动刷新</span>
+            <span v-if="autoRefreshSec > 0" class="auto-refresh-badge">
+              <el-icon><CircleCheck /></el-icon>自动刷新
+            </span>
           </el-text>
         </div>
       </div>
@@ -215,12 +217,12 @@
       <div style="display:flex;align-items:center;gap:10px">
         <span>Pending PVC 详情</span>
         <el-tag type="danger" effect="dark">{{ pvcList.length }} 条</el-tag>
-        <span style="font-size:13px;color:#999">集群: {{ selectedCluster }}</span>
+        <span class="text-disabled" style="font-size:var(--text-sm)">集群: {{ selectedCluster }}</span>
       </div>
     </template>
     <div v-if="pvcLoading" style="text-align:center;padding:40px">
       <el-icon class="is-loading" :size="32"><Refresh /></el-icon>
-      <div style="margin-top:8px;color:#999">加载中...</div>
+      <div class="text-disabled" style="margin-top:var(--space-2)">加载中...</div>
     </div>
     <el-table v-else :data="pvcList" stripe border size="small" style="width:100%">
       <el-table-column prop="namespace" label="Namespace" min-width="160" show-overflow-tooltip />
@@ -242,7 +244,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Monitor, Refresh, ArrowDown } from '@element-plus/icons-vue'
+import { Monitor, Refresh, ArrowDown, CircleCheck } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { getCCEClusters, getCCEMonitoringConfig, queryCCECluster, queryCCEClusterCharts, queryPendingPVCs } from '@/api/cceMonitoring'
 import { getCCEClusterDetail, downloadKubeconfig } from '@/api/cmdb'
@@ -613,7 +615,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 :deep(.el-progress-bar__inner) {
-  background: var(--progress-color, #67c23a) !important;
+  background: var(--progress-color, var(--color-success)) !important;
   background-image: none !important;
 }
 
@@ -625,8 +627,8 @@ onBeforeUnmount(() => {
 }
 
 .metric-card {
-  background: #fafafa;
-  border: 1px solid #e8e8e8;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
   border-radius: 8px;
   padding: 14px 16px 10px;
   display: flex;
@@ -637,23 +639,23 @@ onBeforeUnmount(() => {
 .metric-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 .metric-card--clickable { cursor: pointer; }
 .metric-card--clickable:hover { box-shadow: 0 2px 12px rgba(250,173,20,0.3); }
-.metric-card--ok      { border-color: #b7eb8f; background: #f6ffed; }
-.metric-card--warning { border-color: #ffd591; background: #fffbe6; }
-.metric-card--danger  { border-color: #ffb8b8; background: #fff1f0; }
+.metric-card--ok      { border-color: var(--color-success-border); background: var(--color-success-bg); }
+.metric-card--warning { border-color: var(--color-warning-border); background: var(--color-warning-bg); }
+.metric-card--danger  { border-color: var(--color-error-border); background: var(--color-error-bg); }
 
 .metric-label {
-  font-size: 12px;
-  color: #666;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
   line-height: 1.3;
 }
 .metric-value {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1a1a1a;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
   line-height: 1.2;
 }
-.metric-null { font-size: 20px; color: #bbb; }
-.metric-unit { font-size: 11px; color: #999; }
+.metric-null { font-size: 20px; color: var(--text-disabled); }
+.metric-unit { font-size: var(--text-xs); color: var(--text-tertiary); }
 
 .charts-grid {
   display: grid;
@@ -661,21 +663,21 @@ onBeforeUnmount(() => {
   gap: 20px;
 }
 .chart-item {
-  background: #fafafa;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 12px 14px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) 14px var(--space-2);
 }
 .chart-title {
-  font-size: 13px;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 6px;
-  padding-left: 8px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+  padding-left: var(--space-2);
 }
 .chart-unit {
-  font-size: 11px;
-  color: #999;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
   font-weight: normal;
 }
 .chart-canvas {
@@ -700,18 +702,26 @@ onBeforeUnmount(() => {
   gap: 2px;
 }
 .info-label {
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--text-secondary, #8c8c8c);
-  font-weight: 500;
+  font-weight: var(--font-medium);
   letter-spacing: 0.02em;
 }
 .info-value {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: var(--font-medium);
 }
 .info-value.mono {
   font-family: var(--font-mono, 'JetBrains Mono', monospace);
-  font-size: 12px;
+  font-size: var(--text-sm);
+}
+.auto-refresh-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: var(--space-1);
+  color: var(--color-success);
+  font-size: var(--text-sm);
 }
 </style>

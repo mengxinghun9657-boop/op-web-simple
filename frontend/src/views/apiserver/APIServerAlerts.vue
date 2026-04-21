@@ -254,7 +254,7 @@
             placeholder="请输入预估工时"
             style="width: 200px"
           />
-          <span style="margin-left: 8px; color: #909399;">小时</span>
+          <span style="margin-left: 8px; color: var(--text-tertiary);">小时</span>
         </el-form-item>
 
         <!-- 下拉选择字段 -->
@@ -519,8 +519,8 @@ onMounted(fetchList)
 
 <style scoped>
 .code-block { white-space: pre-wrap; word-break: break-word; display:block; }
-.text-muted { color: #999; font-size: 12px; }
-.form-tip { font-size: 12px; color: #909399; margin-top: 4px; }
+.text-muted { color: var(--text-tertiary); font-size: var(--text-sm); }
+.form-tip { font-size: var(--text-sm); color: var(--text-tertiary); margin-top: 4px; }
 
 .action-grid {
   display: flex;
@@ -536,13 +536,13 @@ onMounted(fetchList)
   padding: 3px 0;
   border: none;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: var(--text-sm);
   cursor: pointer;
   white-space: nowrap;
   transition: opacity 0.15s;
 }
 .action-btn:hover { opacity: 0.8; }
 .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-primary { background: #e8f4fd; color: #1a73e8; }
-.btn-secondary { background: #f1f3f4; color: #5f6368; }
+.btn-primary { background: var(--color-primary-50); color: var(--color-primary-600); }
+.btn-secondary { background: var(--bg-tertiary); color: var(--text-secondary); }
 </style>

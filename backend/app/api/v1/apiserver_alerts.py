@@ -35,14 +35,7 @@ async def get_apiserver_config(db: Session = Depends(get_db)):
 async def save_apiserver_config(payload: dict, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     service = APIServerAlertService(db)
     saved = service.save_config(payload, user_id=getattr(current_user, "id", None))
-    try:
-        from app.core.scheduler import scheduler
-        if saved.get("auto_check_enabled"):
-            scheduler.add_apiserver_alert_job(int(saved.get("check_interval_minutes", 10)))
-        else:
-            scheduler.remove_apiserver_alert_job()
-    except Exception:
-        pass
+    # 配置已保存，worker 的 config_watcher 将在 60 秒内自动感知并更新调度器
     return APIResponse(success=True, data=saved, message="保存成功")
 
 

@@ -61,8 +61,8 @@ onUnmounted(() => {
 .glow-btn {
   position: relative;
   padding: 12px 24px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
   background: #1a1a2e;
   border: none;
   outline: none;
@@ -103,8 +103,8 @@ onUnmounted(() => {
   color: transparent;
 }
 
-.glow-btn.small { padding: 8px 16px; font-size: 14px; }
-.glow-btn.large { padding: 16px 32px; font-size: 18px; }
+.glow-btn.small { padding: 8px 16px; font-size: var(--text-base); }
+.glow-btn.large { padding: 16px 32px; font-size: var(--text-xl); }
 
 .glow-btn.success { --light-color: #00ff88; }
 .glow-btn.warning { --light-color: #ffaa00; }

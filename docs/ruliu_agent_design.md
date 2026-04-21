@@ -1488,3 +1488,85 @@ def process_message(message_data):
 3. **GPU 卡时分析**：`analyze_gpu_bottom(cluster_ids, start_time, end_time)` → `POST /api/v1/gpu-monitoring/bottom-card-time/analyze`
 4. **自动巡检报告**：定时触发 `get_cluster_metrics` 对所有集群扫描，发现异常主动推送群消息
 5. **多模态**：如流支持图片回调时，可以让 LLM 分析截图中的错误信息
+
+## 十一、附录
+服务器端口占用情况
+root@njjs-aitam-6:~# netstat -tulnp
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 127.0.0.1:33271         0.0.0.0:*               LISTEN      2634110/containerd  
+tcp        2      0 0.0.0.0:9108            0.0.0.0:*               LISTEN      1146185/python      
+tcp        0      0 0.0.0.0:9000            0.0.0.0:*               LISTEN      967487/docker-proxy 
+tcp        0      0 0.0.0.0:8960            0.0.0.0:*               LISTEN      956226/docker-proxy 
+tcp        0      0 0.0.0.0:8220            0.0.0.0:*               LISTEN      954869/docker-proxy 
+tcp        0      0 0.0.0.0:8306            0.0.0.0:*               LISTEN      3034938/mysqld      
+tcp        0      0 0.0.0.0:8600            0.0.0.0:*               LISTEN      4138204/python      
+tcp        0      0 0.0.0.0:8601            0.0.0.0:*               LISTEN      956253/docker-proxy 
+tcp        0      0 0.0.0.0:8503            0.0.0.0:*               LISTEN      2109305/node        
+tcp        0      0 0.0.0.0:8504            0.0.0.0:*               LISTEN      846193/nginx: worke 
+tcp        0      0 0.0.0.0:8514            0.0.0.0:*               LISTEN      956211/docker-proxy 
+tcp        0      0 0.0.0.0:8120            0.0.0.0:*               LISTEN      2768863/python      
+tcp        0      0 0.0.0.0:8087            0.0.0.0:*               LISTEN      967503/docker-proxy 
+tcp        0      0 0.0.0.0:8080            0.0.0.0:*               LISTEN      846193/nginx: worke 
+tcp        0      0 0.0.0.0:8088            0.0.0.0:*               LISTEN      1603/1panel-core    
+tcp        0      0 0.0.0.0:8089            0.0.0.0:*               LISTEN      970187/docker-proxy 
+tcp        0      0 0.0.0.0:8075            0.0.0.0:*               LISTEN      3793891/python3     
+tcp        0      0 0.0.0.0:8016            0.0.0.0:*               LISTEN      846193/nginx: worke 
+tcp        0      0 0.0.0.0:8026            0.0.0.0:*               LISTEN      846193/nginx: worke 
+tcp        0      0 0.0.0.0:8004            0.0.0.0:*               LISTEN      846193/nginx: worke 
+tcp        0      0 0.0.0.0:8003            0.0.0.0:*               LISTEN      301751/python       
+tcp        0      0 0.0.0.0:8000            0.0.0.0:*               LISTEN      969740/docker-proxy 
+tcp        0      0 0.0.0.0:8001            0.0.0.0:*               LISTEN      1088065/python3     
+tcp        0      0 0.0.0.0:8015            0.0.0.0:*               LISTEN      1708018/python      
+tcp        0      0 0.0.0.0:6379            0.0.0.0:*               LISTEN      967387/docker-proxy 
+tcp        0      0 0.0.0.0:800             0.0.0.0:*               LISTEN      3755454/./drct      
+tcp        0      0 0.0.0.0:790             0.0.0.0:*               LISTEN      3755050/executor: S 
+tcp        0      0 0.0.0.0:789             0.0.0.0:*               LISTEN      6943/baas_agent     
+tcp        0      0 0.0.0.0:798             0.0.0.0:*               LISTEN      3755454/./drct      
+tcp        0      0 0.0.0.0:799             0.0.0.0:*               LISTEN      3755454/./drct      
+tcp        0      0 0.0.0.0:797             0.0.0.0:*               LISTEN      3755454/./drct      
+tcp        0      0 0.0.0.0:794             0.0.0.0:*               LISTEN      3754945/webfoot-age 
+tcp        0      0 0.0.0.0:792             0.0.0.0:*               LISTEN      6943/baas_agent     
+tcp        0      0 0.0.0.0:793             0.0.0.0:*               LISTEN      3755337/naming-agen 
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      1/systemd           
+tcp        0      0 0.0.0.0:438             0.0.0.0:*               LISTEN      3759435/bsdc_agent  
+tcp        0      0 0.0.0.0:436             0.0.0.0:*               LISTEN      3756942/gianod      
+tcp        0      0 0.0.0.0:437             0.0.0.0:*               LISTEN      3756942/gianod      
+tcp        0      0 0.0.0.0:432             0.0.0.0:*               LISTEN      3759435/bsdc_agent  
+tcp        0      0 0.0.0.0:424             0.0.0.0:*               LISTEN      3755859/noah-ccs-ag 
+tcp        0      0 0.0.0.0:404             0.0.0.0:*               LISTEN      3752937/noah        
+tcp        0      0 0.0.0.0:3307            0.0.0.0:*               LISTEN      970722/docker-proxy 
+tcp6       0      0 :::42231                :::*                    LISTEN      1415306/promtail    
+tcp6       0      0 127.0.0.1:63342         :::*                    LISTEN      1985516/java        
+tcp6       0      0 :::33060                :::*                    LISTEN      3034938/mysqld      
+tcp6       0      0 :::9104                 :::*                    LISTEN      2679197/mysqld_expo 
+tcp6       0      0 :::9090                 :::*                    LISTEN      1501/prometheus     
+tcp6       0      0 :::9091                 :::*                    LISTEN      1512/pushgateway    
+tcp6       0      0 :::9100                 :::*                    LISTEN      1489/node_exporter  
+tcp6       0      0 :::9096                 :::*                    LISTEN      4149302/loki        
+tcp6       0      0 :::9000                 :::*                    LISTEN      967494/docker-proxy 
+tcp6       0      0 :::8960                 :::*                    LISTEN      956234/docker-proxy 
+tcp6       0      0 :::9080                 :::*                    LISTEN      1415306/promtail    
+tcp6       0      0 :::8440                 :::*                    LISTEN      2908994/java        
+tcp6       0      0 :::8220                 :::*                    LISTEN      954876/docker-proxy 
+tcp6       0      0 :::8601                 :::*                    LISTEN      956259/docker-proxy 
+tcp6       0      0 :::8514                 :::*                    LISTEN      956218/docker-proxy 
+tcp6       0      0 :::8520                 :::*                    LISTEN      392281/node         
+tcp6       0      0 :::8521                 :::*                    LISTEN      392216/node         
+tcp6       0      0 :::8100                 :::*                    LISTEN      4149302/loki        
+tcp6       0      0 :::8087                 :::*                    LISTEN      967511/docker-proxy 
+tcp6       0      0 :::8090                 :::*                    LISTEN      1805778/grafana     
+tcp6       0      0 :::8089                 :::*                    LISTEN      970193/docker-proxy 
+tcp6       0      0 :::8000                 :::*                    LISTEN      969746/docker-proxy 
+tcp6       0      0 :::6379                 :::*                    LISTEN      967395/docker-proxy 
+tcp6       0      0 :::811                  :::*                    LISTEN      3755337/naming-agen 
+tcp6       0      0 :::795                  :::*                    LISTEN      3755337/naming-agen 
+tcp6       0      0 :::780                  :::*                    LISTEN      3759719/noah-client 
+tcp6       0      0 :::22                   :::*                    LISTEN      1/systemd           
+tcp6       0      0 :::3307                 :::*                    LISTEN      970729/docker-proxy 
+tcp6       0      0 127.0.0.1:6942          :::*                    LISTEN      1985516/java        
+tcp6       0      0 :::23812                :::*                    LISTEN      1985516/java        
+udp        0      0 127.0.0.1:323           0.0.0.0:*                           1152473/chronyd     
+udp6       0      0 ::1:323                 :::*                                1152473/chronyd   
+
+内网服务器与厂内网络端口联通仅支持8000-9000之间的端口，其余端口如811、9960等无法使用。

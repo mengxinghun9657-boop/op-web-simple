@@ -307,32 +307,32 @@ const cmdbBarOptions = computed(() => {
     tooltip: {
       trigger: 'axis',
       backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#e5e7eb',
+      borderColor: '#dadce0',
       borderWidth: 1,
-      textStyle: { color: '#374151', fontSize: 12 }
+      textStyle: { color: '#5f6368', fontSize: 12 }
     },
     grid: { top: 16, right: 16, bottom: 32, left: 52 },
     xAxis: {
       type: 'category',
       data: ['物理服务器', '虚拟实例', '运行中实例'],
-      axisLine: { lineStyle: { color: '#e5e7eb' } },
-      axisLabel: { color: '#6b7280', fontSize: 11 }
+      axisLine: { lineStyle: { color: '#dadce0' } },
+      axisLabel: { color: '#80868b', fontSize: 11 }
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: '#6b7280', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#f3f4f6', type: 'dashed' } }
+      axisLabel: { color: '#80868b', fontSize: 11 },
+      splitLine: { lineStyle: { color: '#f1f3f4', type: 'dashed' } }
     },
     series: [{
       type: 'bar',
       data: [
-        { value: s.servers, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#3b82f6' }, { offset: 1, color: '#93c5fd' }] } } },
+        { value: s.servers, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#1a73e8' }, { offset: 1, color: '#8ab4f8' }] } } },
         { value: s.instances, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#06b6d4' }, { offset: 1, color: '#67e8f9' }] } } },
-        { value: s.active_instances, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#22c55e' }, { offset: 1, color: '#86efac' }] } } }
+        { value: s.active_instances, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#1e8e3e' }, { offset: 1, color: '#81c995' }] } } }
       ],
       barWidth: '40%',
       borderRadius: [4, 4, 0, 0],
-      label: { show: true, position: 'top', color: '#6b7280', fontSize: 11 }
+      label: { show: true, position: 'top', color: '#80868b', fontSize: 11 }
     }]
   }
 })
@@ -353,7 +353,7 @@ const makeGaugeOptions = (percentage, color, label) => ({
         width: 14,
         color: [
           [percentage / 100, color],
-          [1, '#f3f4f6']
+          [1, '#f1f3f4']
         ]
       }
     },
@@ -364,7 +364,7 @@ const makeGaugeOptions = (percentage, color, label) => ({
     detail: {
       valueAnimation: true,
       formatter: '{value}%',
-      color: '#374151',
+      color: '#5f6368',
       fontSize: 20,
       fontWeight: 700,
       offsetCenter: [0, '10%']

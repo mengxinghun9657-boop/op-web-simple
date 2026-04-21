@@ -55,8 +55,9 @@
             </el-form-item>
 
             <el-form-item label="CCE 集群">
-              <div class="form-tip" style="margin-top: 0; color: #67c23a;">
-                ✓ 集群 ID 由 CCE 官方 API 自动获取，无需手动配置
+              <div class="form-tip form-tip-success">
+                <el-icon style="vertical-align: middle; margin-right: 4px;"><CircleCheck /></el-icon>
+                集群 ID 由 CCE 官方 API 自动获取，无需手动配置
               </div>
             </el-form-item>
 
@@ -64,7 +65,9 @@
               <el-button @click="handleTestConnection" :loading="testing">
                 测试连接
               </el-button>
-              <span v-if="testResult" :class="testResultClass" style="margin-left: 12px;">
+              <span v-if="testResult" class="result-text" :class="testResultClass === 'test-success' ? 'is-success' : testResultClass === 'test-error' ? 'is-error' : ''">
+                <el-icon v-if="testResultClass === 'test-success'"><CircleCheck /></el-icon>
+                <el-icon v-else-if="testResultClass === 'test-error'"><CircleClose /></el-icon>
                 {{ testResult }}
               </span>
             </el-form-item>
@@ -76,7 +79,9 @@
                 <el-icon><Refresh /></el-icon>
                 立即同步
               </el-button>
-              <span v-if="syncResult" :class="syncResultClass" style="margin-left: 12px;">
+              <span v-if="syncResult" class="result-text" :class="syncResultClass === 'test-success' ? 'is-success' : syncResultClass === 'test-error' ? 'is-error' : ''">
+                <el-icon v-if="syncResultClass === 'test-success'"><CircleCheck /></el-icon>
+                <el-icon v-else-if="syncResultClass === 'test-error'"><CircleClose /></el-icon>
                 {{ syncResult }}
               </span>
             </el-form-item>
@@ -121,12 +126,12 @@
 
             <el-form-item label="上次同步">
               <span v-if="syncConfig.last_sync_time">{{ formatTime(syncConfig.last_sync_time) }}</span>
-              <span v-else style="color: #909399;">暂无记录</span>
+              <span v-else class="text-disabled">暂无记录</span>
             </el-form-item>
 
             <el-form-item label="下次同步">
               <span v-if="syncConfig.next_sync_time">{{ formatTime(syncConfig.next_sync_time) }}</span>
-              <span v-else style="color: #909399;">--</span>
+              <span v-else class="text-disabled">--</span>
             </el-form-item>
           </el-form>
         </el-tab-pane>
@@ -176,7 +181,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import {
   getBCEConfig,
   updateBCEConfig,
@@ -367,16 +372,16 @@ const handleTestConnection = async () => {
     const response = await testBCEConnection(testConfig)
 
     if (response.success) {
-      testResult.value = '✅ 连接测试成功'
+      testResult.value = '连接测试成功'
       testResultClass.value = 'test-success'
     } else {
-      testResult.value = `❌ 连接测试失败：${response.error || response.message}`
+      testResult.value = `连接测试失败：${response.error || response.message}`
       testResultClass.value = 'test-error'
     }
   } catch (error) {
     if (error !== 'validation failed') {
       const errorMsg = error.response?.data?.message || error.message || '未知错误'
-      testResult.value = `❌ 连接测试失败：${errorMsg}`
+      testResult.value = `连接测试失败：${errorMsg}`
       testResultClass.value = 'test-error'
     }
   } finally {
@@ -392,19 +397,19 @@ const handleSync = async () => {
     
     const response = await syncBCE('all')
     if (response.success) {
-      syncResult.value = '✅ 同步成功'
+      syncResult.value = '同步成功'
       syncResultClass.value = 'test-success'
       ElMessage.success('BCE 数据同步成功')
       // 同步完成后刷新统计数据
       await loadStats()
     } else {
-      syncResult.value = `❌ 同步失败：${response.message || '未知错误'}`
+      syncResult.value = `同步失败：${response.message || '未知错误'}`
       syncResultClass.value = 'test-error'
       ElMessage.error(response.message || '同步失败')
     }
   } catch (error) {
     console.error('同步失败:', error)
-    syncResult.value = `❌ 同步失败：${error.message || '未知错误'}`
+    syncResult.value = `同步失败：${error.message || '未知错误'}`
     syncResultClass.value = 'test-error'
     ElMessage.error('同步失败')
   } finally {
@@ -439,32 +444,33 @@ onMounted(() => {
 }
 
 .form-tip {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 4px;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+}
+
+.form-tip-success {
+  font-size: var(--text-sm);
+  color: var(--color-success);
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .usage-info {
-  margin-top: 20px;
+  margin-top: var(--space-5);
 }
 
 .usage-info ul {
-  margin: 8px 0 0 0;
+  margin: var(--space-2) 0 0 0;
   padding-left: 20px;
 }
 
 .usage-info li {
-  margin-bottom: 4px;
-  line-height: 1.5;
+  margin-bottom: var(--space-1);
+  line-height: var(--leading-normal);
 }
 
-.test-success {
-  color: #67c23a;
-  font-weight: 500;
-}
-
-.test-error {
-  color: #f56c6c;
-  font-weight: 500;
-}
+/* .test-success/.test-error 已移至全局 .result-text.is-success/.is-error */
 </style>

@@ -162,15 +162,15 @@
                   <div v-if="hasMultipleErrorTypes" class="error-types-section">
                     <div class="section-title">所有错误类型 ({{ getErrorTypesCount }}个)</div>
                     <el-table :data="getAllErrorTypes" size="small" border>
-                      <el-table-column prop="device" label="设备" width="100" />
-                      <el-table-column prop="alert_type" label="告警类型" width="150" />
-                      <el-table-column prop="severity" label="级别" width="80">
+                      <el-table-column prop="device" label="设备" width="100"  resizable/>
+                      <el-table-column prop="alert_type" label="告警类型" width="150"  resizable/>
+                      <el-table-column prop="severity" label="级别" width="80" resizable>
                         <template #default="{ row }">
                           <el-tag :type="getSeverityTagType(row.severity)" size="small">{{ row.severity }}</el-tag>
                         </template>
                       </el-table-column>
-                      <el-table-column prop="component" label="组件" width="100" />
-                      <el-table-column prop="part_sn" label="部件SN" min-width="150" show-overflow-tooltip />
+                      <el-table-column prop="component" label="组件" width="100"  resizable/>
+                      <el-table-column prop="part_sn" label="部件SN" min-width="150" show-overflow-tooltip  resizable/>
                     </el-table>
                   </div>
                 </el-collapse-item>
@@ -408,14 +408,14 @@
                   title="错误项"
                   name="errors"
                 >
-                  <el-table :data="alertData.diagnosis.api_diagnosis.error_items" stripe>
-                    <el-table-column prop="item_name_zh" label="诊断项" min-width="200" />
-                    <el-table-column prop="result" label="结果" width="100">
+                  <el-table :data="alertData.diagnosis.api_diagnosis.error_items" stripe border>
+                    <el-table-column prop="item_name_zh" label="诊断项" min-width="200"  resizable/>
+                    <el-table-column prop="result" label="结果" width="100" resizable>
                       <template #default="{ row }">
                         <el-tag type="danger" size="small">{{ row.result }}</el-tag>
                       </template>
                     </el-table-column>
-                    <el-table-column prop="exact_message" label="详情" min-width="300" show-overflow-tooltip />
+                    <el-table-column prop="exact_message" label="详情" min-width="300" show-overflow-tooltip  resizable/>
                   </el-table>
                 </el-collapse-item>
 
@@ -424,14 +424,14 @@
                   title="警告项"
                   name="warnings"
                 >
-                  <el-table :data="alertData.diagnosis.api_diagnosis.warning_items" stripe>
-                    <el-table-column prop="item_name_zh" label="诊断项" min-width="200" />
-                    <el-table-column prop="result" label="结果" width="100">
+                  <el-table :data="alertData.diagnosis.api_diagnosis.warning_items" stripe border>
+                    <el-table-column prop="item_name_zh" label="诊断项" min-width="200"  resizable/>
+                    <el-table-column prop="result" label="结果" width="100" resizable>
                       <template #default="{ row }">
                         <el-tag type="warning" size="small">{{ row.result }}</el-tag>
                       </template>
                     </el-table-column>
-                    <el-table-column prop="exact_message" label="详情" min-width="300" show-overflow-tooltip />
+                    <el-table-column prop="exact_message" label="详情" min-width="300" show-overflow-tooltip  resizable/>
                   </el-table>
                 </el-collapse-item>
               </el-collapse>

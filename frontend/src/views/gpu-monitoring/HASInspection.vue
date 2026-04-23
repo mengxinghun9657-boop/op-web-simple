@@ -116,25 +116,25 @@
         </div>
       </div>
       <div class="content-card-body">
-        <el-table :data="filteredInstances" v-loading="loading || syncing" class="google-table" height="560">
-          <el-table-column prop="index" label="#" width="70" />
-          <el-table-column prop="id" label="实例ID" min-width="160" />
-          <el-table-column prop="name" label="实例名称" min-width="260" show-overflow-tooltip />
-          <el-table-column prop="internal_ip" label="内网IP" width="140" />
-          <el-table-column prop="gpu_card" label="GPU 型号" width="120">
+        <el-table :data="filteredInstances" v-loading="loading || syncing" class="google-table" height="560" border>
+          <el-table-column prop="index" label="#" width="70"  resizable/>
+          <el-table-column prop="id" label="实例ID" min-width="160"  resizable/>
+          <el-table-column prop="name" label="实例名称" min-width="260" show-overflow-tooltip  resizable/>
+          <el-table-column prop="internal_ip" label="内网IP" width="140"  resizable/>
+          <el-table-column prop="gpu_card" label="GPU 型号" width="120" resizable>
             <template #default="{ row }">
               <el-tag :type="gpuTagType(row.gpu_card)">{{ row.gpu_card }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="region" label="区域" width="100" />
-          <el-table-column prop="has_alive" label="HAS 状态" width="110">
+          <el-table-column prop="region" label="区域" width="100"  resizable/>
+          <el-table-column prop="has_alive" label="HAS 状态" width="110" resizable>
             <template #default="{ row }">
               <el-tag :type="row.has_alive === 'online' ? 'success' : 'danger'">
                 {{ row.has_alive === 'online' ? '在线' : '离线' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="last_update" label="最近更新时间" min-width="180" />
+          <el-table-column prop="last_update" label="最近更新时间" min-width="180"  resizable/>
         </el-table>
       </div>
     </div>

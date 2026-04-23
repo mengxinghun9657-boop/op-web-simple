@@ -343,7 +343,45 @@ def query_server_info(db: Database, keyword: str) -> dict:
                 "rows": rows
             }
         ])
-    
+
+    # 4. 查询告警记录 - 按IP（当前未关闭的）
+    if re.match(ip_pattern, keyword):
+        sql = """SELECT alert_type, severity, status, created_at FROM alert_records WHERE ip = %s AND status NOT IN ('resolved', 'closed') ORDER BY created_at DESC LIMIT 3"""
+        alerts = db.query(sql, (keyword,))
+        if alerts:
+            found_any = True
+            rows = []
+            for alert in alerts:
+                severity_icon = get_severity_icon(alert.get('severity', 'medium'))
+                status_icon = get_status_icon(alert.get('status', 'pending'))
+                created = alert.get('created_at')
+                if isinstance(created, str):
+                    time_str = created[5:16]
+                elif created:
+                    time_str = created.strftime('%m-%d %H:%M')
+                else:
+                    time_str = '-'
+                rows.append({
+                    "type": alert.get('alert_type', '-'),
+                    "severity": f"{severity_icon} {alert.get('severity', '-')}",
+                    "status": f"{status_icon} {alert.get('status', '-')}",
+                    "time": time_str
+                })
+            elements.extend([
+                {"tag": "markdown", "content": "**⚠️ 当前未关闭告警**"},
+                {
+                    "tag": "table",
+                    "header_style": {"text_align": "left", "background_style": "grey", "bold": True},
+                    "columns": [
+                        {"name": "type", "display_name": "告警类型", "width": "35%", "data_type": "text"},
+                        {"name": "severity", "display_name": "级别", "width": "20%", "data_type": "text"},
+                        {"name": "status", "display_name": "状态", "width": "20%", "data_type": "text"},
+                        {"name": "time", "display_name": "时间", "width": "25%", "data_type": "text"}
+                    ],
+                    "rows": rows
+                }
+            ])
+
     if not found_any:
         return {
             "schema": "2.0",

@@ -213,7 +213,28 @@ export const serverFieldDefinitions = [
       { key: 'nova_host_assigned_at', label: 'Nova分配时间', width: 160, defaultVisible: false, sortable: false, type: 'datetime' },
     ]
   },
-  
+
+  // ========== BCE 关联信息分组 ==========
+  {
+    group: 'BCE关联信息',
+    fields: [
+      { key: 'bcc_id', label: 'BCC实例ID', width: 160, defaultVisible: false, sortable: false, copyable: true },
+      { key: 'bcc_name', label: 'BCC名称', width: 150, defaultVisible: false, sortable: false },
+      { key: 'bcc_spec', label: 'BCC规格', width: 150, defaultVisible: false, sortable: false },
+      { key: 'bcc_status', label: 'BCC状态', width: 100, defaultVisible: false, sortable: false },
+      { key: 'bcc_vpc_id', label: 'BCC VPC', width: 150, defaultVisible: false, sortable: false },
+      { key: 'bcc_zone', label: 'BCC可用区', width: 120, defaultVisible: false, sortable: false },
+      { key: 'bcc_payment', label: 'BCC付费方式', width: 120, defaultVisible: false, sortable: false },
+      { key: 'cce_node_id', label: 'CCE节点ID', width: 160, defaultVisible: false, sortable: false, copyable: true },
+      { key: 'cce_node_name', label: 'CCE节点名称', width: 150, defaultVisible: false, sortable: false },
+      { key: 'cce_k8s_name', label: 'CCE K8S节点名', width: 180, defaultVisible: false, sortable: false },
+      { key: 'cce_status', label: 'CCE状态', width: 100, defaultVisible: false, sortable: false },
+      { key: 'cce_cluster_id', label: 'CCE集群ID', width: 160, defaultVisible: false, sortable: false, copyable: true },
+      { key: 'cce_role', label: 'CCE节点角色', width: 120, defaultVisible: false, sortable: false },
+      { key: 'cce_machine_type', label: 'CCE机器类型', width: 120, defaultVisible: false, sortable: false },
+    ]
+  },
+
   // ========== 系统信息分组 ==========
   {
     group: '系统信息',
@@ -284,6 +305,27 @@ export const instanceFieldDefinitions = [
     ]
   },
   
+  // ========== BCE 关联信息分组 ==========
+  {
+    group: 'BCE关联信息',
+    fields: [
+      { key: 'bcc_id', label: 'BCC实例ID', width: 160, defaultVisible: false, sortable: false, copyable: true },
+      { key: 'bcc_name', label: 'BCC名称', width: 150, defaultVisible: false, sortable: false },
+      { key: 'bcc_spec', label: 'BCC规格', width: 150, defaultVisible: false, sortable: false },
+      { key: 'bcc_status', label: 'BCC状态', width: 100, defaultVisible: false, sortable: false },
+      { key: 'bcc_vpc_id', label: 'BCC VPC', width: 150, defaultVisible: false, sortable: false },
+      { key: 'bcc_zone', label: 'BCC可用区', width: 120, defaultVisible: false, sortable: false },
+      { key: 'bcc_payment', label: 'BCC付费方式', width: 120, defaultVisible: false, sortable: false },
+      { key: 'cce_node_id', label: 'CCE节点ID', width: 160, defaultVisible: false, sortable: false, copyable: true },
+      { key: 'cce_node_name', label: 'CCE节点名称', width: 150, defaultVisible: false, sortable: false },
+      { key: 'cce_k8s_name', label: 'CCE K8S节点名', width: 180, defaultVisible: false, sortable: false },
+      { key: 'cce_status', label: 'CCE状态', width: 100, defaultVisible: false, sortable: false },
+      { key: 'cce_cluster_id', label: 'CCE集群ID', width: 160, defaultVisible: false, sortable: false, copyable: true },
+      { key: 'cce_role', label: 'CCE节点角色', width: 120, defaultVisible: false, sortable: false },
+      { key: 'cce_machine_type', label: 'CCE机器类型', width: 120, defaultVisible: false, sortable: false },
+    ]
+  },
+
   // ========== 系统信息分组 ==========
   {
     group: '系统信息',

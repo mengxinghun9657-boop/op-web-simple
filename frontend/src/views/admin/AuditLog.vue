@@ -26,16 +26,16 @@
     <!-- 日志列表 -->
     <div class="content-card">
       <div class="content-card-body">
-        <el-table :data="logs" v-loading="loading" class="google-table">
-          <el-table-column prop="created_at" label="时间" width="180" />
-          <el-table-column prop="username" label="操作人" width="120" />
-          <el-table-column prop="action" label="动作" width="120">
+        <el-table :data="logs" v-loading="loading" class="google-table" border>
+          <el-table-column prop="created_at" label="时间" width="180"  resizable/>
+          <el-table-column prop="username" label="操作人" width="120"  resizable/>
+          <el-table-column prop="action" label="动作" width="120" resizable>
             <template #default="{ row }">
               <el-tag :type="getActionTagType(row.action)">{{ row.action }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="resource" label="资源对象" />
-          <el-table-column prop="ip_address" label="IP地址" width="140" />
+          <el-table-column prop="resource" label="资源对象"  resizable/>
+          <el-table-column prop="ip_address" label="IP地址" width="140"  resizable/>
         </el-table>
 
         <div class="table-footer">

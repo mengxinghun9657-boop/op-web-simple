@@ -60,31 +60,31 @@
           v-loading="loading"
           class="google-table"
           @selection-change="handleSelectionChange"
-        >
-          <el-table-column type="selection" width="55" />
-          <el-table-column prop="cluster_id" label="集群ID" min-width="180" />
-          <el-table-column prop="metric_label" label="指标" min-width="180" />
-          <el-table-column prop="severity" label="严重程度" width="100">
+         border>
+          <el-table-column type="selection" width="55"  resizable/>
+          <el-table-column prop="cluster_id" label="集群ID" min-width="180"  resizable/>
+          <el-table-column prop="metric_label" label="指标" min-width="180"  resizable/>
+          <el-table-column prop="severity" label="严重程度" width="100" resizable>
             <template #default="{ row }">
               <el-tag :type="row.severity === 'critical' ? 'danger' : 'warning'">{{ row.severity }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="100">
+          <el-table-column prop="status" label="状态" width="100" resizable>
             <template #default="{ row }">
               <el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="当前值" width="140">
+          <el-table-column label="当前值" width="140" resizable>
             <template #default="{ row }">{{ row.current_value }} {{ row.unit || '' }}</template>
           </el-table-column>
-          <el-table-column prop="description" label="影响描述" min-width="220" show-overflow-tooltip />
-          <el-table-column label="iCafe" width="90">
+          <el-table-column prop="description" label="影响描述" min-width="220" show-overflow-tooltip  resizable/>
+          <el-table-column label="iCafe" width="90" resizable>
             <template #default="{ row }">
               <el-tag v-if="row.icafe_card_id" type="success" size="small">已建卡</el-tag>
               <span v-else class="text-muted">-</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="220" fixed="right">
+          <el-table-column label="操作" width="220" fixed="right" resizable>
             <template #default="{ row }">
               <div class="action-grid">
                 <div class="action-row action-row-primary">

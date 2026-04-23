@@ -53,7 +53,7 @@
               type="datetimerange"
               start-placeholder="开始时间"
               end-placeholder="结束时间"
-              value-format="YYYY-MM-DDTHH:mm:ss.SSS[Z]"
+              value-format="YYYY-MM-DDTHH:mm:ss"
               class="range-picker"
             />
           </el-form-item>
@@ -141,10 +141,13 @@
             <div class="content-card-title">GPU 型号 Bottom 汇总</div>
           </div>
           <div class="content-card-body">
-            <el-table :data="result.model_summary" size="small" class="google-table">
-              <el-table-column prop="model" label="型号" min-width="120" />
-              <el-table-column prop="gpu_hours" label="卡时(h)" min-width="120" />
-              <el-table-column prop="bottom" label="Bottom" min-width="120" />
+            <el-table :data="result.model_summary" size="small" class="google-table" border>
+              <el-table-column prop="model" label="型号" min-width="120"  resizable/>
+              <el-table-column prop="total_gpus" label="GPU卡数" width="100"  resizable/>
+              <el-table-column prop="pod_count" label="Pod数" width="90"  resizable/>
+              <el-table-column prop="avg_util_percent" label="平均利用率(%)" width="130"  resizable/>
+              <el-table-column prop="gpu_hours" label="卡时(h)" width="120"  resizable/>
+              <el-table-column prop="bottom" label="Bottom" width="120"  resizable/>
             </el-table>
           </div>
         </div>
@@ -153,12 +156,13 @@
             <div class="content-card-title">队列汇总</div>
           </div>
           <div class="content-card-body">
-            <el-table :data="result.namespaces" size="small" class="google-table">
-              <el-table-column prop="namespace" label="队列" min-width="180" show-overflow-tooltip />
-              <el-table-column prop="total_gpus" label="GPU卡数" width="100" />
-              <el-table-column prop="pod_count" label="Pod数" width="90" />
-              <el-table-column prop="total_gpu_hours" label="总卡时(h)" width="120" />
-              <el-table-column prop="total_bottom" label="Bottom" width="120" />
+            <el-table :data="result.namespaces" size="small" class="google-table" border>
+              <el-table-column prop="namespace" label="队列" min-width="180" show-overflow-tooltip  resizable/>
+              <el-table-column prop="total_gpus" label="GPU卡数" width="100"  resizable/>
+              <el-table-column prop="pod_count" label="Pod数" width="90"  resizable/>
+              <el-table-column prop="avg_util_percent" label="平均利用率(%)" width="130"  resizable/>
+              <el-table-column prop="total_gpu_hours" label="总卡时(h)" width="120"  resizable/>
+              <el-table-column prop="total_bottom" label="Bottom" width="120"  resizable/>
             </el-table>
           </div>
         </div>
@@ -173,14 +177,14 @@
           </div>
         </div>
         <div class="content-card-body">
-          <el-table :data="result.pods" class="google-table" height="560">
-            <el-table-column prop="namespace" label="队列" min-width="180" show-overflow-tooltip />
-            <el-table-column prop="pod" label="Pod" min-width="260" show-overflow-tooltip />
-            <el-table-column prop="gpu_count" label="GPU卡数" width="100" />
-            <el-table-column prop="model" label="型号" width="120" />
-            <el-table-column prop="avg_util_percent" label="平均利用率(%)" width="130" />
-            <el-table-column prop="gpu_hours" label="卡时(h)" width="120" />
-            <el-table-column prop="bottom" label="Bottom" width="120" />
+          <el-table :data="result.pods" class="google-table" height="560" border>
+            <el-table-column prop="namespace" label="队列" min-width="180" show-overflow-tooltip  resizable/>
+            <el-table-column prop="pod" label="Pod" min-width="260" show-overflow-tooltip  resizable/>
+            <el-table-column prop="gpu_count" label="GPU卡数" width="100"  resizable/>
+            <el-table-column prop="model" label="型号" width="120"  resizable/>
+            <el-table-column prop="avg_util_percent" label="平均利用率(%)" width="130"  resizable/>
+            <el-table-column prop="gpu_hours" label="卡时(h)" width="120"  resizable/>
+            <el-table-column prop="bottom" label="Bottom" width="120"  resizable/>
           </el-table>
         </div>
       </div>
@@ -224,8 +228,13 @@ import { loadConfig } from '@/api/config'
 const now = new Date()
 const twelveHoursAgo = new Date(now.getTime() - 12 * 3600 * 1000)
 
+const toLocalISO = (d) => {
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
 const clusterIdsText = ref('')
-const dateRange = ref([twelveHoursAgo.toISOString(), now.toISOString()])
+const dateRange = ref([toLocalISO(twelveHoursAgo), toLocalISO(now)])
 const step = ref('5m')
 const targetModels = ref(['H800', 'L20', 'H20'])
 const loading = ref(false)

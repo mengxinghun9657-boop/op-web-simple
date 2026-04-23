@@ -40,8 +40,8 @@
     <!-- 用户列表 -->
     <div class="content-card">
       <div class="content-card-body">
-        <el-table :data="filteredUsers" v-loading="loading" class="google-table">
-          <el-table-column prop="username" label="用户名" width="150">
+        <el-table :data="filteredUsers" v-loading="loading" class="google-table" border>
+          <el-table-column prop="username" label="用户名" width="150" resizable>
             <template #default="{ row }">
               <div class="user-cell">
                 <el-avatar :size="24" class="user-avatar">{{ row.username.charAt(0).toUpperCase() }}</el-avatar>
@@ -49,13 +49,13 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="email" label="邮箱" min-width="180" />
-          <el-table-column prop="role" label="角色" width="120">
+          <el-table-column prop="email" label="邮箱" min-width="180"  resizable/>
+          <el-table-column prop="role" label="角色" width="120" resizable>
             <template #default="{ row }">
               <el-tag :type="getRoleTag(row.role)">{{ formatRole(row.role) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="is_active" label="状态" width="100">
+          <el-table-column prop="is_active" label="状态" width="100" resizable>
             <template #default="{ row }">
               <el-switch
                 v-model="row.is_active"
@@ -63,8 +63,8 @@
               />
             </template>
           </el-table-column>
-          <el-table-column prop="last_login" label="最后登录" width="180" />
-          <el-table-column label="操作" width="240" fixed="right">
+          <el-table-column prop="last_login" label="最后登录" width="180"  resizable/>
+          <el-table-column label="操作" width="240" fixed="right" resizable>
             <template #default="{ row }">
               <div class="action-buttons">
                 <el-button size="small" type="primary" @click="handleEdit(row)">编辑</el-button>

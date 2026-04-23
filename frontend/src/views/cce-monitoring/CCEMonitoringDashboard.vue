@@ -225,14 +225,14 @@
       <div class="text-disabled" style="margin-top:var(--space-2)">加载中...</div>
     </div>
     <el-table v-else :data="pvcList" stripe border size="small" style="width:100%">
-      <el-table-column prop="namespace" label="Namespace" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="pvc" label="PVC 名称" min-width="220" show-overflow-tooltip />
-      <el-table-column prop="storageClass" label="StorageClass" min-width="130" show-overflow-tooltip>
+      <el-table-column prop="namespace" label="Namespace" min-width="160" show-overflow-tooltip  resizable/>
+      <el-table-column prop="pvc" label="PVC 名称" min-width="220" show-overflow-tooltip  resizable/>
+      <el-table-column prop="storageClass" label="StorageClass" min-width="130" show-overflow-tooltip resizable>
         <template #default="{ row }">
           <span>{{ row.storageClass || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="capacity" label="容量" width="80">
+      <el-table-column prop="capacity" label="容量" width="80" resizable>
         <template #default="{ row }">
           <span>{{ row.capacity || '-' }}</span>
         </template>

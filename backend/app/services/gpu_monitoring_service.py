@@ -359,8 +359,19 @@ class GPUMonitoringService:
                 )
             )
 
-        pod_stats = self._calculate_pod_stats(results, actual_step)
+        start_ts = int(start_time.timestamp())
+        end_ts   = int(end_time.timestamp())
+
+        # 拉取 pod 元数据（start/completion/phase/gpu_requests）
+        pod_meta: Dict[str, Any] = {"pod_start": {}, "pod_completion": {}, "pod_phase": {}, "pod_gpu_req": {}}
+        for cluster_id in actual_cluster_ids:
+            meta = self._fetch_pod_meta(start_ts, end_ts, cluster_id, runtime_config)
+            for key in pod_meta:
+                pod_meta[key].update(meta[key])
+
+        pod_stats = self._calculate_pod_stats(results, actual_step, start_ts, end_ts, pod_meta)
         pods = self._format_pod_output(pod_stats)
+        raw_pod_count = len(pods)
         bottom_pods = self._filter_bottom_pods(pods)
         namespaces = self._format_namespace_output(bottom_pods)
         model_summary = self._format_model_summary(bottom_pods, target_models or ["H800", "L20", "H20"])
@@ -376,7 +387,7 @@ class GPUMonitoringService:
         return {
             "summary": {
                 "pod_count": len(bottom_pods),
-                "raw_pod_count": len(pods),
+                "raw_pod_count": raw_pod_count,
                 "namespace_count": len(namespaces),
                 "total_gpu_hours": total_gpu_hours,
                 "total_bottom": total_bottom,
@@ -421,6 +432,81 @@ class GPUMonitoringService:
             logger.error(f"GPU 卡时查询失败: {exc}")
             raise RuntimeError(f"Prometheus 请求失败: {exc}") from exc
 
+    def _query_prometheus_range_chunked(self, query: str, start: int, end: int, step: str, runtime_config: Dict[str, Any], chunk_hours: int = 2) -> List[Dict[str, Any]]:
+        """分段查询 Prometheus range，防止大时间范围 422 错误"""
+        headers = {
+            "Authorization": runtime_config["token"] if str(runtime_config["token"]).startswith("Bearer ") else f"Bearer {runtime_config['token']}",
+            "InstanceId": runtime_config["instance_id"],
+        }
+        results = []
+        cur = start
+        while cur < end:
+            nxt = min(cur + chunk_hours * 3600, end)
+            try:
+                r = requests.get(
+                    f"{runtime_config['grafana_url'].rstrip('/')}/api/v1/query_range",
+                    headers=headers,
+                    params={"query": query, "start": cur, "end": nxt, "step": step},
+                    timeout=60,
+                )
+                if r.status_code == 200:
+                    results.extend(r.json().get("data", {}).get("result", []))
+            except Exception as exc:
+                logger.warning(f"分段查询失败 [{cur},{nxt}]: {exc}")
+            cur = nxt
+        return results
+
+    def _fetch_pod_meta(self, start: int, end: int, cluster_id: str, runtime_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        拉取 pod 元数据：start_time / completion_time / status_phase / gpu_requests
+        返回四个 dict，key 均为 pod 名称
+        """
+        step = "5m"
+
+        def q(query):
+            return self._query_prometheus_range_chunked(query, start, end, step, runtime_config)
+
+        start_data      = q(f'kube_pod_start_time{{clusterID="{cluster_id}"}}')
+        completion_data = q(f'kube_pod_completion_time{{clusterID="{cluster_id}"}}')
+        status_data     = q(f'kube_pod_status_phase{{clusterID="{cluster_id}"}}')
+        gpu_req_data    = q(f'kube_pod_container_resource_requests{{clusterID="{cluster_id}",resource="nvidia_com_gpu"}}')
+
+        pod_start: Dict[str, float] = {}
+        pod_completion: Dict[str, float] = {}
+        pod_phase: Dict[str, str] = {}
+        pod_gpu_req: Dict[str, float] = {}
+
+        for r in start_data:
+            pod = r['metric'].get('pod')
+            if pod and r.get('values'):
+                pod_start[pod] = float(r['values'][0][1])
+
+        for r in completion_data:
+            pod = r['metric'].get('pod')
+            if pod and r.get('values'):
+                pod_completion[pod] = float(r['values'][0][1])
+
+        for r in status_data:
+            pod = r['metric'].get('pod')
+            phase = r['metric'].get('phase')
+            vals = [v for v in r.get('values', []) if v[1] == "1"]
+            if vals and pod:
+                pod_phase[pod] = phase
+
+        for r in gpu_req_data:
+            pod = r['metric'].get('pod')
+            if pod and r.get('values'):
+                val = float(r['values'][-1][1])
+                # 取最大值而非累加，避免多容器重复计算
+                pod_gpu_req[pod] = max(pod_gpu_req.get(pod, 0), val)
+
+        return {
+            "pod_start": pod_start,
+            "pod_completion": pod_completion,
+            "pod_phase": pod_phase,
+            "pod_gpu_req": pod_gpu_req,
+        }
+
     @staticmethod
     def _is_valid_util(value: Any) -> bool:
         try:
@@ -429,12 +515,28 @@ class GPUMonitoringService:
         except (TypeError, ValueError):
             return False
 
-    def _calculate_pod_stats(self, results: List[Dict[str, Any]], step: str) -> Dict[Any, Dict[str, Any]]:
-        step_hours = self.STEP_TO_HOURS[step]
-        pod_stats = defaultdict(
+    def _calculate_pod_stats(
+        self,
+        results: List[Dict[str, Any]],
+        step: str,
+        start_ts: int,
+        end_ts: int,
+        pod_meta: Dict[str, Any],
+    ) -> Dict[Any, Dict[str, Any]]:
+        """
+        聚合每个 pod 的利用率时间点，卡时改为：申请卡数 × 实际运行时长
+        运行时长规则：
+          - Succeeded/Failed → completion_time - start_time
+          - Running/Pending/未知 → now(end_ts) - start_time
+        """
+        pod_start      = pod_meta["pod_start"]
+        pod_completion = pod_meta["pod_completion"]
+        pod_phase      = pod_meta["pod_phase"]
+        pod_gpu_req    = pod_meta["pod_gpu_req"]
+
+        pod_stats: Dict[Any, Dict[str, Any]] = defaultdict(
             lambda: {
                 "time_point_utils": defaultdict(list),
-                "gpu_hours": 0.0,
                 "models": set(),
                 "gpu_indices": set(),
             }
@@ -443,8 +545,8 @@ class GPUMonitoringService:
         for series in results:
             metric = series.get("metric", {})
             namespace = metric.get("job_pod_namespace") or metric.get("namespace")
-            pod = metric.get("job_pod_name") or metric.get("pod")
-            model = metric.get("modelName", "Unknown")
+            pod       = metric.get("job_pod_name")      or metric.get("pod")
+            model     = metric.get("modelName", "Unknown")
             gpu_index = metric.get("gpu", "0")
             if not namespace or not pod:
                 continue
@@ -454,13 +556,27 @@ class GPUMonitoringService:
             stats["models"].add(model)
             stats["gpu_indices"].add(gpu_index)
 
-            valid_points = 0
             for timestamp, value in series.get("values", []):
                 if self._is_valid_util(value):
-                    valid_points += 1
                     stats["time_point_utils"][timestamp].append(float(value))
 
-            stats["gpu_hours"] += valid_points * step_hours
+        # 计算卡时：申请卡数 × 运行时长（小时）
+        for (namespace, pod), stats in pod_stats.items():
+            s = pod_start.get(pod, start_ts)
+            phase = pod_phase.get(pod)
+            if phase in ("Succeeded", "Failed"):
+                e = pod_completion.get(pod, end_ts)
+            else:
+                e = end_ts
+            duration_hrs = max(0.0, min(e, end_ts) - max(s, start_ts)) / 3600.0
+
+            gpu_cnt = pod_gpu_req.get(pod, 0)
+            # 若 kube 指标未覆盖此 pod，退回到 DCGM 上报的卡数
+            if gpu_cnt == 0:
+                gpu_cnt = len(stats["gpu_indices"])
+
+            stats["gpu_hours"] = round(duration_hrs * gpu_cnt, 2)
+            stats["gpu_count"] = gpu_cnt
 
         return pod_stats
 
@@ -474,35 +590,56 @@ class GPUMonitoringService:
 
             models = stats["models"]
             model_name = "Mixed" if len(models) > 1 else (next(iter(models)) if models else "Unknown")
+            avg_util = round(sum(avg_points) / len(avg_points), 2) if avg_points else 0
+            gpu_hours = stats.get("gpu_hours", 0.0)
 
             pods.append(
                 {
                     "namespace": namespace,
                     "pod": pod,
-                    "gpu_count": len(stats["gpu_indices"]),
+                    "gpu_count": stats.get("gpu_count", len(stats["gpu_indices"])),
                     "model": model_name,
-                    "avg_util_percent": round(sum(avg_points) / len(avg_points), 2) if avg_points else 0,
-                    "gpu_hours": round(stats["gpu_hours"], 2),
+                    "avg_util_percent": avg_util,
+                    "gpu_hours": gpu_hours,
                     "bottom": 0,
                 }
             )
 
+        # bottom 对所有 pod 先算出来，过滤在 _filter_bottom_pods 里做
         for item in pods:
-            if item["avg_util_percent"] <= 70:
-                item["bottom"] = round(item["gpu_hours"] * (1 - item["avg_util_percent"] * 0.01), 2)
+            item["bottom"] = round(item["gpu_hours"] * (1 - item["avg_util_percent"] * 0.01), 2)
 
         pods.sort(key=lambda item: item["gpu_hours"], reverse=True)
         return pods
 
     @staticmethod
     def _filter_bottom_pods(pods: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        filtered = [item for item in pods if item["avg_util_percent"] <= 70]
+        """
+        过滤规则（客户原需求）：
+        1. 排除同时满足 avg_util > 70% AND gpu_hours < 100 的 pod（高效小任务）
+        2. 去除剩余中利用率最高的前 10 个 pod（避免极端值影响）
+        3. 按 bottom 降序排列
+        """
+        # Step1：排除同时满足"利用率>70% AND 卡时<100"的 pod（短时高效小任务）
+        # 注意：两个条件必须同时成立才排除，任一条件不满足则保留
+        filtered = [
+            item for item in pods
+            if not (item["avg_util_percent"] > 70 and item["gpu_hours"] < 100)
+        ]
+
+        # Step2：去除利用率前 10 个 pod
+        if len(filtered) > 10:
+            sorted_by_util = sorted(filtered, key=lambda x: x["avg_util_percent"], reverse=True)
+            top10_pods = {item["pod"] for item in sorted_by_util[:10]}
+            filtered = [item for item in filtered if item["pod"] not in top10_pods]
+
+        # Step3：按 bottom 降序
         filtered.sort(key=lambda item: item["bottom"], reverse=True)
         return filtered
 
     @staticmethod
     def _format_namespace_output(pods: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        namespace_stats = defaultdict(lambda: {"total_gpus": 0, "pod_count": 0, "total_gpu_hours": 0.0, "total_bottom": 0.0})
+        namespace_stats = defaultdict(lambda: {"total_gpus": 0, "pod_count": 0, "total_gpu_hours": 0.0, "total_bottom": 0.0, "total_util": 0.0})
 
         for item in pods:
             stats = namespace_stats[item["namespace"]]
@@ -510,6 +647,7 @@ class GPUMonitoringService:
             stats["pod_count"] += 1
             stats["total_gpu_hours"] += item["gpu_hours"]
             stats["total_bottom"] += item["bottom"]
+            stats["total_util"] += item["avg_util_percent"]
 
         rows = [
             {
@@ -518,6 +656,7 @@ class GPUMonitoringService:
                 "pod_count": stats["pod_count"],
                 "total_gpu_hours": round(stats["total_gpu_hours"], 2),
                 "total_bottom": round(stats["total_bottom"], 2),
+                "avg_util_percent": round(stats["total_util"] / stats["pod_count"], 2) if stats["pod_count"] else 0,
             }
             for namespace, stats in namespace_stats.items()
         ]
@@ -527,7 +666,7 @@ class GPUMonitoringService:
     @staticmethod
     def _format_model_summary(pods: List[Dict[str, Any]], target_models: List[str]) -> List[Dict[str, Any]]:
         target_lookup = [item.upper() for item in target_models]
-        summary = defaultdict(lambda: {"gpu_hours": 0.0, "bottom": 0.0})
+        summary = defaultdict(lambda: {"total_gpus": 0, "pod_count": 0, "gpu_hours": 0.0, "bottom": 0.0, "total_util": 0.0})
 
         for item in pods:
             matched_model = item["model"]
@@ -535,12 +674,18 @@ class GPUMonitoringService:
                 if target in item["model"].upper():
                     matched_model = target
                     break
+            summary[matched_model]["total_gpus"] += item["gpu_count"]
+            summary[matched_model]["pod_count"] += 1
             summary[matched_model]["gpu_hours"] += item["gpu_hours"]
             summary[matched_model]["bottom"] += item["bottom"]
+            summary[matched_model]["total_util"] += item["avg_util_percent"]
 
         rows = [
             {
                 "model": model,
+                "total_gpus": values["total_gpus"],
+                "pod_count": values["pod_count"],
+                "avg_util_percent": round(values["total_util"] / values["pod_count"], 2) if values["pod_count"] else 0,
                 "gpu_hours": round(values["gpu_hours"], 2),
                 "bottom": round(values["bottom"], 2),
             }
@@ -598,7 +743,7 @@ class GPUMonitoringService:
   <div class="page">
     <div class="hero">
       <div class="title">GPU bottom 卡时分析报告</div>
-      <p class="subtitle">统计区间：{summary.get("start_time", "-")} 至 {summary.get("end_time", "-")} | 步长：{summary.get("step", "-")} | 集群：{", ".join(summary.get("cluster_ids", []) or ["-"])} | 已过滤平均利用率 > 70% 的记录</p>
+      <p class="subtitle">统计区间：{summary.get("start_time", "-")} 至 {summary.get("end_time", "-")} | 步长：{summary.get("step", "-")} | 集群：{", ".join(summary.get("cluster_ids", []) or ["-"])} | 已过滤利用率&gt;70% 且 卡时&lt;100 的记录，并去除利用率前10的Pod</p>
     </div>
 
     <div class="stats">

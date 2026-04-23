@@ -23,25 +23,25 @@
       </div>
       <div class="content-card-body">
 
-      <el-table v-loading="loading" :data="webhookList" stripe>
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="name" label="名称" min-width="150" />
-        <el-table-column prop="type" label="类型" width="100">
+      <el-table v-loading="loading" :data="webhookList" stripe border>
+        <el-table-column prop="id" label="ID" width="80"  resizable/>
+        <el-table-column prop="name" label="名称" min-width="150"  resizable/>
+        <el-table-column prop="type" label="类型" width="100" resizable>
           <template #default="{ row }">
             <el-tag :type="row.type === 'feishu' ? 'primary' : 'success'">
               {{ row.type === 'feishu' ? '飞书' : '如流' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="url" label="URL" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="severity_filter" label="严重程度过滤" width="150" />
-        <el-table-column prop="keywords" label="关键词" width="120" />
-        <el-table-column prop="enabled" label="状态" width="100">
+        <el-table-column prop="url" label="URL" min-width="200" show-overflow-tooltip  resizable/>
+        <el-table-column prop="severity_filter" label="严重程度过滤" width="150"  resizable/>
+        <el-table-column prop="keywords" label="关键词" width="120"  resizable/>
+        <el-table-column prop="enabled" label="状态" width="100" resizable>
           <template #default="{ row }">
             <el-switch v-model="row.enabled" @change="handleToggleEnable(row)" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right" resizable>
           <template #default="{ row }">
             <div class="action-grid">
               <div class="action-row action-row-primary">

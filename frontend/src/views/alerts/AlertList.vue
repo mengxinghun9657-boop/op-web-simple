@@ -215,15 +215,16 @@
           @selection-change="handleSelectionChange"
           @sort-change="handleSortChange"
           class="google-table"
+          border
           aria-label="硬件告警列表"
         >
-          <el-table-column type="selection" width="55" />
+          <el-table-column type="selection" width="55"  resizable/>
 
-          <el-table-column prop="id" label="ID" width="80" sortable="custom" />
+          <el-table-column prop="id" label="ID" width="80" sortable="custom"  resizable/>
 
-          <el-table-column prop="alert_type" label="告警类型" min-width="180" sortable="custom" />
+          <el-table-column prop="alert_type" label="告警类型" min-width="180" sortable="custom"  resizable/>
 
-          <el-table-column prop="component" label="组件" width="120" sortable="custom">
+          <el-table-column prop="component" label="组件" width="120" sortable="custom" resizable>
             <template #default="{ row }">
               <span :class="`status-badge ${getComponentBadgeClass(row.component)}`">
                 {{ row.component }}
@@ -231,7 +232,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="severity" label="严重程度" width="120" sortable="custom">
+          <el-table-column prop="severity" label="严重程度" width="120" sortable="custom" resizable>
             <template #default="{ row }">
               <span
                 :class="`status-badge ${getSeverityBadgeClass(row.severity)}`"
@@ -243,17 +244,17 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="ip" label="节点IP" width="140" sortable="custom" />
+          <el-table-column prop="ip" label="节点IP" width="140" sortable="custom"  resizable/>
 
-          <el-table-column prop="cluster_id" label="集群ID" width="150" show-overflow-tooltip sortable="custom" />
+          <el-table-column prop="cluster_id" label="集群ID" width="150" show-overflow-tooltip sortable="custom"  resizable/>
 
-          <el-table-column prop="timestamp" label="发生时间" width="180" sortable="custom">
+          <el-table-column prop="timestamp" label="发生时间" width="180" sortable="custom" resizable>
             <template #default="{ row }">
               {{ formatDateTime(row.timestamp) }}
             </template>
           </el-table-column>
 
-          <el-table-column prop="status" label="状态" width="120" sortable="custom">
+          <el-table-column prop="status" label="状态" width="120" sortable="custom" resizable>
             <template #default="{ row }">
               <span
                 :class="`status-badge ${getStatusBadgeClass(row.status)}`"
@@ -264,7 +265,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="source" label="来源" width="100" sortable="custom">
+          <el-table-column prop="source" label="来源" width="100" sortable="custom" resizable>
             <template #default="{ row }">
               <span :class="`status-badge ${getSourceBadgeClass(row.source)}`">
                 {{ getSourceLabel(row.source) }}
@@ -272,7 +273,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="诊断" width="80" align="center">
+          <el-table-column label="诊断" width="80" align="center" resizable>
             <template #default="{ row }">
               <el-icon
                 v-if="row.has_diagnosis"
@@ -293,7 +294,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="操作" width="220" fixed="right">
+          <el-table-column label="操作" width="220" fixed="right" resizable>
             <template #default="{ row }">
               <div class="action-grid">
                 <div class="action-row action-row-primary">

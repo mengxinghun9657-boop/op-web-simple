@@ -338,6 +338,11 @@ class _LocalDBWriter:
 
             cursor = conn.cursor()
             try:
+                # 全量替换：API 数据已确认正常后，先删除旧数据，再写入新数据，避免已释放/下线资源残留
+                if source_type == 'BCC':
+                    cursor.execute(f"DELETE FROM `{table}`")
+                elif source_type == 'CCE' and cluster_id:
+                    cursor.execute(f"DELETE FROM `{table}` WHERE `cluster_id`=%s", (cluster_id,))
                 cursor.executemany(sql, insert_values)
                 conn.commit()
                 count = len(insert_values)

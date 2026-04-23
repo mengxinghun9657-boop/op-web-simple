@@ -244,82 +244,55 @@ class CMDBSyncService:
             
             rows = data.get("data", {}).get("rows", [])
             logger.info(f"获取到 {len(rows)} 条记录")
-            
+
+            # 全量替换：API 数据确认正常后，先删除该 azone 旧数据，避免下架机器残留
+            deleted_servers = self.db.query(IaasServer).filter(
+                IaasServer.nova_host_azone == azone
+            ).delete(synchronize_session=False)
+            deleted_instances = self.db.query(IaasInstance).filter(
+                IaasInstance.nova_vm_azone == azone
+            ).delete(synchronize_session=False)
+            logger.info(f"已清理 {azone} 旧数据: 服务器 {deleted_servers} 条, 实例 {deleted_instances} 条")
+
             # 同步数据
             servers_added = 0
-            servers_updated = 0
-            servers_skipped = 0  # 跳过的重复记录
             instances_added = 0
-            instances_updated = 0
-            instances_skipped = 0  # 跳过的重复记录
-            
-            # 用于跟踪本批次已处理的记录,避免重复
+
+            # 用于跟踪本批次已处理的记录，避免同一 API 响应中重复
             processed_servers = {}  # hostname -> server对象
             processed_instances = {}  # instance_uuid -> instance对象
-            
+
             for row in rows:
                 # 同步服务器
                 hostname = row.get("bns_hostname")
                 if hostname:
-                    # 先检查本批次是否已处理
                     if hostname in processed_servers:
-                        server = processed_servers[hostname]
-                        servers_skipped += 1
-                        is_new = False
-                        # 合并更新：如果新数据有非空字段，更新到已处理的记录中
-                        self._merge_server_fields(server, row)
+                        # 同一批次内重复，合并字段
+                        self._merge_server_fields(processed_servers[hostname], row)
                     else:
-                        # 查询数据库
-                        server = self.db.query(IaasServer).filter(
-                            IaasServer.bns_hostname == hostname
-                        ).first()
-                        
-                        is_new = server is None
-                        if is_new:
-                            server = IaasServer(bns_hostname=hostname)
-                            self.db.add(server)
-                            servers_added += 1
-                        else:
-                            servers_updated += 1
-                        
-                        # 记录到本批次已处理
+                        server = IaasServer(bns_hostname=hostname)
+                        self.db.add(server)
                         processed_servers[hostname] = server
-                    
-                    # 更新所有字段
-                    self._update_server_fields(server, row)
-                    server.synced_at = datetime.utcnow()
-                
+                        servers_added += 1
+
+                    self._update_server_fields(processed_servers[hostname], row)
+                    processed_servers[hostname].synced_at = datetime.utcnow()
+
                 # 同步实例
                 instance_uuid = row.get("nova_vm_instance_uuid")
                 if instance_uuid:
-                    # 先检查本批次是否已处理
                     if instance_uuid in processed_instances:
-                        instance = processed_instances[instance_uuid]
-                        instances_skipped += 1
-                        is_new = False
-                        # 合并更新：如果新数据有非空字段，更新到已处理的记录中
-                        self._merge_instance_fields(instance, row)
+                        # 同一批次内重复，合并字段
+                        self._merge_instance_fields(processed_instances[instance_uuid], row)
                     else:
-                        # 查询数据库
-                        instance = self.db.query(IaasInstance).filter(
-                            IaasInstance.nova_vm_instance_uuid == instance_uuid
-                        ).first()
-                        
-                        is_new = instance is None
-                        if is_new:
-                            instance = IaasInstance(nova_vm_instance_uuid=instance_uuid)
-                            self.db.add(instance)
-                            instances_added += 1
-                        else:
-                            instances_updated += 1
-                        
-                        # 记录到本批次已处理
+                        instance = IaasInstance(nova_vm_instance_uuid=instance_uuid)
+                        self.db.add(instance)
                         processed_instances[instance_uuid] = instance
-                    
-                    # 更新所有字段
-                    self._update_instance_fields(instance, row)
-                    instance.synced_at = datetime.utcnow()
-            
+                        instances_added += 1
+
+                    self._update_instance_fields(processed_instances[instance_uuid], row)
+                    processed_instances[instance_uuid].synced_at = datetime.utcnow()
+
             self.db.commit()
             
             # 更新同步日志
@@ -327,27 +300,23 @@ class CMDBSyncService:
             sync_log.status = "success"
             sync_log.total_rows = len(rows)
             sync_log.servers_added = servers_added
-            sync_log.servers_updated = servers_updated
+            sync_log.servers_updated = 0
             sync_log.instances_added = instances_added
-            sync_log.instances_updated = instances_updated
+            sync_log.instances_updated = 0
             sync_log.completed_at = end_time
             sync_log.duration_seconds = int((end_time - start_time).total_seconds())
             self.db.commit()
-            
-            # 日志中包含跳过的记录数
-            if servers_skipped > 0 or instances_skipped > 0:
-                logger.info(f"同步完成: 服务器(新增{servers_added}/更新{servers_updated}/跳过{servers_skipped}), 实例(新增{instances_added}/更新{instances_updated}/跳过{instances_skipped})")
-            else:
-                logger.info(f"同步完成: 服务器(新增{servers_added}/更新{servers_updated}), 实例(新增{instances_added}/更新{instances_updated})")
-            
+
+            logger.info(f"同步完成: 服务器(新增{servers_added}), 实例(新增{instances_added})")
+
             return {
                 "success": True,
                 "azone": azone,
                 "total_rows": len(rows),
                 "servers_added": servers_added,
-                "servers_updated": servers_updated,
+                "servers_updated": 0,
                 "instances_added": instances_added,
-                "instances_updated": instances_updated,
+                "instances_updated": 0,
                 "duration_seconds": sync_log.duration_seconds
             }
             

@@ -107,6 +107,11 @@ export const getEIPInstanceIds = () => axios.get('/api/v1/cmdb/eip/instance-ids'
 // 获取 BOS Bucket 名称列表（供监控配置同步）
 export const getBOSBucketNames = () => axios.get('/api/v1/cmdb/bos/bucket-names')
 
+// ========== 导出 ==========
+
+// 导出 CMDB 数据（支持 BCE 关联）
+export const exportCMDB = (params) => axios.get('/api/v1/cmdb/export', { params })
+
 // 下载 KubeConfig（触发浏览器下载，type: vpc | public）
 export const downloadKubeconfig = async (clusterId, type = 'vpc') => {
   const resp = await axios.get(`/api/v1/cmdb/cce/cluster/${clusterId}/kubeconfig`, {

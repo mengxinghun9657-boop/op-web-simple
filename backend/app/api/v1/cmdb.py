@@ -935,16 +935,6 @@ async def update_bce_sync_config(
         from app.models.system_config import SystemConfig
         import json
 
-        # 验证配置
-        if 'sync_interval' in config:
-            interval = config['sync_interval']
-            if not isinstance(interval, int) or interval < 300:
-                return APIResponse(
-                    success=False,
-                    error="同步间隔不能小于300秒（5分钟）",
-                    message="配置验证失败"
-                )
-
         # 读取现有配置
         row = db.query(SystemConfig).filter_by(
             module='bce_sync', config_key='sync_config').first()
@@ -1365,3 +1355,297 @@ async def cce_get_kubeconfig(
         media_type="application/x-yaml",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
+
+
+# ========== 导出接口（支持 BCE 关联数据） ==========
+
+@router.get("/export")
+async def export_cmdb_data(
+    view_mode: str = Query("servers", description="导出视图: servers, instances"),
+    search: Optional[str] = None,
+    manufacturer: Optional[str] = None,
+    node_type: Optional[str] = None,
+    state: Optional[str] = None,
+    source: Optional[str] = None,
+    include_bce: bool = Query(False, description="是否包含 BCE 关联数据"),
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    导出 CMDB 数据为 CSV，支持关联 BCE CCE/BCC 数据。
+
+    当 include_bce=true 时：
+    - servers 视图：通过 rms_ip_in1 / nova_host_host_ip 关联 bce_bcc_instances 和 bce_cce_nodes
+    - instances 视图：通过 nova_vm_fixed_ips 关联 bce_bcc_instances 和 bce_cce_nodes
+    """
+    import json as _json
+    from app.core.database import get_db_connection
+
+    # 1. 查询数据（不分页，取全部）
+    if view_mode == "servers":
+        query = db.query(IaasServer)
+        if search:
+            keywords = [k.strip() for k in search.replace("\n", ",").split(",") if k.strip()]
+            all_conditions = []
+            for kw in keywords:
+                matching_hostnames = db.query(distinct(IaasInstance.bns_hostname)).filter(
+                    (IaasInstance.nova_vm_fixed_ips.contains(kw)) |
+                    (IaasInstance.nova_vm_instance_uuid.contains(kw))
+                ).all()
+                matching_hostnames = [h[0] for h in matching_hostnames if h[0]]
+                kw_conditions = [
+                    IaasServer.bns_hostname.contains(kw),
+                    IaasServer.rms_sn.contains(kw)
+                ]
+                if matching_hostnames:
+                    kw_conditions.append(IaasServer.bns_hostname.in_(matching_hostnames))
+                all_conditions.append(or_(*kw_conditions))
+            query = query.filter(or_(*all_conditions))
+        if manufacturer:
+            query = query.filter(IaasServer.rms_manufacturer == manufacturer)
+        if node_type:
+            query = query.filter(IaasServer.nova_host_node_type == node_type)
+        items = query.all()
+    else:
+        query = db.query(IaasInstance)
+        if search:
+            keywords = [k.strip() for k in search.replace("\n", ",").split(",") if k.strip()]
+            all_conditions = []
+            for kw in keywords:
+                matching_servers = db.query(distinct(IaasServer.bns_hostname)).filter(
+                    (IaasServer.bns_hostname.contains(kw)) |
+                    (IaasServer.rms_sn.contains(kw))
+                ).all()
+                matching_hostnames = [h[0] for h in matching_servers if h[0]]
+                kw_conditions = [
+                    IaasInstance.nova_vm_instance_uuid.contains(kw),
+                    IaasInstance.nova_vm_fixed_ips.contains(kw),
+                    IaasInstance.bns_hostname.contains(kw)
+                ]
+                if matching_hostnames:
+                    kw_conditions.append(IaasInstance.bns_hostname.in_(matching_hostnames))
+                all_conditions.append(or_(*kw_conditions))
+            query = query.filter(or_(*all_conditions))
+        if state:
+            query = query.filter(IaasInstance.nova_vm_vm_state == state)
+        if source:
+            query = query.filter(IaasInstance.nova_vm_metadata_source == source)
+        items = query.all()
+
+    if not items:
+        return APIResponse(success=True, data=[], message="无数据可导出")
+
+    # 2. 构建基础数据字典列表
+    def obj_to_dict(obj):
+        data = {}
+        for column in obj.__table__.columns:
+            value = getattr(obj, column.name)
+            if value is not None and hasattr(value, "isoformat"):
+                data[column.name] = value.isoformat()
+            else:
+                data[column.name] = value
+        return data
+
+    rows = [obj_to_dict(item) for item in items]
+
+    # 3. 如果需要 BCE 关联数据，批量查询并关联
+    if include_bce:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+
+            # 检查 BCE 表是否存在
+            cursor.execute("SHOW TABLES LIKE 'bce_bcc_instances'")
+            has_bcc = cursor.fetchone() is not None
+            cursor.execute("SHOW TABLES LIKE 'bce_cce_nodes'")
+            has_cce = cursor.fetchone() is not None
+
+            if view_mode == "servers":
+                # 收集所有服务器下实例的 IP 来关联 BCE
+                # BCE 表中存的是实例/节点 IP，不是宿主机 IP
+                hostname_to_idx = {}
+                for idx, row in enumerate(rows):
+                    hostname = row.get("bns_hostname")
+                    if hostname:
+                        hostname_to_idx.setdefault(hostname, []).append(idx)
+
+                hostnames = list(hostname_to_idx.keys())
+                ip_to_server_idx = {}
+                if hostnames:
+                    instances = db.query(IaasInstance).filter(IaasInstance.bns_hostname.in_(hostnames)).all()
+                    for inst in instances:
+                        raw = inst.nova_vm_fixed_ips
+                        if not raw:
+                            continue
+                        raw_str = str(raw).strip()
+                        # JSON 解析
+                        if raw_str.startswith("[") or raw_str.startswith('"'):
+                            try:
+                                parsed = _json.loads(raw_str)
+                                if isinstance(parsed, list):
+                                    for ip in parsed:
+                                        ip = str(ip).strip()
+                                        if ip:
+                                            for idx in hostname_to_idx.get(inst.bns_hostname, []):
+                                                ip_to_server_idx.setdefault(ip, []).append(idx)
+                                    continue
+                                elif isinstance(parsed, str):
+                                    if parsed.strip():
+                                        for idx in hostname_to_idx.get(inst.bns_hostname, []):
+                                            ip_to_server_idx.setdefault(parsed.strip(), []).append(idx)
+                                    continue
+                            except Exception:
+                                pass
+                        # 普通逗号/分号分隔
+                        for part in raw_str.replace(";", ",").split(","):
+                            part = part.strip()
+                            if part:
+                                for idx in hostname_to_idx.get(inst.bns_hostname, []):
+                                    ip_to_server_idx.setdefault(part, []).append(idx)
+
+                ip_list = list(ip_to_server_idx.keys())
+                if ip_list:
+                    placeholders = ",".join(["%s"] * len(ip_list))
+
+                    # 查 BCC
+                    if has_bcc:
+                        cursor.execute(
+                            f"SELECT `内网ip`, `bcc_id`, `名称`, `实例规格`, `状态`, `vpc_id`, `可用区`, `付费方式` "
+                            f"FROM `bce_bcc_instances` WHERE `内网ip` IN ({placeholders}) ORDER BY `collect_date` DESC",
+                            ip_list
+                        )
+                        bcc_map = {}
+                        for row_data in cursor.fetchall():
+                            ip = row_data[0]
+                            if ip not in bcc_map:
+                                bcc_map[ip] = {
+                                    "bcc_id": row_data[1] or "",
+                                    "bcc_name": row_data[2] or "",
+                                    "bcc_spec": row_data[3] or "",
+                                    "bcc_status": row_data[4] or "",
+                                    "bcc_vpc_id": row_data[5] or "",
+                                    "bcc_zone": row_data[6] or "",
+                                    "bcc_payment": row_data[7] or "",
+                                }
+                        for ip, indices in ip_to_server_idx.items():
+                            bcc = bcc_map.get(ip)
+                            for idx in indices:
+                                if bcc:
+                                    rows[idx].update({k: v for k, v in bcc.items()})
+
+                    # 查 CCE
+                    if has_cce:
+                        cursor.execute(
+                            f"SELECT `内网ip`, `节点id`, `节点名称`, `k8s节点名`, `状态`, `集群id`, `节点角色`, `机器类型` "
+                            f"FROM `bce_cce_nodes` WHERE `内网ip` IN ({placeholders}) ORDER BY `collect_date` DESC",
+                            ip_list
+                        )
+                        cce_map = {}
+                        for row_data in cursor.fetchall():
+                            ip = row_data[0]
+                            if ip not in cce_map:
+                                cce_map[ip] = {
+                                    "cce_node_id": row_data[1] or "",
+                                    "cce_node_name": row_data[2] or "",
+                                    "cce_k8s_name": row_data[3] or "",
+                                    "cce_status": row_data[4] or "",
+                                    "cce_cluster_id": row_data[5] or "",
+                                    "cce_role": row_data[6] or "",
+                                    "cce_machine_type": row_data[7] or "",
+                                }
+                        for ip, indices in ip_to_server_idx.items():
+                            cce = cce_map.get(ip)
+                            for idx in indices:
+                                if cce:
+                                    rows[idx].update({k: v for k, v in cce.items()})
+            else:
+                # instances 视图：通过 nova_vm_fixed_ips 关联
+                ip_to_instance_idx = {}
+                for idx, row in enumerate(rows):
+                    raw = row.get("nova_vm_fixed_ips")
+                    if not raw:
+                        continue
+                    raw_str = str(raw).strip()
+                    # JSON 解析
+                    if raw_str.startswith("[") or raw_str.startswith('"'):
+                        try:
+                            parsed = _json.loads(raw_str)
+                            if isinstance(parsed, list):
+                                for ip in parsed:
+                                    ip = str(ip).strip()
+                                    if ip:
+                                        ip_to_instance_idx.setdefault(ip, []).append(idx)
+                                continue
+                            elif isinstance(parsed, str):
+                                if parsed.strip():
+                                    ip_to_instance_idx.setdefault(parsed.strip(), []).append(idx)
+                                continue
+                        except Exception:
+                            pass
+                    # 普通逗号/分号分隔
+                    for part in raw_str.replace(";", ",").split(","):
+                        part = part.strip()
+                        if part:
+                            ip_to_instance_idx.setdefault(part, []).append(idx)
+
+                ip_list = list(ip_to_instance_idx.keys())
+                if ip_list:
+                    placeholders = ",".join(["%s"] * len(ip_list))
+
+                    # 查 BCC
+                    if has_bcc:
+                        cursor.execute(
+                            f"SELECT `内网ip`, `bcc_id`, `名称`, `实例规格`, `状态`, `vpc_id`, `可用区`, `付费方式` "
+                            f"FROM `bce_bcc_instances` WHERE `内网ip` IN ({placeholders}) ORDER BY `collect_date` DESC",
+                            ip_list
+                        )
+                        bcc_map = {}
+                        for row_data in cursor.fetchall():
+                            ip = row_data[0]
+                            if ip not in bcc_map:
+                                bcc_map[ip] = {
+                                    "bcc_id": row_data[1] or "",
+                                    "bcc_name": row_data[2] or "",
+                                    "bcc_spec": row_data[3] or "",
+                                    "bcc_status": row_data[4] or "",
+                                    "bcc_vpc_id": row_data[5] or "",
+                                    "bcc_zone": row_data[6] or "",
+                                    "bcc_payment": row_data[7] or "",
+                                }
+                        for ip, indices in ip_to_instance_idx.items():
+                            bcc = bcc_map.get(ip)
+                            for idx in indices:
+                                if bcc:
+                                    rows[idx].update({k: v for k, v in bcc.items()})
+
+                    # 查 CCE
+                    if has_cce:
+                        cursor.execute(
+                            f"SELECT `内网ip`, `节点id`, `节点名称`, `k8s节点名`, `状态`, `集群id`, `节点角色`, `机器类型` "
+                            f"FROM `bce_cce_nodes` WHERE `内网ip` IN ({placeholders}) ORDER BY `collect_date` DESC",
+                            ip_list
+                        )
+                        cce_map = {}
+                        for row_data in cursor.fetchall():
+                            ip = row_data[0]
+                            if ip not in cce_map:
+                                cce_map[ip] = {
+                                    "cce_node_id": row_data[1] or "",
+                                    "cce_node_name": row_data[2] or "",
+                                    "cce_k8s_name": row_data[3] or "",
+                                    "cce_status": row_data[4] or "",
+                                    "cce_cluster_id": row_data[5] or "",
+                                    "cce_role": row_data[6] or "",
+                                    "cce_machine_type": row_data[7] or "",
+                                }
+                        for ip, indices in ip_to_instance_idx.items():
+                            cce = cce_map.get(ip)
+                            for idx in indices:
+                                if cce:
+                                    rows[idx].update({k: v for k, v in cce.items()})
+
+            cursor.close()
+        finally:
+            conn.close()
+
+    return APIResponse(success=True, data=rows, total=len(rows))

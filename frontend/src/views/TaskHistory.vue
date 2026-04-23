@@ -64,27 +64,27 @@
         </div>
       </div>
       <div class="content-card-body">
-        <el-table :data="tasks" v-loading="loading" class="google-table">
-          <el-table-column prop="id" label="任务ID" width="200" fixed="left">
+        <el-table :data="tasks" v-loading="loading" class="google-table" border>
+          <el-table-column prop="id" label="任务ID" width="200" fixed="left" resizable>
             <template #default="{ row }">
               <span class="task-id">{{ row.id }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="任务类型" width="140">
+          <el-table-column label="任务类型" width="140" resizable>
             <template #default="{ row }">
               <el-tag :type="taskTypeColors[row.task_type] || 'primary'">
                 {{ taskTypeLabels[row.task_type] || row.task_type }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="100">
+          <el-table-column label="状态" width="100" resizable>
             <template #default="{ row }">
               <el-tag :type="statusColors[row.status]">
                 {{ statusLabels[row.status] }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="进度" width="200">
+          <el-table-column label="进度" width="200" resizable>
             <template #default="{ row }">
               <el-progress
                 :percentage="row.progress"
@@ -93,32 +93,32 @@
               />
             </template>
           </el-table-column>
-          <el-table-column label="进度详情" width="140" align="center">
+          <el-table-column label="进度详情" width="140" align="center" resizable>
             <template #default="{ row }">
               <span class="progress-detail">{{ getProgressText(row) }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="message" label="消息" min-width="200">
+          <el-table-column prop="message" label="消息" min-width="200" resizable>
             <template #default="{ row }">
               <span class="message-text">{{ row.message }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="username" label="创建者" width="100">
+          <el-table-column prop="username" label="创建者" width="100" resizable>
             <template #default="{ row }">
               <el-tag type="primary">{{ row.username || 'system' }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" width="180">
+          <el-table-column label="创建时间" width="180" resizable>
             <template #default="{ row }">
               <span class="time-text">{{ formatTime(row.created_at) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="完成时间" width="180">
+          <el-table-column label="完成时间" width="180" resizable>
             <template #default="{ row }">
               <span class="time-text time-success">{{ row.completed_at ? formatTime(row.completed_at) : '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200" fixed="right">
+          <el-table-column label="操作" width="200" fixed="right" resizable>
             <template #default="{ row }">
               <div class="action-buttons">
                 <el-button size="small" @click="showDetail(row)" class="action-btn">

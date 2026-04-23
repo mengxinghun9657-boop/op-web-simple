@@ -86,7 +86,7 @@ class TaskScheduler:
             self.scheduler.remove_job("apiserver_alert_scan")
             logger.info("APIServer 告警自动检测任务已移除")
         except Exception as e:
-            logger.warning(f"移除 APIServer 告警自动检测任务失败: {e}")
+            logger.debug(f"移除 APIServer 告警自动检测任务失败（任务可能不存在）: {e}")
 
     def add_bce_sync_job(self, interval_hours: int, auto_sync_bcc: bool = True, auto_sync_cce: bool = True):
         """添加 BCE 数据自动同步任务"""
@@ -114,7 +114,7 @@ class TaskScheduler:
             self.scheduler.remove_job("bce_sync")
             logger.info("BCE 自动同步任务已移除")
         except Exception as e:
-            logger.warning(f"移除 BCE 自动同步任务失败: {e}")
+            logger.debug(f"移除 BCE 自动同步任务失败（任务可能不存在）: {e}")
     
     def remove_cmdb_sync_job(self):
         """移除CMDB同步定时任务"""
@@ -122,7 +122,7 @@ class TaskScheduler:
             self.scheduler.remove_job("cmdb_sync")
             logger.info("CMDB同步任务已移除")
         except Exception as e:
-            logger.warning(f"移除CMDB同步任务失败: {e}")
+            logger.debug(f"移除CMDB同步任务失败（任务可能不存在）: {e}")
     
     def _sync_cmdb_data(self, azones: List[str]):
         """
@@ -218,7 +218,8 @@ class TaskScheduler:
             interval_hours = sync_service.get_config("sync_schedule_interval_hours", 24)
             azones = sync_service.get_config("sync_schedule_azones", ["AZONE-cdhmlcc001"])
             if enabled:
-                self.add_cmdb_sync_job(interval_hours, azones)
+                if not self.scheduler.get_job("cmdb_sync"):
+                    self.add_cmdb_sync_job(interval_hours, azones)
             else:
                 self.remove_cmdb_sync_job()
 
@@ -229,7 +230,8 @@ class TaskScheduler:
             if apiserver_row and apiserver_row.config_value:
                 apiserver_cfg = json.loads(apiserver_row.config_value)
                 if apiserver_cfg.get('auto_check_enabled'):
-                    self.add_apiserver_alert_job(int(apiserver_cfg.get('check_interval_minutes', 10)))
+                    if not self.scheduler.get_job("apiserver_alert_scan"):
+                        self.add_apiserver_alert_job(int(apiserver_cfg.get('check_interval_minutes', 10)))
                 else:
                     self.remove_apiserver_alert_job()
             else:
@@ -242,8 +244,9 @@ class TaskScheduler:
             if bce_row and bce_row.config_value:
                 bce_cfg = json.loads(bce_row.config_value)
                 if bce_cfg.get('enabled'):
-                    hours = max(1, bce_cfg.get('sync_interval', 3600) // 3600)
-                    self.add_bce_sync_job(hours, bce_cfg.get('auto_sync_bcc', True), bce_cfg.get('auto_sync_cce', True))
+                    if not self.scheduler.get_job("bce_sync"):
+                        hours = max(0.01, bce_cfg.get('sync_interval', 3600) / 3600)
+                        self.add_bce_sync_job(hours, bce_cfg.get('auto_sync_bcc', True), bce_cfg.get('auto_sync_cce', True))
                 else:
                     self.remove_bce_sync_job()
             else:

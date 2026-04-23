@@ -99,14 +99,15 @@
             <el-form-item label="同步间隔" v-if="syncConfig.enabled">
               <el-input-number
                 v-model="syncIntervalHours"
-                :min="1"
+                :min="0.01"
                 :max="24"
-                :step="1"
+                :step="0.01"
+                :precision="2"
                 style="width: 200px"
               />
               <span style="margin-left: 8px;">小时</span>
               <div class="form-tip">
-                同步间隔范围 1-24 小时，建议设置为 1 小时
+                同步间隔范围 0.01-24 小时，建议生产环境设置为 1 小时
               </div>
             </el-form-item>
 
@@ -215,7 +216,7 @@ const syncConfig = reactive({
 // 计算属性：同步间隔（小时）
 const syncIntervalHours = computed({
   get() {
-    return Math.floor(syncConfig.sync_interval / 3600)
+    return Math.round(syncConfig.sync_interval / 3600 * 100) / 100
   },
   set(val) {
     syncConfig.sync_interval = val * 3600

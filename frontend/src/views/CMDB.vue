@@ -156,6 +156,13 @@
         <div class="table-title">{{ viewMode === 'servers' ? '服务器列表' : '实例列表' }}</div>
         <div class="table-toolbar">
           <span class="status-badge primary">共 {{ total }} 条</span>
+          <el-checkbox v-model="exportIncludeBCE" size="small" style="margin-right: 8px;">
+            包含BCE关联
+          </el-checkbox>
+          <el-button size="small" @click="handleExport" :loading="exporting">
+            <el-icon><Download /></el-icon>
+            导出 Excel
+          </el-button>
         </div>
       </div>
       <div class="table-body">
@@ -167,6 +174,7 @@
           @row-click="showServerDetail"
           @sort-change="handleSortChange"
           class="google-table"
+          border
         >
           <el-table-column
             v-for="fieldConfig in currentFieldConfigs"
@@ -178,6 +186,7 @@
             :sortable="fieldConfig.sortable ? 'custom' : false"
             :show-overflow-tooltip="false"
             :align="fieldConfig.align || 'left'"
+            resizable
           >
             <template #default="{ row }">
               <el-tooltip
@@ -223,7 +232,7 @@
         </el-table>
 
         <!-- 实例列表 - 动态列 -->
-        <el-table v-else :data="instances" v-loading="loading" class="google-table">
+        <el-table v-else :data="instances" v-loading="loading" class="google-table" border>
           <el-table-column
             v-for="fieldConfig in currentFieldConfigs"
             :key="fieldConfig.key"
@@ -234,6 +243,7 @@
             :sortable="fieldConfig.sortable ? 'custom' : false"
             :show-overflow-tooltip="false"
             :align="fieldConfig.align || 'left'"
+            resizable
           >
             <template #default="{ row }">
               <el-tooltip
@@ -536,7 +546,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElLoading } from 'element-plus'
-import { Monitor, Cpu, Odometer, Coin, Search, Upload, Refresh, Delete, Grid, DocumentCopy, Setting, Tools, FolderOpened, ArrowDown, Connection } from '@element-plus/icons-vue'
+import { Monitor, Cpu, Odometer, Coin, Search, Upload, Refresh, Delete, Grid, DocumentCopy, Setting, Tools, FolderOpened, ArrowDown, Connection, Download } from '@element-plus/icons-vue'
 import FieldConfigDialog from '@/components/cmdb/FieldConfigDialog.vue'
 import { getAllFields, getDefaultVisibleFields } from '@/config/cmdbFields'
 import { useUserStore } from '@/stores/user'
@@ -559,6 +569,8 @@ const viewMode = ref('servers')
 const searchText = ref('')
 const filterManufacturer = ref('')
 const filterNodeType = ref('')
+const filterState = ref('')
+const filterSource = ref('')
 
 // 当前有效关键词数量（用于提示）
 const searchKeywordCount = computed(() => {
@@ -767,6 +779,71 @@ const fetchData = async () => {
     ElMessage.error('获取数据失败')
   } finally {
     loading.value = false
+  }
+}
+
+const exporting = ref(false)
+const exportIncludeBCE = ref(false)
+
+const handleExport = async () => {
+  exporting.value = true
+  try {
+    // 始终导出 instances 视图数据（以实例 IP 为主字段，才能正确关联 BCE）
+    const params = {
+      view_mode: 'instances',
+      search: searchText.value || undefined,
+      state: undefined,
+      source: undefined,
+      include_bce: exportIncludeBCE.value,
+    }
+    const response = await cmdbApi.exportCMDB(params)
+
+    const allData = response.data || []
+
+    // 始终使用 instances 视图的字段配置
+    const allInstanceFields = getAllFields('instances')
+    const visibleKeys = visibleInstanceFields.value.length > 0
+      ? visibleInstanceFields.value
+      : getDefaultVisibleFields('instances')
+    let fields = allInstanceFields.filter(f => visibleKeys.includes(f.key))
+
+    if (exportIncludeBCE.value) {
+      const bceFields = allInstanceFields.filter(f => f.group === 'BCE关联信息')
+      const existingKeys = new Set(fields.map(f => f.key))
+      for (const f of bceFields) {
+        if (!existingKeys.has(f.key)) {
+          fields.push(f)
+        }
+      }
+    }
+
+    // 生成 CSV（UTF-8 BOM 保证 Excel 正确显示中文）
+    const header = fields.map(f => f.label).join(',')
+    const rows = allData.map(row =>
+      fields.map(f => {
+        const val = row[f.key] ?? ''
+        let str = String(val).replace(/"/g, '""')
+        // 纯数字值前加制表符，防止 Excel 自动格式化为科学计数法
+        if (/^\d+$/.test(str) && str.length > 0) {
+          str = '\t' + str
+        }
+        return str.includes(',') || str.includes('\n') || str.includes('"') ? `"${str}"` : str
+      }).join(',')
+    )
+    const csv = '\uFEFF' + [header, ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const bceSuffix = exportIncludeBCE.value ? '_含BCE关联' : ''
+    a.download = `实例列表${bceSuffix}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success(`已导出 ${allData.length} 条数据`)
+  } catch (e) {
+    ElMessage.error('导出失败')
+  } finally {
+    exporting.value = false
   }
 }
 
